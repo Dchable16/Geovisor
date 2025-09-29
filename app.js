@@ -57,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.loadData();
         },
 
-        // --- 3. INICIALIZACIÓN DE LA UI ---
         initMap() {
             this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]], zoomControl: false });
             L.control.zoom({ position: 'topleft' }).addTo(this.leaflet.map);
@@ -117,7 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.innerHTML = '☰';
                     button.title = "Mostrar controles";
                     this.nodes.openButton = button;
-                    if (!this.state.isPanelCollapsed) button.style.display = 'none';
+                    if (!this.state.isPanelCollapsed) {
+                        button.style.display = 'none';
+                    }
                     L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false), this);
                     L.DomEvent.disableClickPropagation(button);
                     return button;
@@ -143,7 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(this.CONFIG.dataUrl);
                 if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
                 const geojsonData = await response.json();
-                this.leaflet.geojsonLayer = L.geoJson(geojsonData, { style: feature => this.getFeatureStyle(feature), onEachFeature: (feature, layer) => this.processFeature(feature, layer) }).addTo(this.leaflet.map);
+                this.leaflet.geojsonLayer = L.geoJson(geojsonData, {
+                    style: feature => this.getFeatureStyle(feature),
+                    onEachFeature: (feature, layer) => this.processFeature(feature, layer)
+                }).addTo(this.leaflet.map);
                 this.populateAquiferSelect();
                 this.updateView();
             } catch (error) {
@@ -151,8 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("No se pudo cargar la capa de datos. Verifique la consola (F12).");
             }
         },
-
-        // --- 4. MANEJADORES DE ESTADO ---
 
         setPanelCollapsed(isCollapsed) {
             this.state.isPanelCollapsed = isCollapsed;
@@ -162,29 +164,65 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
         
-        handleAquiferSelect(aquiferName) { this.state.selectedAquiferName = aquiferName || null; if (this.state.selectedAquiferName) { this.leaflet.map.fitBounds(L.featureGroup(this.data.aquifers[this.state.selectedAquiferName]).getBounds().pad(0.1)); } this.render(); },
+        handleAquiferSelect(aquiferName) {
+            this.state.selectedAquiferName = aquiferName || null;
+            if (this.state.selectedAquiferName) {
+                this.leaflet.map.fitBounds(L.featureGroup(this.data.aquifers[this.state.selectedAquiferName]).getBounds().pad(0.1));
+            }
+            this.render();
+        },
+
         handleOpacityChange(opacity) { this.state.opacity = parseFloat(opacity); this.render(); },
         handleFilterChange(filterValue) { this.state.filterValue = filterValue; this.render(); },
+        
+        render() {
+            if (!this.leaflet.geojsonLayer) return;
+            this.leaflet.geojsonLayer.eachLayer(layer => layer.setStyle(this.getLayerStyle(layer)));
+            this.updateView();
+        },
+        
+        updateView() {
+            this.nodes.opacityValueSpan.textContent = `${Math.round(this.state.opacity * 100)}%`;
+            this.nodes.opacitySlider.value = this.state.opacity;
+        },
+        
+        getLayerStyle(layer) {
+            const { VULNERABIL, NOM_ACUIF } = layer.feature.properties;
+            const matchesFilter = (this.state.filterValue === 'all' || VULNERABIL == this.state.filterValue);
+            if (!matchesFilter) return this.CONFIG.styles.muted;
+            
+            let finalStyle = this.getFeatureStyle(layer.feature);
+            if (this.state.selectedAquiferName === NOM_ACUIF) {
+                finalStyle = { ...finalStyle, ...this.CONFIG.styles.selection };
+            }
+            return finalStyle;
+        },
 
-        // --- 5. LÓGICA DE RENDERIZADO Y ESTILOS ---
-
-        render() { if (!this.leaflet.geojsonLayer) return; this.leaflet.geojsonLayer.eachLayer(layer => layer.setStyle(this.getLayerStyle(layer))); this.updateView(); },
-        updateView() { this.nodes.opacityValueSpan.textContent = `${Math.round(this.state.opacity * 100)}%`; this.nodes.opacitySlider.value = this.state.opacity; },
-        getLayerStyle(layer) { const { VULNERABIL, NOM_ACUIF } = layer.feature.properties; const matchesFilter = (this.state.filterValue === 'all' || VULNERABIL == this.state.filterValue); if (!matchesFilter) return this.CONFIG.styles.muted; let finalStyle = this.getFeatureStyle(layer.feature); if (this.state.selectedAquiferName === NOM_ACUIF) { finalStyle = { ...finalStyle, ...this.CONFIG.styles.selection }; } return finalStyle; },
-        getFeatureStyle(feature) { return { ...this.CONFIG.styles.base, fillColor: this.getColor(feature.properties.VULNERABIL), fillOpacity: this.state.opacity }; },
-        getColor(v) { const val = parseInt(v, 10); switch (val) { case 5: return '#D90404'; case 4: return '#F25C05'; case 3: return '#F2B705'; case 2: return '#99C140'; case 1: return '#2DC937'; default: return '#CCCCCC'; } },
-
-        // --- 6. PROCESAMIENTO DE DATOS Y UTILIDADES ---
-
+        getFeatureStyle(feature) {
+            return {
+                ...this.CONFIG.styles.base,
+                fillColor: this.getColor(feature.properties.VULNERABIL),
+                fillOpacity: this.state.opacity
+            };
+        },
+        
+        getColor(v) {
+            const val = parseInt(v, 10);
+            switch (val) {
+                case 5: return '#D90404'; case 4: return '#F25C05'; case 3: return '#F2B705';
+                case 2: return '#99C140'; case 1: return '#2DC937'; default: return '#CCCCCC';
+            }
+        },
+        
         processFeature(feature, layer) {
-            // ----- LA CORRECCIÓN ESTÁ AQUÍ -----
-            // Leemos las propiedades desde 'feature.properties', que es la fuente correcta de los datos.
             const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
             
             layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
             
-            if (!this.data.aquifers[NOM_ACUIF]) { this.data.aquifers[NOM_ACUIF] = []; }
-            this.data.aquifers[NOM_ACUIF].push(layer);
+            if (NOM_ACUIF) {
+                if (!this.data.aquifers[NOM_ACUIF]) { this.data.aquifers[NOM_ACUIF] = []; }
+                this.data.aquifers[NOM_ACUIF].push(layer);
+            }
             
             layer.on({
                 mouseover: e => { const h = e.target; h.setStyle(this.CONFIG.styles.hover); h.bringToFront(); },
@@ -192,7 +230,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
         
-        populateAquiferSelect() { const sortedNames = Object.keys(this.data.aquifers).sort(); this.nodes.aquiferSelect.innerHTML += sortedNames.map(name => `<option value="${name}">${name}</option>`).join(''); },
+        populateAquiferSelect() {
+            const sortedNames = Object.keys(this.data.aquifers).sort();
+            this.nodes.aquiferSelect.innerHTML += sortedNames.map(name => `<option value="${name}">${name}</option>`).join('');
+        },
         
         initLegend() {
             const legend = L.control({ position: 'bottomright' });
@@ -221,4 +262,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     GeovisorApp.init();
-});```
+});
