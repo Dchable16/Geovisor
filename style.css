@@ -7,7 +7,7 @@
 /* --- 1. VARIABLES GLOBALES Y RESET --- */
 :root {
     --header-height: 70px;
-    --header-bg: #EAEAEA;
+    --header-bg: #989899;
     --panel-width: 320px;
     --panel-bg: rgba(255, 255, 255, 0.95);
     --panel-shadow: 0 1px 7px rgba(0,0,0,0.3);
