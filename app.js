@@ -40,10 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         state: {
-            opacity: 0.8, filterValue: 'all', selectedAquiferName: null, isPanelCollapsed: true, // El panel empieza cerrado
+            opacity: 0.8,
+            filterValue: 'all',
+            selectedAquiferName: null,
+            isPanelCollapsed: true, // El panel empieza cerrado
         },
 
-        nodes: {}, leaflet: {}, data: { aquifers: {} },
+        nodes: {}, 
+        leaflet: {},
+        data: { aquifers: {} },
 
         // --- 2. PUNTO DE ENTRADA DE LA APLICACIÓN ---
 
@@ -52,12 +57,23 @@ document.addEventListener('DOMContentLoaded', () => {
             this.loadData();
         },
 
+        // --- 3. MÉTODOS DE INICIALIZACIÓN ---
+
         initMap() {
-            this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]], zoomControl: false });
+            this.leaflet.map = L.map(this.CONFIG.mapId, {
+                center: this.CONFIG.initialCoords,
+                zoom: this.CONFIG.initialZoom,
+                layers: [this.CONFIG.tileLayers["Neutral (defecto)"]],
+                zoomControl: false // Desactivamos el control por defecto para añadirlo en orden
+            });
+
+            // Añadimos los controles en un orden específico para que se apilen correctamente
             L.control.zoom({ position: 'topleft' }).addTo(this.leaflet.map);
             L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
-            this.initOpenButtonControl();
-            this.initUiControlsPanel();
+            
+            this.initOpenButtonControl(); // Primero el botón para que el panel pueda alinearse a él
+            this.initUiControlsPanel();   // Luego el panel
+            
             this.initLegend();
             this.initLogoControl();
         },
@@ -90,12 +106,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     `;
-                    if (this.state.isPanelCollapsed) container.classList.add('collapsed');
 
+                    if (this.state.isPanelCollapsed) {
+                        container.classList.add('collapsed');
+                    }
+                    
                     // Alinear dinámicamente el panel con el botón de abrir
                     setTimeout(() => {
-                        const openButtonPos = this.nodes.openButton.offsetTop;
-                        container.style.top = `${openButtonPos}px`;
+                        if(this.nodes.openButton) {
+                            const openButtonPos = this.nodes.openButton.offsetTop;
+                            container.style.top = `${openButtonPos}px`;
+                        }
                     }, 0);
 
                     this.cacheAndSetupPanelListeners(container);
@@ -113,7 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.innerHTML = '☰';
                     button.title = "Mostrar controles";
                     this.nodes.openButton = button;
-                    if (!this.state.isPanelCollapsed) button.style.display = 'none';
+                    
+                    if (!this.state.isPanelCollapsed) {
+                        button.style.display = 'none';
+                    }
+                    
                     L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false), this);
                     L.DomEvent.disableClickPropagation(button);
                     return button;
@@ -121,18 +146,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             new OpenButtonControl({ position: 'topleft' }).addTo(this.leaflet.map);
         },
-
+        
         cacheAndSetupPanelListeners(container) {
             this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
             this.nodes.opacitySlider = container.querySelector('#opacity-slider');
             this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
             this.nodes.filterRadios = container.querySelectorAll('input[name="vulnerability"]');
             this.nodes.closeButton = container.querySelector('.panel-close-button');
+
             this.nodes.aquiferSelect.addEventListener('change', e => this.handleAquiferSelect(e.target.value));
             this.nodes.opacitySlider.addEventListener('input', e => this.handleOpacityChange(e.target.value));
             this.nodes.filterRadios.forEach(radio => radio.addEventListener('change', e => this.handleFilterChange(e.target.value)));
             this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
         },
+
         async loadData() {
             try {
                 const response = await fetch(this.CONFIG.dataUrl);
@@ -149,8 +176,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 4. MANEJADORES DE ESTADO ---
 
-        setPanelCollapsed(isCollapsed) { this.state.isPanelCollapsed = isCollapsed; 
-                                        this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);},
+        setPanelCollapsed(isCollapsed) {
+            this.state.isPanelCollapsed = isCollapsed;
+            this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);
+            if (this.nodes.openButton) {
+                this.nodes.openButton.style.display = isCollapsed ? 'flex' : 'none';
+            }
+        },
+        
         handleAquiferSelect(aquiferName) { this.state.selectedAquiferName = aquiferName || null; if (this.state.selectedAquiferName) { this.leaflet.map.fitBounds(L.featureGroup(this.data.aquifers[this.state.selectedAquiferName]).getBounds().pad(0.1)); } this.render(); },
         handleOpacityChange(opacity) { this.state.opacity = parseFloat(opacity); this.render(); },
         handleFilterChange(filterValue) { this.state.filterValue = filterValue; this.render(); },
@@ -171,7 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
         getLayerStyle(layer) {
             const { VULNERABIL, NOM_ACUIF } = layer.feature.properties;
             const matchesFilter = (this.state.filterValue === 'all' || VULNERABIL == this.state.filterValue);
+            
             if (!matchesFilter) return this.CONFIG.styles.muted;
+            
             let finalStyle = this.getFeatureStyle(layer.feature);
             if (this.state.selectedAquiferName === NOM_ACUIF) {
                 finalStyle = { ...finalStyle, ...this.CONFIG.styles.selection };
@@ -179,23 +214,41 @@ document.addEventListener('DOMContentLoaded', () => {
             return finalStyle;
         },
 
-        getFeatureStyle(feature) { return { ...this.CONFIG.styles.base, fillColor: this.getColor(feature.properties.VULNERABIL), fillOpacity: this.state.opacity }; },
-        getColor(v) { const val = parseInt(v, 10); switch (val) { case 5: return '#D90404'; case 4: return '#F25C05'; case 3: return '#F2B705'; case 2: return '#99C140'; case 1: return '#2DC937'; default: return '#CCCCCC'; } },
+        getFeatureStyle(feature) {
+            return {
+                ...this.CONFIG.styles.base,
+                fillColor: this.getColor(feature.properties.VULNERABIL),
+                fillOpacity: this.state.opacity
+            };
+        },
+        
+        getColor(v) {
+            const val = parseInt(v, 10);
+            switch (val) {
+                case 5: return '#D90404'; case 4: return '#F25C05'; case 3: return '#F2B705';
+                case 2: return '#99C140'; case 1: return '#2DC937'; default: return '#CCCCCC';
+            }
+        },
 
         // --- 6. PROCESAMIENTO DE DATOS Y UTILIDADES ---
 
         processFeature(feature, layer) {
-            const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
+            const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = layer.properties;
             layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
-            if (!this.data.aquifers[NOM_ACUIF]) { this.data.aquifers[NOM_ACUIF] = []; }
+            
+            if (!this.data.aquifers[NOM_ACUIF]) this.data.aquifers[NOM_ACUIF] = [];
             this.data.aquifers[NOM_ACUIF].push(layer);
+            
             layer.on({
                 mouseover: e => { const h = e.target; h.setStyle(this.CONFIG.styles.hover); h.bringToFront(); },
                 mouseout: e => this.render()
             });
         },
         
-        populateAquiferSelect() { this.nodes.aquiferSelect.innerHTML += Object.keys(this.data.aquifers).sort().map(name => `<option value="${name}">${name}</option>`).join(''); },
+        populateAquiferSelect() {
+            const sortedNames = Object.keys(this.data.aquifers).sort();
+            this.nodes.aquiferSelect.innerHTML += sortedNames.map(name => `<option value="${name}">${name}</option>`).join('');
+        },
         
         initLegend() {
             const legend = L.control({ position: 'bottomright' });
@@ -214,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const LogoControl = L.Control.extend({
                 onAdd: map => {
                     const c = L.DomUtil.create('div', 'leaflet-logo-control');
-                    c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSIG.png" alt="Logo SSIG">`;
+                    c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSSIG.png" alt="Logo SSSIG">`;
                     L.DomEvent.disableClickPropagation(c);
                     return c;
                 }
