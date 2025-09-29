@@ -232,11 +232,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 6. PROCESAMIENTO DE DATOS Y UTILIDADES ---
 
-        processFeature(feature, layer) {
-            const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = layer.properties;
+        const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
+            
             layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
             
-            if (!this.data.aquifers[NOM_ACUIF]) this.data.aquifers[NOM_ACUIF] = [];
+            if (!this.data.aquifers[NOM_ACUIF]) { this.data.aquifers[NOM_ACUIF] = []; }
             this.data.aquifers[NOM_ACUIF].push(layer);
             
             layer.on({
@@ -245,10 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
         
-        populateAquiferSelect() {
-            const sortedNames = Object.keys(this.data.aquifers).sort();
-            this.nodes.aquiferSelect.innerHTML += sortedNames.map(name => `<option value="${name}">${name}</option>`).join('');
-        },
+        populateAquiferSelect() { const sortedNames = Object.keys(this.data.aquifers).sort(); this.nodes.aquiferSelect.innerHTML += sortedNames.map(name => `<option value="${name}">${name}</option>`).join(''); },
         
         initLegend() {
             const legend = L.control({ position: 'bottomright' });
