@@ -51,56 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
             this.initMap();
             this.loadData();
         },
-        
-        initMap() {
-            this.leaflet.map = L.map(this.CONFIG.mapId, {
-                center: this.CONFIG.initialCoords,
-                zoom: this.CONFIG.initialZoom,
-                layers: [this.CONFIG.tileLayers["Neutral (defecto)"]],
-                zoomControl: false // Desactivamos el control de zoom por defecto
-            });
 
-            // Creamos y añadimos los controles de Leaflet en el orden deseado
+        initMap() {
+            this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]], zoomControl: false });
             L.control.zoom({ position: 'topleft' }).addTo(this.leaflet.map);
             L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
-            
-            // --- CORRECCIÓN DE LA LÓGICA DE INICIALIZACIÓN ---
             this.initOpenButtonControl();
-            this.initUiControlsPanel(); // Esta función ahora alineará el panel
-            
-            this.initLegend();
-            this.initLogoControl();
-        },
-
-        initUiControlsPanel() {
-            const UiControl = L.Control.extend({
-                onAdd: (map) => {
-                    // ... (el código interno que crea el `container` y su `innerHTML` es el mismo)
-                    
-                    // -- NUEVA LÓGICA DE ALINEACIÓN --
-                    // Usamos un pequeño timeout para asegurar que el `openButton` ya tenga su posición final
-                    setTimeout(() => {
-                        const openButtonPos = this.nodes.openButton.offsetTop;
-                        container.style.top = `${openButtonPos}px`;
-                    }, 0);
-                    
-                    // ... (El resto: cacheo de nodos, listeners, etc. es el mismo)
-                }
-            });
-            // ... (el `new UiControl(...)` es el mismo)
-        },
-
-        initOpenButtonControl() {
-             // ... (El código de este método es el mismo, crea el botón ☰)
-        },
-
-        // --- 3. MÉTODOS DE INICIALIZACIÓN ---
-
-        initMap() {
-            this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]] });
-            L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
             this.initUiControlsPanel();
-            this.initOpenButtonControl();
             this.initLegend();
             this.initLogoControl();
         },
@@ -134,6 +91,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                     if (this.state.isPanelCollapsed) container.classList.add('collapsed');
+
+                    // Alinear dinámicamente el panel con el botón de abrir
+                    setTimeout(() => {
+                        const openButtonPos = this.nodes.openButton.offsetTop;
+                        container.style.top = `${openButtonPos}px`;
+                    }, 0);
+
                     this.cacheAndSetupPanelListeners(container);
                     L.DomEvent.disableClickPropagation(container);
                     return container;
@@ -157,20 +121,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             new OpenButtonControl({ position: 'topleft' }).addTo(this.leaflet.map);
         },
-        
+
         cacheAndSetupPanelListeners(container) {
             this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
             this.nodes.opacitySlider = container.querySelector('#opacity-slider');
             this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
             this.nodes.filterRadios = container.querySelectorAll('input[name="vulnerability"]');
             this.nodes.closeButton = container.querySelector('.panel-close-button');
-
             this.nodes.aquiferSelect.addEventListener('change', e => this.handleAquiferSelect(e.target.value));
             this.nodes.opacitySlider.addEventListener('input', e => this.handleOpacityChange(e.target.value));
             this.nodes.filterRadios.forEach(radio => radio.addEventListener('change', e => this.handleFilterChange(e.target.value)));
             this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
         },
-
         async loadData() {
             try {
                 const response = await fetch(this.CONFIG.dataUrl);
