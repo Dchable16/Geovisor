@@ -1,13 +1,7 @@
-/*
- * @file style.css
- * @description Hoja de estilos principal para el Geovisor.
- * Utiliza variables CSS para fácil theming y es completamente responsivo.
-*/
-
 /* --- 1. VARIABLES GLOBALES Y RESET --- */
 :root {
     --header-height: 70px;
-    --header-bg: #EAEAEA;
+    --header-bg: #989899;
     --panel-width: 320px;
     --panel-bg: rgba(255, 255, 255, 0.95);
     --panel-shadow: 0 1px 7px rgba(0,0,0,0.3);
@@ -18,68 +12,38 @@
 }
 
 html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    overflow: hidden;
+    height: 100%; margin: 0; padding: 0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; overflow: hidden;
 }
 
-/* --- 2. LAYOUT PRINCIPAL A PANTALLA COMPLETA --- */
-body {
-    display: flex;
-    flex-direction: column;
-}
-
-.main-header {
-    flex-shrink: 0;
-    height: var(--header-height);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 2.5%;
-    background-color: var(--header-bg);
-    box-sizing: border-box;
-    z-index: 2000; /* Sobre el mapa */
-}
-
-.logo-container img {
-    height: 50px;
-    width: auto;
-    object-fit: contain;
-}
-
-.map-container {
-    flex-grow: 1; /* Ocupa el resto del espacio */
-    background-color: #f4f4f4;
-}
-
-#map {
-    width: 100%;
-    height: 100%;
-}
+/* --- 2. LAYOUT PRINCIPAL --- */
+body { display: flex; flex-direction: column; }
+.main-header { flex-shrink: 0; height: var(--header-height); display: flex; justify-content: space-between; align-items: center; padding: 0 2.5%; background-color: var(--header-bg); box-sizing: border-box; z-index: 2000; }
+.logo-container img { height: 50px; width: auto; object-fit: contain; }
+.map-container { flex-grow: 1; background-color: #f4f4f4; position: relative; }
+#map { width: 100%; height: 100%; }
 
 /* --- 3. PANEL DE CONTROLES DESLIZABLE (IZQUIERDA) --- */
+.leaflet-top.leaflet-left .leaflet-control {
+    transition: margin-left var(--animation-speed) var(--animation-easing);
+}
+
 .leaflet-custom-controls {
     background: var(--panel-bg);
+    backdrop-filter: blur(4px);
     padding: 15px;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: var(--panel-shadow);
     width: var(--panel-width);
     box-sizing: border-box;
-    transition: transform var(--animation-speed) var(--animation-easing);
-    position: absolute;
-    top: 10px; /* Anclado a 10px desde arriba */
-    left: 0;   /* Anclado a la izquierda */
-    z-index: 1000;
-    transform: translateX(0); /* Estado por defecto: visible */
+    position: relative;
+    transition: margin-left var(--animation-speed) var(--animation-easing);
 }
 
 .leaflet-custom-controls.collapsed {
-    transform: translateX(calc(-100% - 10px)); /* Oculto a la izquierda */
+    margin-left: calc(-1 * var(--panel-width)); /* Se oculta a la izquierda */
 }
 
-/* Botón para ABRIR el panel (hamburguesa) */
+/* Botón de ABRIR (hamburguesa) - Control de Leaflet separado */
 .leaflet-open-button {
     background-color: white;
     width: 34px;
@@ -93,41 +57,24 @@ body {
     box-shadow: var(--panel-shadow);
     opacity: 0;
     pointer-events: none;
-    transform: scale(0.8);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease;
     transition-delay: 0s;
 }
+
 .leaflet-custom-controls.collapsed + .leaflet-open-button {
     opacity: 1;
-    pointer-events: auto; /* Permite clics */
-    transform: scale(1);
-    transition-delay: 0.4s; 
+    pointer-events: auto;
+    transition-delay: 0.2s; /* Aparece después de que el panel se oculte */
 }
 
-/* Botón para CERRAR el panel (flecha interna) */
+/* Botón de CERRAR (flecha) - DENTRO del panel */
 .panel-close-button {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 30px;
-    height: 30px;
-    background-color: #f0f0f0;
-    color: #555;
-    border: 1px solid #ccc;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    font-size: 24px;
-    line-height: 30px; /* Alineación vertical del símbolo */
+    position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; background-color: #f0f0f0;
+    color: #555; border: 1px solid #ccc; border-radius: 50%; display: flex; justify-content: center;
+    align-items: center; cursor: pointer; font-size: 24px; line-height: 30px;
     transition: background-color 0.2s, color 0.2s;
 }
-.panel-close-button:hover {
-    background-color: var(--accent-color);
-    border-color: var(--accent-color);
-    color: white;
-}
+.panel-close-button:hover { background-color: var(--accent-color); border-color: var(--accent-color); color: white; }
 
 /* --- 4. ELEMENTOS DE UI DENTRO DEL PANEL --- */
 .control-section { margin-bottom: 15px; }
@@ -140,21 +87,16 @@ body {
 .radio-group input[type="radio"] { opacity: 0; position: fixed; width: 0; }
 .radio-group input[type="radio"]:checked + label { background-color: var(--accent-color); border-color: var(--accent-color); color: white; }
 
-/* --- 5. OTROS CONTROLES DE LEAFLET --- */
+/* --- 5. OTROS CONTROLES LEAFLET (LEYENDA CORREGIDA) --- */
 .info.legend {
-    background: var(--panel-bg);
-    backdrop-filter: blur(4px);
-    padding: 10px 15px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--panel-shadow);
-    line-height: 1.8;
-    color: #333;
+    background: var(--panel-bg); backdrop-filter: blur(4px); padding: 10px 15px;
+    border-radius: var(--border-radius); box-shadow: var(--panel-shadow); line-height: 1.8; color: #333;
 }
 .info.legend h4 { margin: 0 0 10px; font-size: 16px; text-align: center; }
 .info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.9; border: 1px solid #666; }
 
 .leaflet-control.leaflet-logo-control { background: transparent; border: none; box-shadow: none; margin: 0 !important; }
-.leaflet-logo-control img { height: 30px; width: auto; display: block; }
+.leaflet-logo-control img { height: 20px; width: auto; display: block; }
 
 /* --- 6. RESPONSIVIDAD --- */
 @media (max-width: 768px) {
