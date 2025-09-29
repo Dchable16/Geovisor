@@ -60,15 +60,7 @@ body {
 }
 
 /* --- 3. PANEL DE CONTROLES DESLIZABLE (IZQUIERDA) --- */
-.leaflet-panel-anchor {
-    position: relative;
-    pointer-events: none;
-}
 .leaflet-custom-controls {
-    position: absolute;
-    top: 0;
-    left: 0;
-    pointer-events: auto; /* Sí debe recibir clics */
     background: var(--panel-bg);
     padding: 15px;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
@@ -76,19 +68,19 @@ body {
     width: var(--panel-width);
     box-sizing: border-box;
     transition: transform var(--animation-speed) var(--animation-easing);
-    transform: translateX(0);
+    position: absolute;
+    top: 10px; /* Anclado a 10px desde arriba */
+    left: 0;   /* Anclado a la izquierda */
+    z-index: 1000;
+    transform: translateX(0); /* Estado por defecto: visible */
 }
+
 .leaflet-custom-controls.collapsed {
-    transform: translateX(calc(-100% - 10px));
+    transform: translateX(calc(-100% - 10px)); /* Oculto a la izquierda */
 }
 
 /* Botón para ABRIR el panel (hamburguesa) */
 .leaflet-open-button {
-    position: absolute;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    opacity: 0;
     background-color: white;
     width: 34px;
     height: 34px;
@@ -99,12 +91,16 @@ body {
     font-size: 20px;
     border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
-    transition: opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+    transition: opacity 0.3s ease, transform 0.3s ease;
     transition-delay: 0s;
 }
 .leaflet-custom-controls.collapsed + .leaflet-open-button {
     opacity: 1;
     pointer-events: auto; /* Permite clics */
+    transform: scale(1);
     transition-delay: 0.4s; 
 }
 
