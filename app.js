@@ -57,21 +57,18 @@ document.addEventListener('DOMContentLoaded', () => {
         initMap() {
             this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]] });
             L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
-            this.initUiContainerControl();
+            this.initUiControlsPanel();
+            this.initOpenButtonControl();
             this.initLegend();
             this.initLogoControl();
         },
 
-        initUiContainerControl() {
-            const UiContainerControl = L.Control.extend({
+        initUiControlsPanel() {
+            const UiControl = L.Control.extend({
                 onAdd: (map) => {
-                    // 1. Crear el ANCLA. Este es el único elemento que Leaflet posicionará.
-                    const anchor = L.DomUtil.create('div', 'leaflet-panel-anchor');
-
-                    // 2. Crear el PANEL de controles (código anterior) y añadirlo DENTRO del ancla
-                    const panel = L.DomUtil.create('div', 'leaflet-custom-controls', anchor);
-                    this.nodes.uiControlContainer = panel;
-                    panel.innerHTML = `
+                    const container = L.DomUtil.create('div', 'leaflet-custom-controls');
+                    this.nodes.uiControlContainer = container;
+                    container.innerHTML = `
                         <div class="panel-close-button" title="Ocultar controles">«</div>
                         <h1>Vulnerabilidad a la Intrusión Salina</h1>
                         <div class="control-section">
@@ -85,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="control-section">
                             <label>Iluminar por vulnerabilidad:</label>
                             <div class="radio-group">
-                                <!-- radios -->
                                 <input type="radio" id="vul-todos" name="vulnerability" value="all" checked><label for="vul-todos">Todos</label>
                                 <input type="radio" id="vul-1" name="vulnerability" value="1"><label for="vul-1">1</label>
                                 <input type="radio" id="vul-2" name="vulnerability" value="2"><label for="vul-2">2</label>
@@ -95,28 +91,32 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     `;
-                    
-                    // 3. Crear el BOTÓN ☰ (código anterior) y añadirlo DENTRO del ancla
-                    const openButton = L.DomUtil.create('div', 'leaflet-open-button', anchor);
-                    openButton.innerHTML = '☰';
-                    openButton.title = "Mostrar controles";
-                    this.nodes.openButton = openButton;
-
-                    // Aplicar el estado inicial (oculto)
-                    this.setPanelCollapsed(this.state.isPanelCollapsed);
-
-                    // Buscar y configurar los eventos para los elementos recién creados
-                    this.cacheAndSetupPanelListeners(panel);
-
-                    L.DomEvent.disableClickPropagation(anchor); // Detener eventos en el ancla y sus hijos
-                    return anchor;
+                    if (this.state.isPanelCollapsed) container.classList.add('collapsed');
+                    this.cacheAndSetupPanelListeners(container);
+                    L.DomEvent.disableClickPropagation(container);
+                    return container;
                 }
             });
-            new UiContainerControl({ position: 'topleft' }).addTo(this.leaflet.map);
+            new UiControl({ position: 'topleft' }).addTo(this.leaflet.map);
+        },
+
+        initOpenButtonControl() {
+            const OpenButtonControl = L.Control.extend({
+                onAdd: (map) => {
+                    const button = L.DomUtil.create('div', 'leaflet-open-button');
+                    button.innerHTML = '☰';
+                    button.title = "Mostrar controles";
+                    this.nodes.openButton = button;
+                    if (!this.state.isPanelCollapsed) button.style.display = 'none';
+                    L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false), this);
+                    L.DomEvent.disableClickPropagation(button);
+                    return button;
+                }
+            });
+            new OpenButtonControl({ position: 'topleft' }).addTo(this.leaflet.map);
         },
         
         cacheAndSetupPanelListeners(container) {
-            // Se mantienen los querySelector...
             this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
             this.nodes.opacitySlider = container.querySelector('#opacity-slider');
             this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
@@ -127,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.nodes.opacitySlider.addEventListener('input', e => this.handleOpacityChange(e.target.value));
             this.nodes.filterRadios.forEach(radio => radio.addEventListener('change', e => this.handleFilterChange(e.target.value)));
             this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
-            // NOTA: El listener para el botón de ABRIR se añade directamente en 'initUiContainerControl'
         },
 
         async loadData() {
@@ -147,9 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- 4. MANEJADORES DE ESTADO ---
 
         setPanelCollapsed(isCollapsed) { this.state.isPanelCollapsed = isCollapsed; 
-                                        this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);
-                                        this.nodes.openButton.style.display = isCollapsed ? 'flex' : 'none';
-                                       },
+                                        this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);},
         handleAquiferSelect(aquiferName) { this.state.selectedAquiferName = aquiferName || null; if (this.state.selectedAquiferName) { this.leaflet.map.fitBounds(L.featureGroup(this.data.aquifers[this.state.selectedAquiferName]).getBounds().pad(0.1)); } this.render(); },
         handleOpacityChange(opacity) { this.state.opacity = parseFloat(opacity); this.render(); },
         handleFilterChange(filterValue) { this.state.filterValue = filterValue; this.render(); },
