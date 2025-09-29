@@ -51,6 +51,48 @@ document.addEventListener('DOMContentLoaded', () => {
             this.initMap();
             this.loadData();
         },
+        
+        initMap() {
+            this.leaflet.map = L.map(this.CONFIG.mapId, {
+                center: this.CONFIG.initialCoords,
+                zoom: this.CONFIG.initialZoom,
+                layers: [this.CONFIG.tileLayers["Neutral (defecto)"]],
+                zoomControl: false // Desactivamos el control de zoom por defecto
+            });
+
+            // Creamos y añadimos los controles de Leaflet en el orden deseado
+            L.control.zoom({ position: 'topleft' }).addTo(this.leaflet.map);
+            L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
+            
+            // --- CORRECCIÓN DE LA LÓGICA DE INICIALIZACIÓN ---
+            this.initOpenButtonControl();
+            this.initUiControlsPanel(); // Esta función ahora alineará el panel
+            
+            this.initLegend();
+            this.initLogoControl();
+        },
+
+        initUiControlsPanel() {
+            const UiControl = L.Control.extend({
+                onAdd: (map) => {
+                    // ... (el código interno que crea el `container` y su `innerHTML` es el mismo)
+                    
+                    // -- NUEVA LÓGICA DE ALINEACIÓN --
+                    // Usamos un pequeño timeout para asegurar que el `openButton` ya tenga su posición final
+                    setTimeout(() => {
+                        const openButtonPos = this.nodes.openButton.offsetTop;
+                        container.style.top = `${openButtonPos}px`;
+                    }, 0);
+                    
+                    // ... (El resto: cacheo de nodos, listeners, etc. es el mismo)
+                }
+            });
+            // ... (el `new UiControl(...)` es el mismo)
+        },
+
+        initOpenButtonControl() {
+             // ... (El código de este método es el mismo, crea el botón ☰)
+        },
 
         // --- 3. MÉTODOS DE INICIALIZACIÓN ---
 
