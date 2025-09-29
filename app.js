@@ -57,23 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
             this.loadData();
         },
 
-        // --- 3. MÉTODOS DE INICIALIZACIÓN ---
-
+        // --- 3. INICIALIZACIÓN DE LA UI ---
         initMap() {
-            this.leaflet.map = L.map(this.CONFIG.mapId, {
-                center: this.CONFIG.initialCoords,
-                zoom: this.CONFIG.initialZoom,
-                layers: [this.CONFIG.tileLayers["Neutral (defecto)"]],
-                zoomControl: false // Desactivamos el control por defecto para añadirlo en orden
-            });
-
-            // Añadimos los controles en un orden específico para que se apilen correctamente
+            this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]], zoomControl: false });
             L.control.zoom({ position: 'topleft' }).addTo(this.leaflet.map);
             L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
-            
-            this.initOpenButtonControl(); // Primero el botón para que el panel pueda alinearse a él
-            this.initUiControlsPanel();   // Luego el panel
-            
+            this.initOpenButtonControl();
+            this.initUiControlsPanel();
             this.initLegend();
             this.initLogoControl();
         },
@@ -106,19 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     `;
-
-                    if (this.state.isPanelCollapsed) {
-                        container.classList.add('collapsed');
-                    }
-                    
-                    // Alinear dinámicamente el panel con el botón de abrir
+                    if (this.state.isPanelCollapsed) container.classList.add('collapsed');
                     setTimeout(() => {
-                        if(this.nodes.openButton) {
-                            const openButtonPos = this.nodes.openButton.offsetTop;
-                            container.style.top = `${openButtonPos}px`;
+                        if (this.nodes.openButton) {
+                            container.style.top = `${this.nodes.openButton.offsetTop}px`;
                         }
                     }, 0);
-
                     this.cacheAndSetupPanelListeners(container);
                     L.DomEvent.disableClickPropagation(container);
                     return container;
@@ -134,11 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.innerHTML = '☰';
                     button.title = "Mostrar controles";
                     this.nodes.openButton = button;
-                    
-                    if (!this.state.isPanelCollapsed) {
-                        button.style.display = 'none';
-                    }
-                    
+                    if (!this.state.isPanelCollapsed) button.style.display = 'none';
                     L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false), this);
                     L.DomEvent.disableClickPropagation(button);
                     return button;
@@ -153,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
             this.nodes.filterRadios = container.querySelectorAll('input[name="vulnerability"]');
             this.nodes.closeButton = container.querySelector('.panel-close-button');
-
             this.nodes.aquiferSelect.addEventListener('change', e => this.handleAquiferSelect(e.target.value));
             this.nodes.opacitySlider.addEventListener('input', e => this.handleOpacityChange(e.target.value));
             this.nodes.filterRadios.forEach(radio => radio.addEventListener('change', e => this.handleFilterChange(e.target.value)));
@@ -190,49 +168,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 5. LÓGICA DE RENDERIZADO Y ESTILOS ---
 
-        render() {
-            if (!this.leaflet.geojsonLayer) return;
-            this.leaflet.geojsonLayer.eachLayer(layer => layer.setStyle(this.getLayerStyle(layer)));
-            this.updateView();
-        },
-
-        updateView() {
-            this.nodes.opacityValueSpan.textContent = `${Math.round(this.state.opacity * 100)}%`;
-            this.nodes.opacitySlider.value = this.state.opacity;
-        },
-
-        getLayerStyle(layer) {
-            const { VULNERABIL, NOM_ACUIF } = layer.feature.properties;
-            const matchesFilter = (this.state.filterValue === 'all' || VULNERABIL == this.state.filterValue);
-            
-            if (!matchesFilter) return this.CONFIG.styles.muted;
-            
-            let finalStyle = this.getFeatureStyle(layer.feature);
-            if (this.state.selectedAquiferName === NOM_ACUIF) {
-                finalStyle = { ...finalStyle, ...this.CONFIG.styles.selection };
-            }
-            return finalStyle;
-        },
-
-        getFeatureStyle(feature) {
-            return {
-                ...this.CONFIG.styles.base,
-                fillColor: this.getColor(feature.properties.VULNERABIL),
-                fillOpacity: this.state.opacity
-            };
-        },
-        
-        getColor(v) {
-            const val = parseInt(v, 10);
-            switch (val) {
-                case 5: return '#D90404'; case 4: return '#F25C05'; case 3: return '#F2B705';
-                case 2: return '#99C140'; case 1: return '#2DC937'; default: return '#CCCCCC';
-            }
-        },
+        render() { if (!this.leaflet.geojsonLayer) return; this.leaflet.geojsonLayer.eachLayer(layer => layer.setStyle(this.getLayerStyle(layer))); this.updateView(); },
+        updateView() { this.nodes.opacityValueSpan.textContent = `${Math.round(this.state.opacity * 100)}%`; this.nodes.opacitySlider.value = this.state.opacity; },
+        getLayerStyle(layer) { const { VULNERABIL, NOM_ACUIF } = layer.feature.properties; const matchesFilter = (this.state.filterValue === 'all' || VULNERABIL == this.state.filterValue); if (!matchesFilter) return this.CONFIG.styles.muted; let finalStyle = this.getFeatureStyle(layer.feature); if (this.state.selectedAquiferName === NOM_ACUIF) { finalStyle = { ...finalStyle, ...this.CONFIG.styles.selection }; } return finalStyle; },
+        getFeatureStyle(feature) { return { ...this.CONFIG.styles.base, fillColor: this.getColor(feature.properties.VULNERABIL), fillOpacity: this.state.opacity }; },
+        getColor(v) { const val = parseInt(v, 10); switch (val) { case 5: return '#D90404'; case 4: return '#F25C05'; case 3: return '#F2B705'; case 2: return '#99C140'; case 1: return '#2DC937'; default: return '#CCCCCC'; } },
 
         // --- 6. PROCESAMIENTO DE DATOS Y UTILIDADES ---
 
-        const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
+        processFeature(feature, layer) {
+            // ----- LA CORRECCIÓN ESTÁ AQUÍ -----
+            // Leemos las propiedades desde 'feature.properties', que es la fuente correcta de los datos.
+            const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
             
             layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
             
@@ -274,4 +221,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     GeovisorApp.init();
-});
+});```
