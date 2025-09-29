@@ -55,27 +55,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- 3. MÉTODOS DE INICIALIZACIÓN ---
 
         initMap() {
-            this.leaflet.map = L.map(this.CONFIG.mapId, { zoomControl: false, // Desactivamos el control de zoom por defecto para añadirlo luego
-                center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]] 
-            });
-            L.control.zoom({ position: 'topright' }).addTo(this.leaflet.map); // Añadimos el control de zoom a la derecha
+            this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]] });
             L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
-            this.initUiControls(); // <-- Solo esta función se encarga de todo el panel y botones
+            this.initUiControlsPanel();
+            this.initOpenButtonControl();
             this.initLegend();
             this.initLogoControl();
         },
 
-        initUiControls() {
-            // Este control único contendrá tanto el panel como el botón de abrir
-            const UiContainerControl = L.Control.extend({
+        initUiControlsPanel() {
+            const UiControl = L.Control.extend({
                 onAdd: (map) => {
-                    // El "ancla" que Leaflet posicionará correctamente
-                    const anchor = L.DomUtil.create('div', 'leaflet-ui-anchor');
-                    
-                    // El panel deslizable, DENTRO del ancla
-                    const panel = L.DomUtil.create('div', 'leaflet-custom-controls', anchor);
-                    this.nodes.uiControlContainer = panel;
-                    panel.innerHTML = `
+                    const container = L.DomUtil.create('div', 'leaflet-custom-controls');
+                    this.nodes.uiControlContainer = container;
+                    container.innerHTML = `
                         <div class="panel-close-button" title="Ocultar controles">«</div>
                         <h1>Vulnerabilidad a la Intrusión Salina</h1>
                         <div class="control-section">
@@ -98,22 +91,29 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     `;
-
-                    // El botón ☰, también DENTRO del ancla
-                    const openButton = L.DomUtil.create('div', 'leaflet-open-button', anchor);
-                    openButton.innerHTML = '☰';
-                    openButton.title = "Mostrar controles";
-                    this.nodes.openButton = openButton;
-                    
-                    // Sincronizar estado inicial y listeners
-                    this.setPanelCollapsed(this.state.isPanelCollapsed, true);
-                    this.cacheAndSetupPanelListeners(panel);
-
-                    L.DomEvent.disableClickPropagation(anchor);
-                    return anchor;
+                    if (this.state.isPanelCollapsed) container.classList.add('collapsed');
+                    this.cacheAndSetupPanelListeners(container);
+                    L.DomEvent.disableClickPropagation(container);
+                    return container;
                 }
             });
-            new UiContainerControl({ position: 'topleft' }).addTo(this.leaflet.map);
+            new UiControl({ position: 'topleft' }).addTo(this.leaflet.map);
+        },
+
+        initOpenButtonControl() {
+            const OpenButtonControl = L.Control.extend({
+                onAdd: (map) => {
+                    const button = L.DomUtil.create('div', 'leaflet-open-button');
+                    button.innerHTML = '☰';
+                    button.title = "Mostrar controles";
+                    this.nodes.openButton = button;
+                    if (!this.state.isPanelCollapsed) button.style.display = 'none';
+                    L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false), this);
+                    L.DomEvent.disableClickPropagation(button);
+                    return button;
+                }
+            });
+            new OpenButtonControl({ position: 'topleft' }).addTo(this.leaflet.map);
         },
         
         cacheAndSetupPanelListeners(container) {
@@ -127,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.nodes.opacitySlider.addEventListener('input', e => this.handleOpacityChange(e.target.value));
             this.nodes.filterRadios.forEach(radio => radio.addEventListener('change', e => this.handleFilterChange(e.target.value)));
             this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
-            this.nodes.openButton.addEventListener('click', () => this.setPanelCollapsed(false));
         },
 
         async loadData() {
