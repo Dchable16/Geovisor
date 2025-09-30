@@ -39,51 +39,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        state: {
-            opacity: 0.8, filterValue: 'all', selectedAquiferName: null, isPanelCollapsed: true, // El panel empieza cerrado
+state: {
+            opacity: 0.8, filterValue: 'all', selectedAquiferName: null, isPanelCollapsed: true,
         },
 
         nodes: {}, leaflet: {}, data: { aquifers: {} },
 
-        /**
-         * init: El punto de entrada que orquesta la inicialización de la aplicación.
-         */
         init() {
             this.initMap();
             this.loadData();
         },
 
-        /**
-         * initMap: Configura el mapa Leaflet y todos sus controles personalizados.
-         */
         initMap() {
-            this.leaflet.map = L.map(this.CONFIG.mapId, {
-                center: this.CONFIG.initialCoords,
-                zoom: this.CONFIG.initialZoom,
-                layers: [this.CONFIG.tileLayers["Neutral (defecto)"]],
-                zoomControl: false // Se controla manualmente para asegurar el orden
-            });
-
+            this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]], zoomControl: false });
             L.control.zoom({ position: 'topleft' }).addTo(this.leaflet.map);
             L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
-            
-            this.initOpenButtonControl(); // Debe crearse ANTES que el panel para que este se alinee.
+            this.initOpenButtonControl();
             this.initUiControlsPanel();
-            
             this.initLegend();
             this.initLogoControl();
         },
 
-        /**
-         * initUiControlsPanel: Crea el panel de controles principal como un control de Leaflet.
-         * Su posición vertical se alinea dinámicamente con el botón de apertura.
-         */
         initUiControlsPanel() {
             const UiControl = L.Control.extend({
                 onAdd: (map) => {
                     const container = L.DomUtil.create('div', 'leaflet-custom-controls');
                     this.nodes.uiControlContainer = container;
-                    
                     container.innerHTML = `
                         <div class="panel-close-button" title="Ocultar controles">«</div>
                         <h1>Vulnerabilidad a la Intrusión Salina</h1>
@@ -107,17 +88,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     `;
-                    
                     if (this.state.isPanelCollapsed) container.classList.add('collapsed');
-
-                    // Alinear dinámicamente el panel con el botón de apertura
                     setTimeout(() => {
                         if (this.nodes.openButton) {
                             const openButtonPos = this.nodes.openButton.offsetTop;
                             container.style.top = `${openButtonPos}px`;
                         }
                     }, 0);
-                    
                     this.cacheAndSetupPanelListeners(container);
                     L.DomEvent.disableClickPropagation(container);
                     return container;
@@ -134,8 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.title = "Mostrar controles";
                     this.nodes.openButton = button;
                     
-                    // CORRECCIÓN: Al iniciar, si el panel está colapsado,
-                    // el botón debe tener la clase para ser visible.
+                    // Se usa la clase .is-visible en lugar de style.display
                     if (this.state.isPanelCollapsed) {
                         button.classList.add('is-visible');
                     }
@@ -145,8 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return button;
                 }
             });
-            new OpenButtonControl({ position: 'topleft' }).addTo(this.leaflet.map);
-        },
             new OpenButtonControl({ position: 'topleft' }).addTo(this.leaflet.map);
         },
         
