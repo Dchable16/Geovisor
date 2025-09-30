@@ -1,4 +1,4 @@
-/**
+/*
  * @file style.css
  * @description Hoja de estilos principal para el Geovisor.
  * Utiliza variables CSS para fácil theming y es completamente responsivo.
@@ -7,7 +7,7 @@
 /* --- 1. VARIABLES GLOBALES Y RESET --- */
 :root {
     --header-height: 70px;
-    --header-bg: #989899;
+    --header-bg: #EAEAEA;
     --panel-width: 320px;
     --panel-bg: rgba(255, 255, 255, 0.95);
     --panel-shadow: 0 1px 7px rgba(0,0,0,0.3);
@@ -40,7 +40,7 @@ body {
     padding: 0 2.5%;
     background-color: var(--header-bg);
     box-sizing: border-box;
-    z-index: 2000;
+    z-index: 2000; /* Sobre el mapa */
 }
 
 .logo-container img {
@@ -50,7 +50,7 @@ body {
 }
 
 .map-container {
-    flex-grow: 1;
+    flex-grow: 1; /* Ocupa el resto del espacio */
     background-color: #f4f4f4;
 }
 
@@ -60,28 +60,26 @@ body {
 }
 
 /* --- 3. PANEL DE CONTROLES DESLIZABLE (IZQUIERDA) --- */
-
-/* Contenedor principal del panel */
 .leaflet-custom-controls {
     background: var(--panel-bg);
-    backdrop-filter: blur(4px); /* Efecto de desenfoque para navegadores modernos */
     padding: 15px;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: var(--panel-shadow);
     width: var(--panel-width);
     box-sizing: border-box;
     transition: transform var(--animation-speed) var(--animation-easing);
-    transform: translateX(0); /* Estado visible */
     position: absolute;
-    left: 0;
+    top: 10px; /* Anclado a 10px desde arriba */
+    left: 0;   /* Anclado a la izquierda */
     z-index: 1000;
+    transform: translateX(0); /* Estado por defecto: visible */
 }
 
 .leaflet-custom-controls.collapsed {
     transform: translateX(calc(-100% - 10px)); /* Oculto a la izquierda */
 }
 
-/* Botón para ABRIR el panel (hamburguesa), controla su visibilidad con CSS */
+/* Botón para ABRIR el panel (hamburguesa) */
 .leaflet-open-button {
     background-color: white;
     width: 34px;
@@ -99,12 +97,11 @@ body {
     transition: opacity 0.3s ease, transform 0.3s ease;
     transition-delay: 0s;
 }
-
 .leaflet-custom-controls.collapsed + .leaflet-open-button {
     opacity: 1;
-    pointer-events: auto;
+    pointer-events: auto; /* Permite clics */
     transform: scale(1);
-    transition-delay: 0.2s; /* Aparece después de que el panel empieza a ocultarse */
+    transition-delay: 0.4s; 
 }
 
 /* Botón para CERRAR el panel (flecha interna) */
@@ -123,7 +120,7 @@ body {
     align-items: center;
     cursor: pointer;
     font-size: 24px;
-    line-height: 30px;
+    line-height: 30px; /* Alineación vertical del símbolo */
     transition: background-color 0.2s, color 0.2s;
 }
 .panel-close-button:hover {
@@ -155,8 +152,9 @@ body {
 }
 .info.legend h4 { margin: 0 0 10px; font-size: 16px; text-align: center; }
 .info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.9; border: 1px solid #666; }
+
 .leaflet-control.leaflet-logo-control { background: transparent; border: none; box-shadow: none; margin: 0 !important; }
-.leaflet-logo-control img { height: 20px; width: auto; display: block; }
+.leaflet-logo-control img { height: 30px; width: auto; display: block; }
 
 /* --- 6. RESPONSIVIDAD --- */
 @media (max-width: 768px) {
