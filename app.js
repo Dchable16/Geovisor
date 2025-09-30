@@ -134,13 +134,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.title = "Mostrar controles";
                     this.nodes.openButton = button;
                     
-                    if (!this.state.isPanelCollapsed) button.style.display = 'none';
+                    // CORRECCIÓN: Al iniciar, si el panel está colapsado,
+                    // el botón debe tener la clase para ser visible.
+                    if (this.state.isPanelCollapsed) {
+                        button.classList.add('is-visible');
+                    }
 
                     L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false), this);
                     L.DomEvent.disableClickPropagation(button);
                     return button;
                 }
             });
+            new OpenButtonControl({ position: 'topleft' }).addTo(this.leaflet.map);
+        },
             new OpenButtonControl({ position: 'topleft' }).addTo(this.leaflet.map);
         },
         
@@ -178,8 +184,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setPanelCollapsed(isCollapsed) {
             this.state.isPanelCollapsed = isCollapsed;
+            // TTogglea la clase del panel para que se oculte o muestre
             this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);
-            this.nodes.openButton.style.display = isCollapsed ? 'flex' : 'none';
+
+            // CORRECCIÓN: En lugar de manipular 'style', ahora solo
+            // ttoggleamos la clase de visibilidad en el botón de abrir.
+            this.nodes.openButton.classList.toggle('is-visible', isCollapsed);
         },
 
         handleAquiferSelect(aquiferName) {
