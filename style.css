@@ -18,109 +18,71 @@
 }
 
 html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    height: 100%; margin: 0; padding: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', sans-serif;
     overflow: hidden;
 }
 
-/* --- 2. LAYOUT PRINCIPAL A PANTALLA COMPLETA --- */
-body {
-    display: flex;
-    flex-direction: column;
-}
-
-.main-header {
-    flex-shrink: 0;
-    height: var(--header-height);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 2.5%;
-    background-color: var(--header-bg);
-    box-sizing: border-box;
-    z-index: 2000; /* Sobre el mapa */
-}
-
-.logo-container img {
-    height: 50px;
-    width: auto;
-    object-fit: contain;
-}
-
-.map-container {
-    flex-grow: 1; /* Ocupa el resto del espacio */
-    background-color: #f4f4f4;
-}
-
-#map {
-    width: 100%;
-    height: 100%;
-}
+/* --- 2. LAYOUT PRINCIPAL --- */
+body { display: flex; flex-direction: column; }
+.main-header { flex-shrink: 0; height: var(--header-height); display: flex; justify-content: space-between; align-items: center; padding: 0 2.5%; background-color: var(--header-bg); box-sizing: border-box; z-index: 2000; }
+.logo-container img { height: 50px; width: auto; object-fit: contain; }
+.map-container { flex-grow: 1; background-color: #f4f4f4; }
+#map { width: 100%; height: 100%; }
 
 /* --- 3. PANEL DE CONTROLES DESLIZABLE (IZQUIERDA) --- */
 .leaflet-custom-controls {
     background: var(--panel-bg);
+    backdrop-filter: blur(4px);
     padding: 15px;
-    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
     width: var(--panel-width);
     box-sizing: border-box;
     transition: transform var(--animation-speed) var(--animation-easing);
-    position: absolute;
-    top: 10px; /* Anclado a 10px desde arriba */
-    left: 0;   /* Anclado a la izquierda */
-    z-index: 1000;
-    transform: translateX(0); /* Estado por defecto: visible */
+    transform: translateX(0); /* Estado visible por defecto */
+    position: relative;
 }
 
 .leaflet-custom-controls.collapsed {
-    transform: translateX(calc(-100% - 10px)); /* Oculto a la izquierda */
+    transform: translateX(calc(-100% - 20px)); /* Se oculta completamente a la izquierda */
 }
 
 /* Botón para ABRIR el panel (hamburguesa) */
 .leaflet-open-button {
     background-color: white;
-    width: 34px;
-    height: 34px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: 34px; height: 34px;
+    display: flex; justify-content: center; align-items: center;
     cursor: pointer;
     font-size: 20px;
     border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
+    /* Lógica de visibilidad controlada por CSS, no por JS */
     opacity: 0;
     pointer-events: none;
     transform: scale(0.8);
     transition: opacity 0.3s ease, transform 0.3s ease;
     transition-delay: 0s;
 }
+/* Se muestra solo cuando el panel está colapsado */
 .leaflet-custom-controls.collapsed + .leaflet-open-button {
     opacity: 1;
-    pointer-events: auto; /* Permite clics */
+    pointer-events: auto;
     transform: scale(1);
-    transition-delay: 0.4s; 
+    transition-delay: 0.2s; /* Aparece después de que el panel empieza a ocultarse */
 }
 
 /* Botón para CERRAR el panel (flecha interna) */
 .panel-close-button {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 30px;
-    height: 30px;
-    background-color: #f0f0f0;
-    color: #555;
+    top: 10px; right: 10px;
+    width: 30px; height: 30px;
+    background-color: #f0f0f0; color: #555;
     border: 1px solid #ccc;
     border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
     cursor: pointer;
-    font-size: 24px;
-    line-height: 30px; /* Alineación vertical del símbolo */
+    font-size: 24px; line-height: 30px;
     transition: background-color 0.2s, color 0.2s;
 }
 .panel-close-button:hover {
@@ -142,13 +104,8 @@ body {
 
 /* --- 5. OTROS CONTROLES DE LEAFLET --- */
 .info.legend {
-    background: var(--panel-bg);
-    backdrop-filter: blur(4px);
-    padding: 10px 15px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--panel-shadow);
-    line-height: 1.8;
-    color: #333;
+    background: var(--panel-bg); backdrop-filter: blur(4px); padding: 10px 15px; border-radius: var(--border-radius);
+    box-shadow: var(--panel-shadow); line-height: 1.8; color: #333;
 }
 .info.legend h4 { margin: 0 0 10px; font-size: 16px; text-align: center; }
 .info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.9; border: 1px solid #666; }
