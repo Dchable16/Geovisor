@@ -94,21 +94,23 @@ body {
     font-size: 20px;
     border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
-    
-    /* Lógica de visibilidad controlada por CSS y 'collapsed' */
+
+    /* Por defecto, el botón está oculto y escalado hacia abajo */
     opacity: 0;
     pointer-events: none;
     transform: scale(0.8);
+
+    /* Define cómo debe animarse al cambiar opacidad o transform */
     transition: opacity 0.3s ease, transform 0.3s ease;
-    transition-delay: 0s;
 }
 
-/* Cuando el panel está colapsado, el botón de abrir se muestra */
-.leaflet-custom-controls.collapsed ~ .leaflet-control-container .leaflet-open-button {
+/* Clase de estado: Cuando el botón TIENE esta clase, se vuelve visible */
+.leaflet-open-button.is-visible {
     opacity: 1;
     pointer-events: auto;
     transform: scale(1);
-    transition-delay: 0.2s; /* Aparece después de que el panel empiece a ocultarse */
+    /* Retraso: solo empieza la animación de aparecer 0.2s después de que se lo ordenen */
+    transition-delay: 0.2s;
 }
 
 
