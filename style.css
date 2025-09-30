@@ -143,7 +143,7 @@ body {
 .control-section { margin-bottom: 15px; }
 .control-section:last-child { margin-bottom: 0; }
 .control-section > label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
-.control-section h1 { text-align: center; color: #333; margin: 0; padding-right: 35px; margin-bottom: 20px; font-size: 1.5em; line-height: 1.2; }
+.control-section h1 { text-align: center; color: #333; margin: 0; padding-right: 35px; margin-bottom: 14px; font-size: 1.5em; line-height: 1.2; }
 #acuifero-select, #opacity-slider { width: 100%; box-sizing: border-box; }
 #acuifero-select { padding: 8px; border-radius: 3px; border: 1px solid #ccc; font-size: 14px; }
 .radio-group label { display: inline-block; background-color: #eee; padding: 6px 12px; font-size: 12px; border: 1px solid #ddd; border-radius: 15px; cursor: pointer; margin: 0 4px 5px 0; }
