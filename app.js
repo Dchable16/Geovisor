@@ -234,7 +234,7 @@ state: {
         },
         
         initLegend() {
-            const legend = L.control({ position: 'bottomright' });
+            const legend = L.control({ position: 'bottomleft' });
             legend.onAdd = () => {
                 const div = L.DomUtil.create('div', 'info legend');
                 const grades = [1, 2, 3, 4, 5], labels = ['Muy Baja', 'Baja', 'Media', 'Alta', 'Muy Alta'];
@@ -255,7 +255,7 @@ state: {
                     return c;
                 }
             });
-            new LogoControl({ position: 'bottomleft' }).addTo(this.leaflet.map);
+            new LogoControl({ position: 'bottomright' }).addTo(this.leaflet.map);
         }
     };
     
