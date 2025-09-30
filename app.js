@@ -40,29 +40,48 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         state: {
-            opacity: 0.8, filterValue: 'all', selectedAquiferName: null, isPanelCollapsed: true, // El panel empieza cerrado
+            opacity: 0.8,
+            filterValue: 'all',
+            selectedAquiferName: null,
+            isPanelCollapsed: true, // El panel empieza cerrado
         },
 
-        nodes: {}, leaflet: {}, data: { aquifers: {} },
+        nodes: {}, 
+        leaflet: {}, 
+        data: { aquifers: {} },
 
-        // --- 2. PUNTO DE ENTRADA DE LA APLICACIÓN ---
-
+        /**
+         * El punto de entrada principal de la aplicación.
+         */
         init() {
             this.initMap();
             this.loadData();
         },
 
-        // --- 3. MÉTODOS DE INICIALIZACIÓN ---
-
+        /**
+         * Inicializa el mapa de Leaflet y todos sus controles asociados.
+         */
         initMap() {
-            this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]] });
+            this.leaflet.map = L.map(this.CONFIG.mapId, {
+                center: this.CONFIG.initialCoords,
+                zoom: this.CONFIG.initialZoom,
+                layers: [this.CONFIG.tileLayers["Neutral (defecto)"]],
+                zoomControl: false // Desactivamos el zoom por defecto para controlar el orden
+            });
+
+            // Añadimos los controles en el orden deseado para un correcto apilamiento
+            L.control.zoom({ position: 'topleft' }).addTo(this.leaflet.map);
+            this.initOpenButtonControl(); // Se crea primero para que Leaflet lo posicione correctamente
+            this.initUiControlsPanel(); // Se crea después
             L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
-            this.initUiControlsPanel();
-            this.initOpenButtonControl();
             this.initLegend();
             this.initLogoControl();
         },
 
+        /**
+         * Crea el panel de controles principal, pero NO lo añade directamente al DOM.
+         * Su contenedor será un control de Leaflet para manejar el posicionamiento.
+         */
         initUiControlsPanel() {
             const UiControl = L.Control.extend({
                 onAdd: (map) => {
@@ -89,8 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <input type="radio" id="vul-4" name="vulnerability" value="4"><label for="vul-4">4</label>
                                 <input type="radio" id="vul-5" name="vulnerability" value="5"><label for="vul-5">5</label>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                     if (this.state.isPanelCollapsed) container.classList.add('collapsed');
                     this.cacheAndSetupPanelListeners(container);
                     L.DomEvent.disableClickPropagation(container);
@@ -100,6 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
             new UiControl({ position: 'topleft' }).addTo(this.leaflet.map);
         },
 
+        /**
+         * Crea el botón '☰' para abrir el panel de controles.
+         */
         initOpenButtonControl() {
             const OpenButtonControl = L.Control.extend({
                 onAdd: (map) => {
@@ -107,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.innerHTML = '☰';
                     button.title = "Mostrar controles";
                     this.nodes.openButton = button;
-                    if (!this.state.isPanelCollapsed) button.style.display = 'none';
+                    if (!this.state.isPanelCollapsed) this.setPanelCollapsed(false); // Inicializa estado visual
                     L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false), this);
                     L.DomEvent.disableClickPropagation(button);
                     return button;
@@ -116,19 +137,26 @@ document.addEventListener('DOMContentLoaded', () => {
             new OpenButtonControl({ position: 'topleft' }).addTo(this.leaflet.map);
         },
         
+        /**
+         * Busca los nodos del DOM dentro del panel de controles y asigna los listeners.
+         * Se llama una sola vez después de crear el panel.
+         * @param {HTMLElement} container - El elemento contenedor del panel de UI.
+         */
         cacheAndSetupPanelListeners(container) {
             this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
             this.nodes.opacitySlider = container.querySelector('#opacity-slider');
             this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
             this.nodes.filterRadios = container.querySelectorAll('input[name="vulnerability"]');
             this.nodes.closeButton = container.querySelector('.panel-close-button');
-
             this.nodes.aquiferSelect.addEventListener('change', e => this.handleAquiferSelect(e.target.value));
             this.nodes.opacitySlider.addEventListener('input', e => this.handleOpacityChange(e.target.value));
             this.nodes.filterRadios.forEach(radio => radio.addEventListener('change', e => this.handleFilterChange(e.target.value)));
             this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
         },
 
+        /**
+         * Carga los datos GeoJSON de forma asíncrona.
+         */
         async loadData() {
             try {
                 const response = await fetch(this.CONFIG.dataUrl);
@@ -143,22 +171,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        // --- 4. MANEJADORES DE ESTADO ---
-
-        setPanelCollapsed(isCollapsed) { this.state.isPanelCollapsed = isCollapsed; 
-                                        this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);},
+        /**
+         * Modifica el estado `isPanelCollapsed` y actualiza la UI.
+         * @param {boolean} isCollapsed - El nuevo estado del panel.
+         */
+        setPanelCollapsed(isCollapsed) {
+            this.state.isPanelCollapsed = isCollapsed;
+            this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);
+        },
+        
         handleAquiferSelect(aquiferName) { this.state.selectedAquiferName = aquiferName || null; if (this.state.selectedAquiferName) { this.leaflet.map.fitBounds(L.featureGroup(this.data.aquifers[this.state.selectedAquiferName]).getBounds().pad(0.1)); } this.render(); },
         handleOpacityChange(opacity) { this.state.opacity = parseFloat(opacity); this.render(); },
         handleFilterChange(filterValue) { this.state.filterValue = filterValue; this.render(); },
-
-        // --- 5. LÓGICA DE RENDERIZADO Y ESTILOS ---
-
+        
+        /**
+         * Redibuja la capa GeoJSON y actualiza la vista. Es el punto central de renderizado.
+         */
         render() {
             if (!this.leaflet.geojsonLayer) return;
             this.leaflet.geojsonLayer.eachLayer(layer => layer.setStyle(this.getLayerStyle(layer)));
             this.updateView();
         },
-
+        
         updateView() {
             this.nodes.opacityValueSpan.textContent = `${Math.round(this.state.opacity * 100)}%`;
             this.nodes.opacitySlider.value = this.state.opacity;
@@ -177,8 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         getFeatureStyle(feature) { return { ...this.CONFIG.styles.base, fillColor: this.getColor(feature.properties.VULNERABIL), fillOpacity: this.state.opacity }; },
         getColor(v) { const val = parseInt(v, 10); switch (val) { case 5: return '#D90404'; case 4: return '#F25C05'; case 3: return '#F2B705'; case 2: return '#99C140'; case 1: return '#2DC937'; default: return '#CCCCCC'; } },
-
-        // --- 6. PROCESAMIENTO DE DATOS Y UTILIDADES ---
 
         processFeature(feature, layer) {
             const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
@@ -210,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const LogoControl = L.Control.extend({
                 onAdd: map => {
                     const c = L.DomUtil.create('div', 'leaflet-logo-control');
-                    c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSIG.png" alt="Logo SSIG">`;
+                    c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSSIG.png" alt="Logo SSSIG">`;
                     L.DomEvent.disableClickPropagation(c);
                     return c;
                 }
