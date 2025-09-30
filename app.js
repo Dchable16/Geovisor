@@ -52,16 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
             this.loadData();
         },
 
+        // --- 3. MÉTODOS DE INICIALIZACIÓN ---
+
         initMap() {
-            this.leaflet.map = L.map(this.CONFIG.mapId, {
-                center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom,
-                layers: [this.CONFIG.tileLayers["Neutral (defecto)"]],
-                zoomControl: false
-            });
-            L.control.zoom({ position: 'topleft' }).addTo(this.leaflet.map);
-            this.initOpenButtonControl();
-            this.initUiControlsPanel();
+            this.leaflet.map = L.map(this.CONFIG.mapId, { center: this.CONFIG.initialCoords, zoom: this.CONFIG.initialZoom, layers: [this.CONFIG.tileLayers["Neutral (defecto)"]] });
             L.control.layers(this.CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.leaflet.map);
+            this.initUiControlsPanel();
+            this.initOpenButtonControl();
             this.initLegend();
             this.initLogoControl();
         },
@@ -95,12 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                     if (this.state.isPanelCollapsed) container.classList.add('collapsed');
-                    setTimeout(() => {
-                        if (this.nodes.openButton) {
-                            const openButtonPos = this.nodes.openButton.offsetTop;
-                            container.style.top = `${openButtonPos}px`;
-                        }
-                    }, 0);
                     this.cacheAndSetupPanelListeners(container);
                     L.DomEvent.disableClickPropagation(container);
                     return container;
@@ -116,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.innerHTML = '☰';
                     button.title = "Mostrar controles";
                     this.nodes.openButton = button;
+                    if (!this.state.isPanelCollapsed) button.style.display = 'none';
                     L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false), this);
                     L.DomEvent.disableClickPropagation(button);
                     return button;
@@ -130,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
             this.nodes.filterRadios = container.querySelectorAll('input[name="vulnerability"]');
             this.nodes.closeButton = container.querySelector('.panel-close-button');
+
             this.nodes.aquiferSelect.addEventListener('change', e => this.handleAquiferSelect(e.target.value));
             this.nodes.opacitySlider.addEventListener('input', e => this.handleOpacityChange(e.target.value));
             this.nodes.filterRadios.forEach(radio => radio.addEventListener('change', e => this.handleFilterChange(e.target.value)));
@@ -150,21 +143,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        setPanelCollapsed(isCollapsed) {
-            this.state.isPanelCollapsed = isCollapsed;
-            this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);
-        },
-        
+        // --- 4. MANEJADORES DE ESTADO ---
+
+        setPanelCollapsed(isCollapsed) { this.state.isPanelCollapsed = isCollapsed; 
+                                        this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);},
         handleAquiferSelect(aquiferName) { this.state.selectedAquiferName = aquiferName || null; if (this.state.selectedAquiferName) { this.leaflet.map.fitBounds(L.featureGroup(this.data.aquifers[this.state.selectedAquiferName]).getBounds().pad(0.1)); } this.render(); },
         handleOpacityChange(opacity) { this.state.opacity = parseFloat(opacity); this.render(); },
         handleFilterChange(filterValue) { this.state.filterValue = filterValue; this.render(); },
+
+        // --- 5. LÓGICA DE RENDERIZADO Y ESTILOS ---
 
         render() {
             if (!this.leaflet.geojsonLayer) return;
             this.leaflet.geojsonLayer.eachLayer(layer => layer.setStyle(this.getLayerStyle(layer)));
             this.updateView();
         },
-        
+
         updateView() {
             this.nodes.opacityValueSpan.textContent = `${Math.round(this.state.opacity * 100)}%`;
             this.nodes.opacitySlider.value = this.state.opacity;
@@ -180,10 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return finalStyle;
         },
-        
+
         getFeatureStyle(feature) { return { ...this.CONFIG.styles.base, fillColor: this.getColor(feature.properties.VULNERABIL), fillOpacity: this.state.opacity }; },
-        
         getColor(v) { const val = parseInt(v, 10); switch (val) { case 5: return '#D90404'; case 4: return '#F25C05'; case 3: return '#F2B705'; case 2: return '#99C140'; case 1: return '#2DC937'; default: return '#CCCCCC'; } },
+
+        // --- 6. PROCESAMIENTO DE DATOS Y UTILIDADES ---
 
         processFeature(feature, layer) {
             const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
@@ -215,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const LogoControl = L.Control.extend({
                 onAdd: map => {
                     const c = L.DomUtil.create('div', 'leaflet-logo-control');
-                    c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSSIG.png" alt="Logo SSSIG">`;
+                    c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSIG.png" alt="Logo SSIG">`;
                     L.DomEvent.disableClickPropagation(c);
                     return c;
                 }
