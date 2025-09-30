@@ -186,6 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setPanelCollapsed(isCollapsed) {
             this.state.isPanelCollapsed = isCollapsed;
             this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);
+            this.nodes.openButton.style.display = isCollapsed ? 'flex' : 'none';
         },
         handleAquiferSelect(aquiferName) {
             this.state.selectedAquiferName = aquiferName || null;
