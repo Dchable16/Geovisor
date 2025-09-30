@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 2. PUNTO DE ENTRADA DE LA APLICACIÓN ---
 
-        init() {
+       init() {
             this.initMap();
             this.loadData();
         },
