@@ -164,7 +164,7 @@ body {
 .info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.9; border: 1px solid #666; }
 
 .leaflet-control.leaflet-logo-control { background: transparent; border: none; box-shadow: none; margin: 0 !important; }
-.leaflet-logo-control img { height: 30px; width: auto; display: block; }
+.leaflet-logo-control img { height: 35px; width: auto; display: block; }
 
 /* --- 6. RESPONSIVIDAD --- */
 @media (max-width: 768px) {
