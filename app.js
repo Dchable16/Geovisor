@@ -189,7 +189,7 @@ state: {
         },
 
         getLayerStyle(layer) {
-            const { VULNERABIL, NOM_ACUIF } = layer.feature.properties;
+            const { Vulnerabil, NOM_ACUIF } = layer.feature.properties;
             if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
                 return this.CONFIG.styles.muted;
             }
