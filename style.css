@@ -1,31 +1,47 @@
 /**
  * @file style.css
- * @description Hoja de estilos principal para el Geovisor.
- * Organizada por componentes, utiliza variables CSS y es responsiva.
+ * @description Hoja de estilos mejorada para el Geovisor.
+ * Versión 2.0: Paleta de colores moderna, tipografía profesional,
+ * iconos, microinteracciones y diseño responsivo pulido.
 */
 
-/* --- 1. VARIABLES GLOBALES Y RESET --- */
+/* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
 :root {
     --header-height: 70px;
-    --header-bg: #EAEAEA;
-    --panel-width: 320px;
-    --panel-bg: rgba(255, 255, 255, 0.95);
-    --panel-shadow: 0 1px 7px rgba(0,0,0,0.3);
-    --border-radius: 5px;
-    --accent-color: #2b82d4;
-    --animation-speed: 0.4s;
-    --animation-easing: cubic-bezier(0.25, 0.8, 0.25, 1);
+    --header-bg: #FFFFFF;
+    --panel-width: 340px;
+    --panel-bg: rgba(255, 255, 255, 0.9);
+    --shadow-color: rgba(0, 0, 0, 0.15);
+    --panel-shadow: 0 4px 12px var(--shadow-color);
+    --border-radius: 8px;
+    --accent-color: #007BFF; /* Azul brillante y accesible */
+    --accent-hover: #0056b3;
+    --font-sans: 'Roboto', sans-serif;
+    --text-color: #333;
+    --text-light: #666;
+    --border-color: #DDE2E6;
+    --animation-speed: 0.3s;
+    --animation-easing: ease-in-out;
 }
 
+/* --- 2. RESET Y ESTILOS BASE --- */
 html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: var(--font-sans);
     overflow: hidden;
+    background-color: #F8F9FA;
+    color: var(--text-color);
 }
 
-/* --- 2. LAYOUT PRINCIPAL --- */
+* {
+    box-sizing: border-box;
+}
+
+/* --- 3. LAYOUT PRINCIPAL --- */
 body {
     display: flex;
     flex-direction: column;
@@ -39,7 +55,7 @@ body {
     align-items: center;
     padding: 0 2.5%;
     background-color: var(--header-bg);
-    box-sizing: border-box;
+    border-bottom: 1px solid var(--border-color);
     z-index: 2000;
 }
 
@@ -51,7 +67,7 @@ body {
 
 .map-container {
     flex-grow: 1;
-    background-color: #f4f4f4;
+    position: relative; /* Para el posicionamiento del loader */
 }
 
 #map {
@@ -59,15 +75,14 @@ body {
     height: 100%;
 }
 
-/* --- 3. PANEL DE CONTROLES DESLIZABLE (IZQUIERDA) --- */
+/* --- 4. PANEL DE CONTROLES --- */
 .leaflet-custom-controls {
     background: var(--panel-bg);
-    backdrop-filter: blur(4px);
-    padding: 15px;
+    backdrop-filter: blur(8px);
+    padding: 20px;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: var(--panel-shadow);
     width: var(--panel-width);
-    box-sizing: border-box;
     transition: transform var(--animation-speed) var(--animation-easing);
     position: absolute;
     left: 0;
@@ -76,102 +91,125 @@ body {
 }
 
 .leaflet-custom-controls.collapsed {
-    transform: translateX(calc(-100% - 10px));
+    transform: translateX(calc(-100% - 15px));
 }
 
-/* Botones Abrir/Cerrar del Panel */
+/* Botón para abrir panel */
 .leaflet-open-button {
     background-color: white;
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border-radius: 50%;
+    box-shadow: var(--panel-shadow);
+    transition: all var(--animation-speed) var(--animation-easing);
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    font-size: 20px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--panel-shadow);
-    opacity: 0;
-    pointer-events: none;
-    transform: scale(0.8);
-    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .leaflet-open-button.is-visible {
     opacity: 1;
     pointer-events: auto;
     transform: scale(1);
-    transition-delay: 0.2s;
+    transition-delay: 0.1s;
 }
 
+.leaflet-open-button:hover {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+/* Botón para cerrar panel */
 .panel-close-button {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 15px;
+    right: 15px;
     width: 30px;
     height: 30px;
-    background-color: #f0f0f0;
-    color: #555;
-    border: 1px solid #ccc;
+    background: transparent;
+    color: var(--text-light);
+    border: none;
     border-radius: 50%;
+    cursor: pointer;
+    font-size: 22px;
     display: flex;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
-    font-size: 24px;
-    line-height: 30px;
-    transition: background-color 0.2s, color 0.2s;
+    transition: all 0.2s ease;
 }
 .panel-close-button:hover {
-    background-color: var(--accent-color);
-    border-color: var(--accent-color);
-    color: white;
+    background-color: #E9ECEF;
+    color: var(--text-color);
 }
 
-/* --- 4. ELEMENTOS DE UI DENTRO DEL PANEL --- */
-.control-section { margin-bottom: 20px; }
-.control-section:last-child { margin-bottom: 0; }
-.control-section > label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
-.control-section h1 { text-align: center; color: #333; margin: 0; padding-right: 35px; margin-bottom: 20px; font-size: 1.5em; line-height: 1.2; }
-#acuifero-select, #opacity-slider { width: 100%; box-sizing: border-box; }
-#acuifero-select { padding: 8px; border-radius: 3px; border: 1px solid #ccc; font-size: 14px; }
+/* --- 5. ELEMENTOS DE UI DENTRO DEL PANEL --- */
+.control-section {
+    margin-bottom: 24px;
+}
+.control-section:last-child {
+    margin-bottom: 0;
+}
+.control-section > label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #495057;
+}
+.control-section h1 {
+    text-align: center;
+    color: var(--text-color);
+    margin: 0 0 24px 0;
+    padding-right: 30px; /* Espacio para el botón de cerrar */
+    font-size: 1.4em;
+    line-height: 1.2;
+}
+#acuifero-select, #opacity-slider {
+    width: 100%;
+}
+#acuifero-select {
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    background-color: white;
+}
+#acuifero-select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
 
-/* --- BLOQUE DE ESTILOS RESTAURADO --- */
+/* Estilo de los radio buttons tipo "píldora" */
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .radio-group label {
-    display: inline-block;
-    background-color: #eee;
-    padding: 6px 12px;
-    font-size: 12px;
-    border: 1px solid #ddd;
-    border-radius: 15px; /* <- La clave para el estilo "píldora" */
+    background-color: #F1F3F5;
+    padding: 8px 14px;
+    font-size: 13px;
+    border: 1px solid transparent;
+    border-radius: 20px;
     cursor: pointer;
-    margin: 0 4px 5px 0;
+    transition: all 0.2s ease;
 }
-.radio-group input[type="radio"] {
-    opacity: 0; /* <- Oculta el círculo del radio nativo */
-    position: fixed;
-    width: 0;
-}
+.radio-group input[type="radio"] { display: none; }
 .radio-group input[type="radio"]:checked + label {
-    background-color: var(--accent-color); /* <- Color de selección */
-    border-color: var(--accent-color);
+    background-color: var(--accent-color);
     color: white;
+    font-weight: bold;
 }
-/* --- FIN DEL BLOQUE RESTAURADO --- */
+.radio-group label:hover {
+    border-color: var(--accent-color);
+}
 
 
-/* Estilo para el Interruptor de Capa */
-.layer-toggle {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 44px;
-    height: 24px;
-}
+/* Interruptor de Capa (Toggle Switch) */
+.layer-toggle { display: flex; justify-content: space-between; align-items: center; }
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider {
     position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
@@ -184,10 +222,37 @@ body {
 input:checked + .slider { background-color: var(--accent-color); }
 input:checked + .slider:before { transform: translateX(20px); }
 
-/* --- 5. OTROS CONTROLES DE LEAFLET --- */
+/* --- 6. INDICADOR DE CARGA (SPINNER) --- */
+.loader-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+.spinner {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid var(--accent-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- 7. OTROS CONTROLES DE LEAFLET --- */
 .info.legend {
     background: var(--panel-bg);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
     padding: 10px 15px;
     border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
@@ -195,14 +260,14 @@ input:checked + .slider:before { transform: translateX(20px); }
     color: #333;
 }
 .info.legend h4 { margin: 0 0 10px; font-size: 16px; text-align: center; }
-.info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.9; border: 1px solid #666; }
+.info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 1; border: 1px solid #999; }
 
-.leaflet-control.leaflet-logo-control { background: transparent; border: none; box-shadow: none; margin: 0 !important; }
-.leaflet-logo-control img { height: 35px; width: auto; display: block; }
-
-/* --- 6. RESPONSIVIDAD --- */
+/* --- 8. RESPONSIVIDAD --- */
 @media (max-width: 768px) {
-    :root { --header-height: 60px; --panel-width: calc(100vw - 60px); }
+    :root {
+        --header-height: 60px;
+        --panel-width: calc(100vw - 50px);
+    }
     .logo-container img { height: 40px; }
     .control-section h1 { font-size: 1.2em; }
 }
