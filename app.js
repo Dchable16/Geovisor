@@ -65,6 +65,7 @@ state: {
                 onAdd: (map) => {
                     const container = L.DomUtil.create('div', 'leaflet-custom-controls');
                     this.nodes.uiControlContainer = container;
+
                     container.innerHTML = `
                         <div class="panel-close-button" title="Ocultar controles">«</div>
                         <h1>Vulnerabilidad a la Intrusión Salina</h1>
@@ -87,54 +88,33 @@ state: {
                                 <input type="radio" id="vul-5" name="vulnerability" value="5"><label for="vul-5">5</label>
                             </div>
                         </div>
+                        <div class="control-section">
+                            <label>Capas Adicionales:</label>
+                            <div class="layer-toggle">
+                                <span>Línea de Costa (10km)</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="coastline-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
                     `;
+                    
                     if (this.state.isPanelCollapsed) container.classList.add('collapsed');
+                    
                     setTimeout(() => {
                         if (this.nodes.openButton) {
                             const openButtonPos = this.nodes.openButton.offsetTop;
                             container.style.top = `${openButtonPos}px`;
                         }
                     }, 0);
+                    
                     this.cacheAndSetupPanelListeners(container);
                     L.DomEvent.disableClickPropagation(container);
                     return container;
                 }
             });
             new UiControl({ position: 'topleft' }).addTo(this.leaflet.map);
-        },
-
-        getUiPanelHtml() {
-            return `
-                <div class="panel-close-button" title="Ocultar controles">«</div>
-                <h1>Vulnerabilidad a la Intrusión Salina</h1>
-                
-                <div class="control-section">
-                    <label for="acuifero-select">Selecciona un acuífero:</label>
-                    <select id="acuifero-select"><option value="">-- Mostrar todos --</option></select>
-                </div>
-                
-                <div class="control-section">
-                    <label for="opacity-slider">Opacidad general: <span id="opacity-value"></span></label>
-                    <input id="opacity-slider" type="range" min="0" max="1" step="0.05">
-                </div>
-                
-                <div class="control-section">
-                    <label>Iluminar por vulnerabilidad:</label>
-                    <div class="radio-group"><!-- ...radios... --></div>
-                </div>
-
-                <!-- NUEVA SECCIÓN PARA CAPAS ADICIONALES -->
-                <div class="control-section">
-                    <label>Capas Adicionales:</label>
-                    <div class="layer-toggle">
-                        <span>Línea de Costa (10km)</span>
-                        <label class="switch">
-                            <input type="checkbox" id="coastline-toggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-            `;
         },
 
         initOpenButtonControl() {
@@ -174,17 +154,12 @@ state: {
         },
 
         async loadData() {
-            this.loadAncillaryLayers();
+            this.loadAncillaryLayers(); // Carga en paralelo la capa de costa
             try {
                 const response = await fetch(this.CONFIG.dataUrl);
                 if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
                 const geojsonData = await response.json();
-                
-                this.leaflet.geojsonLayer = L.geoJson(geojsonData, {
-                    style: feature => this.getFeatureStyle(feature),
-                    onEachFeature: (feature, layer) => this.processFeature(feature, layer)
-                }).addTo(this.leaflet.map);
-                
+                this.leaflet.geojsonLayer = L.geoJson(geojsonData, { style: feature => this.getFeatureStyle(feature), onEachFeature: (feature, layer) => this.processFeature(feature, layer) }).addTo(this.leaflet.map);
                 this.populateAquiferSelect();
                 this.updateView();
             } catch (error) {
@@ -198,11 +173,7 @@ state: {
                 const response = await fetch(this.CONFIG.coastlineUrl);
                 if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
                 const coastlineData = await response.json();
-                
-                this.leaflet.coastlineLayer = L.geoJson(coastlineData, {
-                    style: this.CONFIG.styles.coastline
-                });
-                // No se añade al mapa aquí, se controla en el render()
+                this.leaflet.coastlineLayer = L.geoJson(coastlineData, { style: this.CONFIG.styles.coastline });
             } catch (error) {
                 console.warn("No se pudo cargar la capa de línea de costa:", error);
             }
@@ -210,11 +181,7 @@ state: {
 
         setPanelCollapsed(isCollapsed) {
             this.state.isPanelCollapsed = isCollapsed;
-            // TTogglea la clase del panel para que se oculte o muestre
             this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);
-
-            // CORRECCIÓN: En lugar de manipular 'style', ahora solo
-            // ttoggleamos la clase de visibilidad en el botón de abrir.
             this.nodes.openButton.classList.toggle('is-visible', isCollapsed);
         },
 
