@@ -69,20 +69,17 @@ body {
     width: var(--panel-width);
     box-sizing: border-box;
     transition: transform var(--animation-speed) var(--animation-easing);
-    
-    /* Posición dinámica controlada por JS, no valores fijos */
     position: absolute;
     left: 0;
     z-index: 1000;
-    
-    transform: translateX(0); /* Estado visible por defecto */
+    transform: translateX(0);
 }
 
 .leaflet-custom-controls.collapsed {
-    transform: translateX(calc(-100% - 10px)); /* Oculto completamente a la izquierda */
+    transform: translateX(calc(-100% - 10px));
 }
 
-/* Botón de ABRIR (hamburguesa) - Flota independientemente */
+/* Botones Abrir/Cerrar del Panel */
 .leaflet-open-button {
     background-color: white;
     width: 34px;
@@ -94,27 +91,19 @@ body {
     font-size: 20px;
     border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
-
-    /* Por defecto, el botón está oculto y escalado hacia abajo */
     opacity: 0;
     pointer-events: none;
     transform: scale(0.8);
-
-    /* Define cómo debe animarse al cambiar opacidad o transform */
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-/* Clase de estado: Cuando el botón TIENE esta clase, se vuelve visible */
 .leaflet-open-button.is-visible {
     opacity: 1;
     pointer-events: auto;
     transform: scale(1);
-    /* Retraso: solo empieza la animación de aparecer 0.2s después de que se lo ordenen */
     transition-delay: 0.2s;
 }
 
-
-/* Botón de CERRAR (flecha) - Interno al panel */
 .panel-close-button {
     position: absolute;
     top: 10px;
@@ -146,9 +135,32 @@ body {
 .control-section h1 { text-align: center; color: #333; margin: 0; padding-right: 35px; margin-bottom: 20px; font-size: 1.5em; line-height: 1.2; }
 #acuifero-select, #opacity-slider { width: 100%; box-sizing: border-box; }
 #acuifero-select { padding: 8px; border-radius: 3px; border: 1px solid #ccc; font-size: 14px; }
-.radio-group label { /* ... (sin cambios) ... */ }
 
-/* --- 4a. NUEVO ESTILO PARA EL INTERRUPTOR DE CAPA --- */
+/* --- BLOQUE DE ESTILOS RESTAURADO --- */
+.radio-group label {
+    display: inline-block;
+    background-color: #eee;
+    padding: 6px 12px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    border-radius: 15px; /* <- La clave para el estilo "píldora" */
+    cursor: pointer;
+    margin: 0 4px 5px 0;
+}
+.radio-group input[type="radio"] {
+    opacity: 0; /* <- Oculta el círculo del radio nativo */
+    position: fixed;
+    width: 0;
+}
+.radio-group input[type="radio"]:checked + label {
+    background-color: var(--accent-color); /* <- Color de selección */
+    border-color: var(--accent-color);
+    color: white;
+}
+/* --- FIN DEL BLOQUE RESTAURADO --- */
+
+
+/* Estilo para el Interruptor de Capa */
 .layer-toggle {
     display: flex;
     justify-content: space-between;
@@ -160,9 +172,7 @@ body {
     width: 44px;
     height: 24px;
 }
-.switch input {
-    opacity: 0; width: 0; height: 0;
-}
+.switch input { opacity: 0; width: 0; height: 0; }
 .slider {
     position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
     background-color: #ccc; transition: .4s; border-radius: 24px;
@@ -171,12 +181,8 @@ body {
     position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
     background-color: white; transition: .4s; border-radius: 50%;
 }
-input:checked + .slider {
-    background-color: var(--accent-color);
-}
-input:checked + .slider:before {
-    transform: translateX(20px);
-}
+input:checked + .slider { background-color: var(--accent-color); }
+input:checked + .slider:before { transform: translateX(20px); }
 
 /* --- 5. OTROS CONTROLES DE LEAFLET --- */
 .info.legend {
