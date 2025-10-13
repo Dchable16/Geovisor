@@ -70,7 +70,7 @@ state: {
                 onAdd: (map) => {
                     const container = L.DomUtil.create('div', 'leaflet-custom-controls');
                     this.nodes.uiControlContainer = container;
-
+                    // HTML unificado y sin duplicados
                     container.innerHTML = `
                         <div class="panel-close-button" title="Ocultar controles">«</div>
                         <h1>Vulnerabilidad a la Intrusión Salina</h1>
@@ -92,25 +92,6 @@ state: {
                                 <input type="radio" id="vul-4" name="vulnerability" value="4"><label for="vul-4">4</label>
                                 <input type="radio" id="vul-5" name="vulnerability" value="5"><label for="vul-5">5</label>
                             </div>
-
-                        <div class="control-section">
-                                <label>Capas Adicionales:</label>
-                                <div class="layer-toggle">
-                                    <span>Línea de Costa (10km)</span>
-                                    <label class="switch">
-                                        <input type="checkbox" id="coastline-toggle">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-                                <div class="layer-toggle" style="margin-top: 10px;">
-                                    <span>Línea de Costa (1km)</span>
-                                    <label class="switch">
-                                        <input type="checkbox" id="coastline-1km-toggle">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        `;
                         </div>
                         <div class="control-section">
                             <label>Capas Adicionales:</label>
@@ -121,18 +102,17 @@ state: {
                                     <span class="slider"></span>
                                 </label>
                             </div>
+                            <div class="layer-toggle" style="margin-top: 10px;">
+                                <span>Línea de Costa (1km)</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="coastline-1km-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                         </div>
                     `;
-                    
                     if (this.state.isPanelCollapsed) container.classList.add('collapsed');
-                    
-                    setTimeout(() => {
-                        if (this.nodes.openButton) {
-                            const openButtonPos = this.nodes.openButton.offsetTop;
-                            container.style.top = `${openButtonPos}px`;
-                        }
-                    }, 0);
-                    
+                    setTimeout(() => { if (this.nodes.openButton) { container.style.top = `${this.nodes.openButton.offsetTop}px`; } }, 0);
                     this.cacheAndSetupPanelListeners(container);
                     L.DomEvent.disableClickPropagation(container);
                     return container;
@@ -148,12 +128,7 @@ state: {
                     button.innerHTML = '☰';
                     button.title = "Mostrar controles";
                     this.nodes.openButton = button;
-                    
-                    // Se usa la clase .is-visible en lugar de style.display
-                    if (this.state.isPanelCollapsed) {
-                        button.classList.add('is-visible');
-                    }
-
+                    if (this.state.isPanelCollapsed) button.classList.add('is-visible');
                     L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false), this);
                     L.DomEvent.disableClickPropagation(button);
                     return button;
@@ -169,18 +144,18 @@ state: {
             this.nodes.filterRadios = container.querySelectorAll('input[name="vulnerability"]');
             this.nodes.closeButton = container.querySelector('.panel-close-button');
             this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
-            this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
+            this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle'); // Referencia al nuevo interruptor
 
             this.nodes.aquiferSelect.addEventListener('change', e => this.handleAquiferSelect(e.target.value));
             this.nodes.opacitySlider.addEventListener('input', e => this.handleOpacityChange(e.target.value));
             this.nodes.filterRadios.forEach(radio => radio.addEventListener('change', e => this.handleFilterChange(e.target.value)));
             this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
             this.nodes.coastlineToggle.addEventListener('change', e => this.handleCoastlineToggle(e.target.checked));
-            this.nodes.coastline1kmToggle.addEventListener('change', e => this.handleCoastline1kmToggle(e.target.checked));
+            this.nodes.coastline1kmToggle.addEventListener('change', e => this.handleCoastline1kmToggle(e.target.checked)); // Evento para el nuevo interruptor
         },
 
         async loadData() {
-            this.loadAncillaryLayers(); // Carga en paralelo la capa de costa
+            this.loadAncillaryLayers();
             try {
                 const response = await fetch(this.CONFIG.dataUrl);
                 if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
@@ -189,8 +164,8 @@ state: {
                 this.populateAquiferSelect();
                 this.updateView();
             } catch (error) {
-                console.error("Error al cargar los datos geoespaciales:", error);
-                alert("No se pudo cargar la capa de datos. Verifique la consola (F12).");
+                console.error("Error al cargar datos principales:", error);
+                alert("No se pudo cargar la capa principal de datos.");
             }
         },
 
@@ -198,69 +173,48 @@ state: {
             try {
                 const response10km = await fetch(this.CONFIG.coastlineUrl);
                 if (!response10km.ok) throw new Error(`HTTP ${response10km.status}`);
-                const data10km = await response10km.json();
-                this.leaflet.coastlineLayer = L.geoJson(data10km, { style: this.CONFIG.styles.coastline });
+                this.leaflet.coastlineLayer = L.geoJson(await response10km.json(), { style: this.CONFIG.styles.coastline });
             } catch (error) { console.warn("No se pudo cargar la capa de 10km:", error); }
-
             try {
                 const response1km = await fetch(this.CONFIG.coastline1kmUrl);
                 if (!response1km.ok) throw new Error(`HTTP ${response1km.status}`);
-                const data1km = await response1km.json();
-                this.leaflet.coastline1kmLayer = L.geoJson(data1km, { style: this.CONFIG.styles.coastline1km });
+                this.leaflet.coastline1kmLayer = L.geoJson(await response1km.json(), { style: this.CONFIG.styles.coastline1km });
             } catch (error) { console.warn("No se pudo cargar la capa de 1km:", error); }
         },
         
-        handleCoastlineToggle(isVisible) { this.state.isCoastlineVisible = isVisible; this.render(); },
-        handleCoastline1kmToggle(isVisible) { this.state.isCoastline1kmVisible = isVisible; this.render(); },
-
         setPanelCollapsed(isCollapsed) {
             this.state.isPanelCollapsed = isCollapsed;
             this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);
             this.nodes.openButton.classList.toggle('is-visible', isCollapsed);
         },
 
-        handleAquiferSelect(aquiferName) {
-            this.state.selectedAquiferName = aquiferName || null;
-            if (this.state.selectedAquiferName) {
-                this.leaflet.map.fitBounds(L.featureGroup(this.data.aquifers[this.state.selectedAquiferName]).getBounds().pad(0.1));
-            }
-            this.render();
-        },
-        
+        handleAquiferSelect(aquiferName) { this.state.selectedAquiferName = aquiferName || null; if (this.state.selectedAquiferName) { this.leaflet.map.fitBounds(L.featureGroup(this.data.aquifers[this.state.selectedAquiferName]).getBounds().pad(0.1)); } this.render(); },
         handleOpacityChange(opacity) { this.state.opacity = parseFloat(opacity); this.render(); },
         handleFilterChange(filterValue) { this.state.filterValue = filterValue; this.render(); },
-        handleCoastlineToggle(isVisible) {
-            this.state.isCoastlineVisible = isVisible;
-            this.render(); // Dispara un redibujado para mostrar/ocultar la capa
-        },
+        handleCoastlineToggle(isVisible) { this.state.isCoastlineVisible = isVisible; this.render(); },
+        handleCoastline1kmToggle(isVisible) { this.state.isCoastline1kmVisible = isVisible; this.render(); },
 
         render() {
-            if (!this.leaflet.geojsonLayer) return;
-            this.leaflet.geojsonLayer.eachLayer(layer => layer.setStyle(this.getLayerStyle(layer)));
-            if (this.leaflet.coastlineLayer) {
-                const isonMap = this.leaflet.map.hasLayer(this.leaflet.coastlineLayer);
-                if (this.state.isCoastlineVisible && !isonMap) {
-                    this.leaflet.coastlineLayer.addTo(this.leaflet.map);
-                } else if (!this.state.isCoastlineVisible && isonMap) {
-                    this.leaflet.coastlineLayer.remove();
-                }
-           
-            if (this.leaflet.coastline1kmLayer) {
-                const onMap = this.leaflet.map.hasLayer(this.leaflet.coastline1kmLayer);
-                if (this.state.isCoastline1kmVisible && !onMap) this.leaflet.coastline1kmLayer.addTo(this.leaflet.map);
-                else if (!this.state.isCoastline1kmVisible && onMap) this.leaflet.coastline1kmLayer.remove();
-            }
-
-            if (this.nodes.opacityValueSpan) this.updateView();
-        },
+            if (this.leaflet.geojsonLayer) this.leaflet.geojsonLayer.eachLayer(layer => layer.setStyle(this.getLayerStyle(layer)));
             
-            this.updateView();
+            // Lógica unificada para las capas adicionales
+            const toggleLayer = (layer, isVisible) => {
+                if (!layer) return;
+                const onMap = this.leaflet.map.hasLayer(layer);
+                if (isVisible && !onMap) layer.addTo(this.leaflet.map);
+                else if (!isVisible && onMap) layer.remove();
+            };
+            toggleLayer(this.leaflet.coastlineLayer, this.state.isCoastlineVisible);
+            toggleLayer(this.leaflet.coastline1kmLayer, this.state.isCoastline1kmVisible);
+            
+            if (this.nodes.opacityValueSpan) this.updateView();
         },
 
         updateView() {
             this.nodes.opacityValueSpan.textContent = `${Math.round(this.state.opacity * 100)}%`;
             this.nodes.opacitySlider.value = this.state.opacity;
             this.nodes.coastlineToggle.checked = this.state.isCoastlineVisible;
+            this.nodes.coastline1kmToggle.checked = this.state.isCoastline1kmVisible;
         },
 
         getLayerStyle(layer) {
