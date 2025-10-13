@@ -150,7 +150,8 @@ class GeovisorApp {
         if (isVisible && !this.mapManager.map.hasLayer(layer)) {
             layer.addTo(this.mapManager.map);
         } else if (!isVisible && this.mapManager.map.hasLayer(layer)) {
-            this.mapManager.map.remove(layer);
+            // CORRECCIÓN: Usar removeLayer() en lugar de remove()
+            this.mapManager.map.removeLayer(layer); 
         }
     }
 }
