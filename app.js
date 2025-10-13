@@ -37,13 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 muted: { fillColor: '#A9A9A9', weight: 1, color: '#A9A9A9', fillOpacity: 0.2 },
                 selection: { color: '#00FFFF', weight: 4, opacity: 1 },
                 hover: { weight: 3, color: '#000', dashArray: '', fillOpacity: 0.95 },
-                coastline: { color: "#007BFF", weight: 2, opacity: 0.8, fillColor: 'transparent'  } 
-                
+                coastline: { color: "#007BFF", weight: 2, opacity: 0.8, fillColor: 'transparent'  }, 
+                coastline1km: { color: "#FF0000", weight: 2.5, opacity: 0.85, fillColor: 'transparent' } 
             }
         },
 
 state: {
             opacity: 0.8, filterValue: 'all', selectedAquiferName: null, isPanelCollapsed: true,
+            isCoastlineVisible: false,
+            isCoastline1kmVisible: false,
         },
 
         nodes: {}, leaflet: {}, data: { aquifers: {} },
@@ -90,6 +92,25 @@ state: {
                                 <input type="radio" id="vul-4" name="vulnerability" value="4"><label for="vul-4">4</label>
                                 <input type="radio" id="vul-5" name="vulnerability" value="5"><label for="vul-5">5</label>
                             </div>
+
+                        <div class="control-section">
+                                <label>Capas Adicionales:</label>
+                                <div class="layer-toggle">
+                                    <span>Línea de Costa (10km)</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="coastline-toggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="layer-toggle" style="margin-top: 10px;">
+                                    <span>Línea de Costa (1km)</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="coastline-1km-toggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        `;
                         </div>
                         <div class="control-section">
                             <label>Capas Adicionales:</label>
@@ -148,12 +169,14 @@ state: {
             this.nodes.filterRadios = container.querySelectorAll('input[name="vulnerability"]');
             this.nodes.closeButton = container.querySelector('.panel-close-button');
             this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
+            this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
 
             this.nodes.aquiferSelect.addEventListener('change', e => this.handleAquiferSelect(e.target.value));
             this.nodes.opacitySlider.addEventListener('input', e => this.handleOpacityChange(e.target.value));
             this.nodes.filterRadios.forEach(radio => radio.addEventListener('change', e => this.handleFilterChange(e.target.value)));
             this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
             this.nodes.coastlineToggle.addEventListener('change', e => this.handleCoastlineToggle(e.target.checked));
+            this.nodes.coastline1kmToggle.addEventListener('change', e => this.handleCoastline1kmToggle(e.target.checked));
         },
 
         async loadData() {
@@ -173,14 +196,22 @@ state: {
 
         async loadAncillaryLayers() {
             try {
-                const response = await fetch(this.CONFIG.coastlineUrl);
-                if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
-                const coastlineData = await response.json();
-                this.leaflet.coastlineLayer = L.geoJson(coastlineData, { style: this.CONFIG.styles.coastline });
-            } catch (error) {
-                console.warn("No se pudo cargar la capa de línea de costa:", error);
-            }
+                const response10km = await fetch(this.CONFIG.coastlineUrl);
+                if (!response10km.ok) throw new Error(`HTTP ${response10km.status}`);
+                const data10km = await response10km.json();
+                this.leaflet.coastlineLayer = L.geoJson(data10km, { style: this.CONFIG.styles.coastline });
+            } catch (error) { console.warn("No se pudo cargar la capa de 10km:", error); }
+
+            try {
+                const response1km = await fetch(this.CONFIG.coastline1kmUrl);
+                if (!response1km.ok) throw new Error(`HTTP ${response1km.status}`);
+                const data1km = await response1km.json();
+                this.leaflet.coastline1kmLayer = L.geoJson(data1km, { style: this.CONFIG.styles.coastline1km });
+            } catch (error) { console.warn("No se pudo cargar la capa de 1km:", error); }
         },
+        
+        handleCoastlineToggle(isVisible) { this.state.isCoastlineVisible = isVisible; this.render(); },
+        handleCoastline1kmToggle(isVisible) { this.state.isCoastline1kmVisible = isVisible; this.render(); },
 
         setPanelCollapsed(isCollapsed) {
             this.state.isPanelCollapsed = isCollapsed;
@@ -213,7 +244,15 @@ state: {
                 } else if (!this.state.isCoastlineVisible && isonMap) {
                     this.leaflet.coastlineLayer.remove();
                 }
+           
+            if (this.leaflet.coastline1kmLayer) {
+                const onMap = this.leaflet.map.hasLayer(this.leaflet.coastline1kmLayer);
+                if (this.state.isCoastline1kmVisible && !onMap) this.leaflet.coastline1kmLayer.addTo(this.leaflet.map);
+                else if (!this.state.isCoastline1kmVisible && onMap) this.leaflet.coastline1kmLayer.remove();
             }
+
+            if (this.nodes.opacityValueSpan) this.updateView();
+        },
             
             this.updateView();
         },
