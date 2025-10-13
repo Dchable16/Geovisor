@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             initialZoom: 5,
             dataUrl: 'data/Vulnerabilidad.geojson',
             coastlineUrl: 'data/Linea_Costa_10km.geojson',
+             coastline1kmUrl: 'data/Linea_Costa_1km.geojson',
             tileLayers: {
                 "Neutral (defecto)": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO' }),
                 "OpenStreetMap": L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }),
