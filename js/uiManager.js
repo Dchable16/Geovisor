@@ -11,6 +11,7 @@ export class UIManager {
         this.initControlsPanel();
         this.initOpenButton();
     }
+    /**
     * Muestra u oculta el overlay de carga.
      * @param {boolean} isLoading - true para mostrar el loader, false para ocultarlo.
      */
