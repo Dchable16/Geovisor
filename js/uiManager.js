@@ -16,12 +16,11 @@ export class UIManager {
      * @param {boolean} isLoading - true para mostrar el loader, false para ocultarlo.
      */
     setLoading(isLoading) {
-            if (this.nodes.loader) {
-                // El 'display: none;' inicial se sobrescribe a 'flex' para mostrarlo
-                this.nodes.loader.style.display = isLoading ? 'flex' : 'none';
-            }
+        if (this.nodes.loader) {
+            // El 'display: none;' inicial se sobrescribe a 'flex' para mostrarlo
+            this.nodes.loader.style.display = isLoading ? 'flex' : 'none';
         }
-    }
+    } 
 
     initControlsPanel() {
         const UiControl = L.Control.extend({
