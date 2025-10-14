@@ -6,26 +6,32 @@ import { CONFIG } from './config.js';
 
 export class MapManager {
     constructor(mapId) {
+        // 1. Inicializa el mapa
         this.map = L.map(mapId, {
             center: CONFIG.initialCoords,
             zoom: CONFIG.initialZoom,
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false
         });
-        this.addControls();
+
+        // 2. Crea los "panes" para ordenar las capas de forma profesional
+        this.map.createPane('acuiferosPane');
+        this.map.getPane('acuiferosPane').style.zIndex = 450;
     }
 
-    addControls() {
+    // 3. Los controles se inicializan por separado para asegurar que el mapa ya existe
+    initializeControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
         L.control.layers(CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.map);
         this.addLegend();
         this.addLogo();
     }
 
-    addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
+    addGeoJsonLayer(data, styleFunction, onEachFeatureFunction, paneName) {
         return L.geoJson(data, {
             style: styleFunction,
-            onEachFeature: onEachFeatureFunction
+            onEachFeature: onEachFeatureFunction,
+            pane: paneName
         }).addTo(this.map);
     }
     
@@ -49,7 +55,7 @@ export class MapManager {
         const LogoControl = L.Control.extend({
             onAdd: map => {
                 const c = L.DomUtil.create('div', 'leaflet-logo-control');
-                c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSIG.png" alt="Logo SSIG">`;
+                c.innerHTML = `<img src="logos/Logo_SSIG.png" alt="Logo SSIG">`;
                 L.DomEvent.disableClickPropagation(c);
                 return c;
             }
