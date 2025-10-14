@@ -11,6 +11,7 @@ import { UIManager } from './uiManager.js';
 
 class GeovisorApp {
     constructor() {
+        // Estado centralizado de la aplicación
         this.state = {
             opacity: 0.8,
             filterValue: 'all',
@@ -18,98 +19,74 @@ class GeovisorApp {
             isCoastlineVisible: false,
             isCoastline1kmVisible: false,
         };
-        this.data = { aquifers: {} };
-        this.leafletLayers = {};
+
+        this.data = {
+            aquifers: {}, // Almacenará las capas por nombre de acuífero
+        };
+
+        this.leafletLayers = {}; // Almacenará las capas de Leaflet
+
+        // Inicializar los módulos
+        this.mapManager = new MapManager(CONFIG.mapId);
+        this.uiManager = new UIManager(this.mapManager.map, this.handleStateChange.bind(this));
         
-        // La inicialización ahora se maneja de forma asíncrona
         this.init();
     }
 
-    /**
-     * Orquesta la inicialización de la aplicación en el orden correcto.
-     */
-    async init() {
-        // 1. Crear el mapa y los panes PRIMERO
-        this.mapManager = new MapManager(CONFIG.mapId);
-
-        // 2. Crear la UI y pasarle la referencia al mapa
-        this.uiManager = new UIManager(this.mapManager.map, this.handleStateChange.bind(this));
-        
-        // 3. AHORA que la UI existe, añadir los controles restantes del mapa
-        this.mapManager.initializeControls();
-
-        // 4. Cargar todos los datos GeoJSON
-        await this.loadLayers();
-
-        // 5. Finalmente, actualizar la UI con el estado inicial
-        this.uiManager.updateView(this.state);
-    }
-
-    /**
-     * Maneja los cambios de estado que vienen desde la UI.
-     */
+    // Método para manejar los cambios de estado provenientes de la UI
     handleStateChange(newState) {
         this.updateState(newState);
     }
 
-    /**
-     * Actualiza el estado centralizado y vuelve a dibujar el mapa.
-     */
+    // Método centralizado para actualizar el estado y volver a renderizar
     updateState(newState) {
+        // Fusionar el nuevo estado con el estado actual
         this.state = { ...this.state, ...newState };
+        console.log("Nuevo estado:", this.state); // Para depuración
 
-        // Si se seleccionó un acuífero, hacer zoom a él
-        if (newState.selectedAquifer && this.data.aquifers[newState.selectedAquifer]) {
-            const group = L.featureGroup(this.data.aquifers[newState.selectedAquifer]);
-            this.mapManager.fitBounds(group.getBounds());
+        if (newState.selectedAquifer) {
+             const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
+             this.mapManager.fitBounds(group.getBounds());
         }
-        
+
         this.render();
     }
 
-    /**
-     * Carga y procesa todas las capas geográficas.
-     */
-    async loadLayers() {
-        document.getElementById('loader').style.display = 'flex';
-        try {
-            // Cargar capas auxiliares (líneas de costa)
-            const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
-            if (coastlineData) {
-                this.leafletLayers.coastline = L.geoJson(coastlineData, { style: CONFIG.styles.coastline });
-            }
-            const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
-            if (coastline1kmData) {
-                this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { style: CONFIG.styles.coastline1km });
-            }
+    async init() {
+        this.loadLayers();
+        this.uiManager.updateView(this.state);
+    }
 
-            // Cargar capa principal de vulnerabilidad
-            const mainData = await fetchGeoJSON(CONFIG.dataUrl);
-            if (mainData) {
-                this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
-                    mainData,
-                    (feature) => this.getFeatureStyle(feature),
-                    (feature, layer) => this.onEachFeature(feature, layer),
-                    'acuiferosPane' // Dibuja esta capa en su panel designado
-                );
-                this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
-            } else {
-                alert("No se pudo cargar la capa principal de datos.");
-            }
-        } catch (error) {
-            console.error("Error crítico durante la carga de capas:", error);
-        } finally {
-            document.getElementById('loader').style.display = 'none';
+    async loadLayers() {
+        // Cargar capas auxiliares
+        const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
+        if (coastlineData) {
+            this.leafletLayers.coastline = L.geoJson(coastlineData, { style: CONFIG.styles.coastline });
+        }
+        
+        const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
+        if (coastline1kmData) {
+            this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { style: CONFIG.styles.coastline1km });
+        }
+
+        // Cargar capa principal de vulnerabilidad
+        const mainData = await fetchGeoJSON(CONFIG.dataUrl);
+        if (mainData) {
+            this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
+                mainData,
+                (feature) => this.getFeatureStyle(feature),
+                (feature, layer) => this.onEachFeature(feature, layer)
+            );
+            this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
+        } else {
+            alert("No se pudo cargar la capa principal de datos. La aplicación puede no funcionar correctamente.");
         }
     }
     
-    /**
-     * Define las interacciones para cada polígono de acuífero.
-     */
     onEachFeature(feature, layer) {
-        const { NOM_ACUIF } = feature.properties;
-        
-        // Agrupa las capas por nombre de acuífero para el zoom
+        const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
+        layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
+
         if (!this.data.aquifers[NOM_ACUIF]) {
             this.data.aquifers[NOM_ACUIF] = [];
         }
@@ -117,77 +94,69 @@ class GeovisorApp {
 
         layer.on({
             mouseover: (e) => {
-                // Solo aplica el efecto hover si no está seleccionado
-                if (this.state.selectedAquifer !== NOM_ACUIF) {
-                    e.target.setStyle(CONFIG.styles.hover);
-                }
-                e.target.bringToFront();
+                const targetLayer = e.target;
+                targetLayer.setStyle(CONFIG.styles.hover);
+                targetLayer.bringToFront();
             },
             mouseout: (e) => {
-                // Restaura el estilo original de la capa
+                // Simplemente le pedimos a la capa principal que se vuelva a renderizar
                 this.leafletLayers.vulnerability.resetStyle(e.target);
-            },
-            click: (e) => {
-                // Al hacer clic, actualiza el acuífero seleccionado
-                this.updateState({ selectedAquifer: NOM_ACUIF });
-                // Muestra la información en el panel de la UI (reemplazando el popup)
-                this.uiManager.updateInfoPanel(feature.properties);
             }
         });
     }
 
-    /**
-     * Define el estilo visual de cada polígono.
-     */
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
 
-        // Si hay un filtro y no coincide, atenúa el polígono
+        // Si hay un filtro y no coincide, aplicar estilo "muted"
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
             return CONFIG.styles.muted;
         }
-        
+
+        // Estilo base según vulnerabilidad
         let style = {
             ...CONFIG.styles.base,
             fillColor: this.mapManager.getColor(VULNERABIL),
             fillOpacity: this.state.opacity
         };
         
-        // Si el acuífero está seleccionado, resáltalo
+        // Si el acuífero está seleccionado, aplicar estilo de selección
         if (this.state.selectedAquifer === NOM_ACUIF) {
             style = { ...style, ...CONFIG.styles.selection };
         }
+
         return style;
     }
 
-    /**
-     * Aplica los cambios de estado al mapa.
-     */
     render() {
+        // Actualizar estilos de la capa de vulnerabilidad
         if (this.leafletLayers.vulnerability) {
             this.leafletLayers.vulnerability.eachLayer(layer => {
                 layer.setStyle(this.getFeatureStyle(layer.feature));
             });
         }
+        
+        // Alternar visibilidad de capas adicionales
         this.toggleLayer(this.leafletLayers.coastline, this.state.isCoastlineVisible);
         this.toggleLayer(this.leafletLayers.coastline1km, this.state.isCoastline1kmVisible);
+        
+        // Actualizar la vista de la UI
         this.uiManager.updateView(this.state);
     }
     
-    /**
-     * Muestra u oculta una capa en el mapa.
-     */
     toggleLayer(layer, isVisible) {
         if (!layer) return;
+        
         if (isVisible && !this.mapManager.map.hasLayer(layer)) {
             layer.addTo(this.mapManager.map);
         } else if (!isVisible && this.mapManager.map.hasLayer(layer)) {
-            this.mapManager.map.removeLayer(layer);
+            // CORRECCIÓN: Usar removeLayer() en lugar de remove()
+            this.mapManager.map.removeLayer(layer); 
         }
     }
 }
 
-// Iniciar la aplicación
+// Iniciar la aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     new GeovisorApp();
 });
