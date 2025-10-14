@@ -12,20 +12,29 @@ export class MapManager {
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false
         });
-        this.addControls();
+
+        this.createPanes();
     }
 
-    addControls() {
+    initializeControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
         L.control.layers(CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.map);
         this.addLegend();
         this.addLogo();
     }
 
-    addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
+    createPanes() {
+        this.map.createPane('acuiferosPane');
+        this.map.getPane('acuiferosPane').style.zIndex = 450;
+        this.map.createPane('costasPane');
+        this.map.getPane('costasPane').style.zIndex = 460;
+    }
+
+    addGeoJsonLayer(data, styleFunction, onEachFeatureFunction, paneName) {
         return L.geoJson(data, {
             style: styleFunction,
-            onEachFeature: onEachFeatureFunction
+            onEachFeature: onEachFeatureFunction,
+            pane: paneName
         }).addTo(this.map);
     }
     
