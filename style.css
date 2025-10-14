@@ -235,6 +235,19 @@ input:checked + .slider:before { transform: translateX(20px); }
     align-items: center;
     z-index: 9999;
     transition: opacity 0.3s ease;
+    display: flex;
+    flex-direction: column; /* Apila el spinner y el texto */
+    gap: 15px;              /* Espaciado entre el spinner y el texto */
+    
+    /* ... código existente ... */
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+.loader-text {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--accent-color); /* Usar el color principal para prominencia */
+    margin: 0;
 }
 .spinner {
     border: 5px solid #f3f3f3;
