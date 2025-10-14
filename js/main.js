@@ -188,7 +188,7 @@ class GeovisorApp {
         // Actualizar la vista de la UI
         this.uiManager.updateView(this.state);
     }
-
+}
 // Iniciar la aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     new GeovisorApp();
