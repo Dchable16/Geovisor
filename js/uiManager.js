@@ -53,6 +53,16 @@ export class UIManager {
         return `
             <div class="panel-close-button" title="Ocultar controles">«</div>
             <h1>Vulnerabilidad a la Intrusión Salina</h1>
+                <div id="info-panel" class="info-panel">
+                <div class="info-placeholder">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Haz clic en un acuífero para ver sus detalles.</p>
+                </div>
+                <div class="info-content" style="display:none;">
+                    <h3 id="info-title"></h3>
+                    <table id="info-table"></table>
+                </div>
+            </div>
             <div class="control-section">
                 <label for="acuifero-select">Selecciona un acuífero:</label>
                 <select id="acuifero-select"><option value="">-- Mostrar todos --</option></select>
@@ -94,6 +104,11 @@ export class UIManager {
         this.nodes.closeButton = container.querySelector('.panel-close-button');
         this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
         this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
+        this.nodes.infoPanel = container.querySelector('#info-panel');
+        this.nodes.infoPlaceholder = container.querySelector('.info-placeholder');
+        this.nodes.infoContent = container.querySelector('.info-content');
+        this.nodes.infoTitle = container.querySelector('#info-title');
+        this.nodes.infoTable = container.querySelector('#info-table');
     }
 
     addListeners() {
@@ -122,4 +137,28 @@ export class UIManager {
         this.nodes.coastlineToggle.checked = state.isCoastlineVisible;
         this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
     }
+}
+
+updateInfoPanel(properties) {
+    if (!properties) {
+        // Si no hay propiedades, muestra el placeholder
+        this.nodes.infoContent.style.display = 'none';
+        this.nodes.infoPlaceholder.style.display = 'block';
+        return;
+    }
+
+    this.nodes.infoPlaceholder.style.display = 'none';
+    this.nodes.infoContent.style.display = 'block';
+    
+    this.nodes.infoTitle.textContent = properties.NOM_ACUIF;
+
+    // Formatear los datos en una tabla
+    const details = {
+        "Clave:": properties.CLAVE_ACUI,
+        "Nivel de Vulnerabilidad:": properties.VULNERABIL
+    };
+
+    this.nodes.infoTable.innerHTML = Object.entries(details)
+        .map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`)
+        .join('');
 }
