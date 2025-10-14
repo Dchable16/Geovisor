@@ -28,6 +28,22 @@ export class MapManager {
             onEachFeature: onEachFeatureFunction
         }).addTo(this.map);
     }
+
+    addMeasureControl() {
+        const measureControl = L.control.measure({
+            position: 'topleft', // Se posiciona junto a los controles de zoom
+            primaryLengthUnit: 'kilometers', 
+            secondaryLengthUnit: 'meters',
+            primaryAreaUnit: 'hectares',
+            secondaryAreaUnit: 'sqmeters',
+            activeColor: '#ff7f50', // Color coral
+            completedColor: '#007BFF', // Color azul del tema
+            localization: 'es', // Localización en español
+            // Añadir un icono de cinta métrica si es posible
+            // Opcionalmente, se puede personalizar el icono si se tienen los archivos
+        });
+        measureControl.addTo(this.map);
+    }
     
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
