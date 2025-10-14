@@ -261,8 +261,16 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 .info.legend h4 { margin: 0 0 10px; font-size: 16px; text-align: center; }
 .info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 1; border: 1px solid #999; }
-leaflet-logo-control img {
-    height: 35px; /* <-- Cambia este valor */
+.leaflet-logo-control {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 10px 10px 0 !important; /* Ajusta el margen si es necesario */
+}
+
+/* AQUÍ CONTROLAS EL TAMAÑO DEL LOGO */
+.leaflet-logo-control img {
+    height: 35px; /* <-- Cambia este valor al tamaño que desees */
     width: auto;
 }
 
