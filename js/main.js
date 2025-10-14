@@ -85,12 +85,25 @@ class GeovisorApp {
         // Cargar capa principal de vulnerabilidad
         const mainData = await fetchGeoJSON(CONFIG.dataUrl);
         if (mainData) {
+            // 1. Crear la capa Leaflet con estilos y onEachFeature (solo para eventos/pop-ups)
             this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
                 mainData,
                 (feature) => this.getFeatureStyle(feature),
-                (feature, layer) => this.onEachFeature(feature, layer)
+                (feature, layer) => this.onEachFeature(feature, layer) // Ahora onEachFeature es más simple
             );
-            this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
+
+            // 2. PROCESAMIENTO DE DATOS: Agrupar referencias de acuíferos para el dropdown
+            this.leafletLayers.vulnerability.eachLayer(layer => {
+                const { NOM_ACUIF } = layer.feature.properties;
+                if (!this.data.aquifers[NOM_ACUIF]) {
+                    this.data.aquifers[NOM_ACUIF] = [];
+                }
+                this.data.aquifers[NOM_ACUIF].push(layer);
+            });
+
+            if (Object.keys(this.data.aquifers).length > 0) {
+                 this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
+            }
         } else {
             alert("No se pudo cargar la capa principal de datos. La aplicación puede no funcionar correctamente.");
         }
@@ -100,10 +113,7 @@ class GeovisorApp {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
         layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
 
-        if (!this.data.aquifers[NOM_ACUIF]) {
-            this.data.aquifers[NOM_ACUIF] = [];
-        }
-        this.data.aquifers[NOM_ACUIF].push(layer);
+        // **NOTA:** Se eliminó la lógica de agrupación (`this.data.aquifers[...]`) de aquí.
 
         layer.on({
             mouseover: (e) => {
@@ -112,7 +122,6 @@ class GeovisorApp {
                 targetLayer.bringToFront();
             },
             mouseout: (e) => {
-                // Simplemente le pedimos a la capa principal que se vuelva a renderizar
                 this.leafletLayers.vulnerability.resetStyle(e.target);
             }
         });
