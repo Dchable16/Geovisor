@@ -21,11 +21,20 @@ export const CONFIG = {
         "Gris Oscuro (ESRI)": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { attribution:'&copy; Esri' })
     },
     styles: {
-        base: { weight: 1.5, opacity: 1, color: 'white' },
-        muted: { fillColor: '#A9A9A9', weight: 1, color: '#A9A9A9', fillOpacity: 0.2 },
-        selection: { color: '#00FFFF', weight: 4, opacity: 1 },
-        hover: { weight: 3, color: '#000', dashArray: '', fillOpacity: 0.95 },
-        coastline: { color: "#007BFF", weight: 2, opacity: 0.8, fillColor: 'transparent'  }, 
-        coastline1km: { color: "#FF0000", weight: 2.5, opacity: 0.85, fillColor: 'transparent' } 
+        // El color del borde se definirá dinámicamente ahora
+        base: { weight: 1.5, opacity: 1 }, 
+        
+        // Un gris más suave y con borde para el estilo silenciado
+        muted: { fillColor: '#E9ECEF', weight: 1, color: '#ADB5BD', fillOpacity: 0.5 },
+        
+        // Haremos la selección más llamativa con un borde grueso y brillante
+        selection: { color: '#00FFFF', weight: 5, opacity: 1 }, 
+        
+        // El hover será más sutil pero claro
+        hover: { weight: 4, color: '#343A40', dashArray: '', fillOpacity: 0.95 },
+        
+        // ¡NUEVO! Estilos para las líneas de costa
+        coastline: { color: "#007BFF", weight: 2, opacity: 0.8, dashArray: "5, 10" }, // Línea punteada
+        coastline1km: { color: "#FF0000", weight: 2.5, opacity: 0.85 } // Línea sólida
     }
 };
