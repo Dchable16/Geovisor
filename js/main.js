@@ -9,6 +9,21 @@ import { fetchGeoJSON } from './dataLoader.js';
 import { MapManager } from './mapManager.js';
 import { UIManager } from './uiManager.js';
 
+function darkenColor(hex, percent) {
+    hex = hex.replace(/^\s*#|\s*$/g, '');
+    if (hex.length == 3) {
+        hex = hex.replace(/(.)/g, '$1$1');
+    }
+    const a = parseInt(hex, 16);
+    const r = (a >> 16) & 255;
+    const g = (a >> 8) & 255;
+    const b = a & 255;
+    const newR = Math.max(0, r - Math.floor(r * (percent / 100)));
+    const newG = Math.max(0, g - Math.floor(g * (percent / 100)));
+    const newB = Math.max(0, b - Math.floor(b * (percent / 100)));
+    return `#${(1 << 24 | newR << 16 | newG << 8 | newB).toString(16).slice(1)}`;
+}
+
 class GeovisorApp {
     constructor() {
         // Estado centralizado de la aplicación
@@ -107,24 +122,24 @@ class GeovisorApp {
 
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
-
-        // Si hay un filtro y no coincide, aplicar estilo "muted"
+    
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
             return CONFIG.styles.muted;
         }
-
-        // Estilo base según vulnerabilidad
+    
+        const fillColor = this.mapManager.getColor(VULNERABIL);
+    
         let style = {
             ...CONFIG.styles.base,
-            fillColor: this.mapManager.getColor(VULNERABIL),
+            fillColor: fillColor,
+            color: darkenColor(fillColor, 20), // Borde 20% más oscuro que el relleno
             fillOpacity: this.state.opacity
         };
-        
-        // Si el acuífero está seleccionado, aplicar estilo de selección
+    
         if (this.state.selectedAquifer === NOM_ACUIF) {
             style = { ...style, ...CONFIG.styles.selection };
         }
-
+    
         return style;
     }
 
