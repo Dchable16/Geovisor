@@ -11,6 +11,67 @@ export class UIManager {
         this.initControlsPanel();
         this.initOpenButton();
     }
+    
+    initInfoPanel() {
+            const mapContainer = document.querySelector('.map-container');
+            const infoPanel = L.DomUtil.create('div', 'info-panel');
+            this.nodes.infoPanelContainer = infoPanel;
+            
+            const template = document.querySelector('#info-panel-template');
+            if (template) {
+                infoPanel.appendChild(template.content.cloneNode(true));
+            }
+            
+            // Insertar el panel directamente en el contenedor del mapa
+            mapContainer.appendChild(infoPanel); 
+            
+            // Cache y listeners específicos del panel
+            this.nodes.infoPanelContent = infoPanel.querySelector('#info-panel-content');
+            this.nodes.infoPanelTitle = infoPanel.querySelector('#info-panel-title');
+            this.nodes.infoPanelClose = infoPanel.querySelector('.info-panel-close');
+    
+            this.nodes.infoPanelClose.addEventListener('click', () => this.hideInfoPanel());
+            L.DomEvent.disableClickPropagation(infoPanel);
+        }
+
+    showInfoPanel(properties, vulnerabilityMap) {
+        // Formatear el contenido
+        let htmlContent = '';
+        
+        // 1. Mostrar título (Acuífero)
+        this.nodes.infoPanelTitle.textContent = properties.NOM_ACUIF || "Detalles del Acuífero";
+
+        // 2. Mapear y mostrar propiedades relevantes
+        const attributesToShow = [
+            { key: 'NOM_ACUIF', label: 'Nombre del Acuífero' },
+            { key: 'CLAVE_ACUI', label: 'Clave' },
+            { key: 'VULNERABIL', label: 'Nivel de Vulnerabilidad' },
+        ];
+
+        attributesToShow.forEach(attr => {
+            let value = properties[attr.key];
+            if (attr.key === 'VULNERABIL' && vulnerabilityMap) {
+                // Si es vulnerabilidad, añadir la etiqueta descriptiva
+                const levelData = vulnerabilityMap[String(value)];
+                value = value ? `${value} (${levelData.label})` : 'N/A';
+            }
+            
+            htmlContent += `
+                <div class="info-panel-row">
+                    <strong>${attr.label}:</strong>
+                    <span class="info-panel-value">${value}</span>
+                </div>
+            `;
+        });
+        
+        this.nodes.infoPanelContent.innerHTML = htmlContent;
+        this.nodes.infoPanelContainer.classList.add('is-visible');
+    }
+
+     hideInfoPanel() {
+        this.nodes.infoPanelContainer.classList.remove('is-visible');
+    }
+    
     /**
     * Muestra u oculta el overlay de carga.
      * @param {boolean} isLoading - true para mostrar el loader, false para ocultarlo.
