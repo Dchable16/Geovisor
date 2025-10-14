@@ -31,10 +31,10 @@ export class MapManager {
         this.addLogo();
     }
 
-    addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
+    addGeoJsonLayer(data, styleFunction, onEachFeatureFunction, paneName) {
         return L.geoJson(data, {
             style: styleFunction,
-            onEachFeature: onEachFeatureFunction
+            onEachFeature: onEachFeatureFunction, // <-- COMA AÑADIDA
             pane: paneName
         }).addTo(this.map);
     }
