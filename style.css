@@ -146,6 +146,82 @@ body {
     background-color: #E9ECEF;
     color: var(--text-color);
 }
+.info-panel {
+    background: var(--panel-bg);
+    backdrop-filter: blur(8px);
+    border-radius: var(--border-radius);
+    box-shadow: var(--panel-shadow);
+    width: 300px; /* Ancho fijo para el inspector */
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    
+    /* Animación de entrada/salida */
+    transform: translateX(calc(100% + 20px));
+    opacity: 0;
+    transition: transform var(--animation-speed) var(--animation-easing), opacity var(--animation-speed) var(--animation-easing);
+}
+
+.info-panel.is-visible {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.info-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 15px 10px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.info-panel h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: var(--accent-color);
+}
+
+.info-panel-close {
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 5px;
+    transition: color 0.2s;
+}
+.info-panel-close:hover {
+    color: var(--text-color);
+}
+
+#info-panel-content {
+    padding: 15px 20px;
+    line-height: 1.6;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+.info-panel-row {
+    margin-bottom: 8px;
+}
+.info-panel-row strong {
+    color: var(--text-color);
+    display: block;
+    font-size: 0.9em;
+}
+.info-panel-value {
+    color: var(--text-light);
+    font-size: 1em;
+}
+
+/* RESPONSIVIDAD para el panel de información */
+@media (max-width: 768px) {
+    .info-panel {
+        width: calc(100vw - 40px);
+        top: 70px; /* Bajo el header */
+        right: 20px;
+    }
+}
 
 /* --- 5. ELEMENTOS DE UI DENTRO DEL PANEL --- */
 .control-section {
