@@ -100,22 +100,29 @@ class GeovisorApp {
     
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
-        layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
 
-        if (!this.data.aquifers[NOM_ACUIF]) {
-            this.data.aquifers[NOM_ACUIF] = [];
+        if (!this.data.aquifers[feature.properties.NOM_ACUIF]) {
+            this.data.aquifers[feature.properties.NOM_ACUIF] = [];
         }
-        this.data.aquifers[NOM_ACUIF].push(layer);
-
+        this.data.aquifers[feature.properties.NOM_ACUIF].push(layer);
+    
         layer.on({
             mouseover: (e) => {
                 const targetLayer = e.target;
-                targetLayer.setStyle(CONFIG.styles.hover);
+                if (this.state.selectedAquifer !== feature.properties.NOM_ACUIF) {
+                    targetLayer.setStyle(CONFIG.styles.hover);
+                }
                 targetLayer.bringToFront();
             },
             mouseout: (e) => {
-                // Simplemente le pedimos a la capa principal que se vuelva a renderizar
                 this.leafletLayers.vulnerability.resetStyle(e.target);
+            },
+            // ¡NUEVO EVENTO CLICK!
+            click: (e) => {
+                // Actualiza el estado para la selección visual
+                this.updateState({ selectedAquifer: feature.properties.NOM_ACUIF });
+                // Llama al uiManager para mostrar la información
+                this.uiManager.updateInfoPanel(feature.properties);
             }
         });
     }
