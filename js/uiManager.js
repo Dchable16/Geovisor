@@ -115,6 +115,29 @@ export class UIManager {
         new UiControl({ position: 'topleft' }).addTo(this.map);
     }
 
+    generateVulnerabilityRadios(container) {
+        const radioGroup = container.querySelector('#vulnerability-radio-group');
+        if (!radioGroup) return;
+
+        let radioHTML = '';
+        // Obtenemos las claves (1, 2, 3, 4, 5) y las ordenamos
+        const grades = Object.keys(CONFIG.vulnerabilityMap)
+                             .filter(key => key !== 'default')
+                             .sort((a, b) => b - a); // Ordenar de 5 a 1 (Máximo a Mínimo)
+
+        grades.forEach(grade => {
+            const label = CONFIG.vulnerabilityMap[grade].label;
+            const id = `vul-${grade}`;
+            radioHTML += `
+                <input type="radio" id="${id}" name="vulnerability" value="${grade}">
+                <label for="${id}">${grade} (${label})</label>
+            `;
+        });
+        
+        // Insertar después del radio "Todos"
+        radioGroup.insertAdjacentHTML('beforeend', radioHTML);
+    }
+
     initOpenButton() {
         const OpenButtonControl = L.Control.extend({
             onAdd: () => {
