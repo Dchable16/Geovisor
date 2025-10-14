@@ -53,8 +53,15 @@ class GeovisorApp {
     }
 
     async init() {
-        this.loadLayers();
+        this.uiManager.setLoading(true); // 1. Mostrar loader al iniciar
+        await this.loadLayers();
+        this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
         this.uiManager.updateView(this.state);
+        
+        // 3. Zoom inicial al extent completo tras la carga (Mejora UX)
+        if (this.leafletLayers.vulnerability) {
+            this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
+        }
     }
 
     async loadLayers() {
