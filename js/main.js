@@ -60,29 +60,38 @@ class GeovisorApp {
     async loadLayers() {
         document.getElementById('loader').style.display = 'flex';
         try {
-            // Cargar capas auxiliares
+            // --- SECCIÓN CORREGIDA ---
+    
+            // Cargar capa de línea de costa (10km)
             const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
             if (coastlineData) {
-                // 1. Crear la capa y AÑADIRLA al mapa para que reconozca el pane
-                this.leafletLayers.coastline = L.geoJson(coastlineData, {
+                // Paso 1: Crear el objeto de la capa con sus opciones
+                const coastlineLayer = L.geoJson(coastlineData, {
                     style: CONFIG.styles.coastline,
                     pane: 'costasPane'
-                }).addTo(this.mapManager.map);
-                
-                // 2. QUITARLA inmediatamente para respetar el estado inicial (oculto)
-                this.mapManager.map.removeLayer(this.leafletLayers.coastline);
+                });
+    
+                // Paso 2: Añadirla al mapa para que Leaflet la reconozca y asigne el pane
+                coastlineLayer.addTo(this.mapManager.map);
+    
+                // Paso 3: Quitarla inmediatamente para que comience oculta
+                this.mapManager.map.removeLayer(coastlineLayer);
+    
+                // Paso 4: Guardar la capa ya inicializada para su uso posterior
+                this.leafletLayers.coastline = coastlineLayer;
             }
             
+            // Cargar capa de línea de costa (1km)
             const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
             if (coastline1kmData) {
-                // 1. Crear la capa y AÑADIRLA al mapa
-                this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, {
+                // Repetimos el mismo proceso robusto
+                const coastline1kmLayer = L.geoJson(coastline1kmData, {
                     style: CONFIG.styles.coastline1km,
                     pane: 'costasPane'
-                }).addTo(this.mapManager.map);
-                
-                // 2. QUITARLA inmediatamente
-                this.mapManager.map.removeLayer(this.leafletLayers.coastline1km);
+                });
+                coastline1kmLayer.addTo(this.mapManager.map);
+                this.mapManager.map.removeLayer(coastline1kmLayer);
+                this.leafletLayers.coastline1km = coastline1kmLayer;
             }
     
             // --- FIN DE LA SECCIÓN CORREGIDA ---
