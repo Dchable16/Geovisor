@@ -11,6 +11,7 @@ export class UIManager {
         this.onStateChange = onStateChange; // Callback para notificar cambios de estado
         this.nodes = {}; // Almacenará referencias a los elementos del DOM
         this.nodes.loader = document.querySelector('#app-loader');
+        this.initInfoPanel();
         this.initControlsPanel();
         this.initOpenButton();
     }
