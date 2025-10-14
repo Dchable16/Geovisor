@@ -113,9 +113,7 @@ class GeovisorApp {
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
         layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
-
-        // **NOTA:** Se eliminó la lógica de agrupación (`this.data.aquifers[...]`) de aquí.
-
+    
         layer.on({
             mouseover: (e) => {
                 const targetLayer = e.target;
@@ -123,35 +121,46 @@ class GeovisorApp {
                 targetLayer.bringToFront();
             },
             mouseout: (e) => {
-                this.leafletLayers.vulnerability.resetStyle(e.target);
+                // REFACTORIZACIÓN: Recalcular el estilo basado en el estado actual
+                // Esto asegura que el estilo correcto (filtrado o seleccionado) sea restaurado.
+                e.target.setStyle(this.getFeatureStyle(e.target.feature));
             }
         });
     }
 
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
-
-        // Si hay un filtro y no coincide, aplicar estilo "muted"
-        if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
-            return CONFIG.styles.muted;
-        }
-
-        // Estilo base según vulnerabilidad
+        
+        // 1. Determinar el color base y la opacidad global
         let style = {
             ...CONFIG.styles.base,
             fillColor: this.mapManager.getColor(VULNERABIL),
-            fillOpacity: this.state.opacity
+            fillOpacity: this.state.opacity // Opacidad global aplicada
         };
-        
-        // Si el acuífero está seleccionado, aplicar estilo de selección
-        if (this.state.selectedAquifer === NOM_ACUIF) {
-            style = { ...style, ...CONFIG.styles.selection };
+    
+        // 2. Aplicar Filtro de Vulnerabilidad (Muting)
+        if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
+            // Aplicar estilo 'muted' sobre el estilo base. Se asume que CONFIG.styles.muted
+            // ajusta fillOpacity a un valor bajo (ej. 0.1).
+            style = { ...style, ...CONFIG.styles.muted };
         }
-
+    
+        // 3. Aplicar Estilo de Selección (Override)
+        if (this.state.selectedAquifer === NOM_ACUIF) {
+            // El estilo de selección anula cualquier filtro o muting
+            style = { 
+                ...style, 
+                ...CONFIG.styles.selection,
+                fillOpacity: 1.0 // Se asegura que el acuífero seleccionado siempre sea visible
+            }; 
+        }
+    
         return style;
     }
 
     render() {
+        const map = this.mapManager.map;
+        
         // Actualizar estilos de la capa de vulnerabilidad
         if (this.leafletLayers.vulnerability) {
             this.leafletLayers.vulnerability.eachLayer(layer => {
@@ -159,25 +168,26 @@ class GeovisorApp {
             });
         }
         
-        // Alternar visibilidad de capas adicionales
-        this.toggleLayer(this.leafletLayers.coastline, this.state.isCoastlineVisible);
-        this.toggleLayer(this.leafletLayers.coastline1km, this.state.isCoastline1kmVisible);
-        
+        // Alternar visibilidad de capas adicionales (Lógica de toggleLayer integrada)
+        // Usamos un array de objetos para manejar el alternado de forma limpia.
+        [
+            { layer: this.leafletLayers.coastline, isVisible: this.state.isCoastlineVisible },
+            { layer: this.leafletLayers.coastline1km, isVisible: this.state.isCoastline1kmVisible }
+        ].forEach(({ layer, isVisible }) => {
+            if (!layer) return;
+            
+            const isCurrentlyVisible = map.hasLayer(layer);
+            
+            if (isVisible && !isCurrentlyVisible) {
+                layer.addTo(map);
+            } else if (!isVisible && isCurrentlyVisible) {
+                map.removeLayer(layer); 
+            }
+        });
+    
         // Actualizar la vista de la UI
         this.uiManager.updateView(this.state);
     }
-    
-    toggleLayer(layer, isVisible) {
-        if (!layer) return;
-        
-        if (isVisible && !this.mapManager.map.hasLayer(layer)) {
-            layer.addTo(this.mapManager.map);
-        } else if (!isVisible && this.mapManager.map.hasLayer(layer)) {
-            // CORRECCIÓN: Usar removeLayer() en lugar de remove()
-            this.mapManager.map.removeLayer(layer); 
-        }
-    }
-}
 
 // Iniciar la aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
