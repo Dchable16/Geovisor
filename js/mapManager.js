@@ -14,6 +14,15 @@ export class MapManager {
         });
         this.addControls();
     }
+    createPanes() {
+        // Pane para las capas principales de acuíferos
+        this.map.createPane('acuiferosPane');
+        this.map.getPane('acuiferosPane').style.zIndex = 450;
+
+        // Pane para las líneas de costa, para que siempre estén encima
+        this.map.createPane('costasPane');
+        this.map.getPane('costasPane').style.zIndex = 460;
+    }
 
     addControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
@@ -26,6 +35,7 @@ export class MapManager {
         return L.geoJson(data, {
             style: styleFunction,
             onEachFeature: onEachFeatureFunction
+            pane: paneName
         }).addTo(this.map);
     }
     
