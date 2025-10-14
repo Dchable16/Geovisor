@@ -58,28 +58,42 @@ class GeovisorApp {
     }
 
     async loadLayers() {
-        // Cargar capas auxiliares
-        const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
-        if (coastlineData) {
-            this.leafletLayers.coastline = L.geoJson(coastlineData, { style: CONFIG.styles.coastline });
-        }
-        
-        const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
-        if (coastline1kmData) {
-            this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { style: CONFIG.styles.coastline1km });
-        }
-
-        // Cargar capa principal de vulnerabilidad
-        const mainData = await fetchGeoJSON(CONFIG.dataUrl);
-        if (mainData) {
-            this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
-                mainData,
-                (feature) => this.getFeatureStyle(feature),
-                (feature, layer) => this.onEachFeature(feature, layer)
-            );
-            this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
-        } else {
-            alert("No se pudo cargar la capa principal de datos. La aplicación puede no funcionar correctamente.");
+        document.getElementById('loader').style.display = 'flex';
+        try {
+            // Cargar capas auxiliares en el pane 'costasPane'
+            const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
+            if (coastlineData) {
+                this.leafletLayers.coastline = L.geoJson(coastlineData, { 
+                    style: CONFIG.styles.coastline,
+                    pane: 'costasPane' // <-- ESPECIFICAR PANE
+                });
+            }
+            
+            const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
+            if (coastline1kmData) {
+                this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { 
+                    style: CONFIG.styles.coastline1km,
+                    pane: 'costasPane' // <-- ESPECIFICAR PANE
+                });
+            }
+    
+            // Cargar capa principal en el pane 'acuiferosPane'
+            const mainData = await fetchGeoJSON(CONFIG.dataUrl);
+            if (mainData) {
+                this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
+                    mainData,
+                    (feature) => this.getFeatureStyle(feature),
+                    (feature, layer) => this.onEachFeature(feature, layer),
+                    'acuiferosPane' // <-- PASAR EL NOMBRE DEL PANE
+                );
+                this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
+            } else {
+                alert("No se pudo cargar la capa principal de datos...");
+            }
+        } catch (error) {
+            console.error("Error durante la carga de capas:", error);
+        } finally {
+            document.getElementById('loader').style.display = 'none';
         }
     }
     
