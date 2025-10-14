@@ -153,7 +153,7 @@ body {
     box-shadow: var(--panel-shadow);
     width: 300px; /* Ancho fijo para el inspector */
     position: absolute;
-    top: 90px; /*
+    top: 90px; /* CORRECCIÓN: Coloca el panel debajo del control de capas */
     right: 20px;
     z-index: 1000;
     
@@ -265,7 +265,7 @@ body {
 .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .radio-group label {
     background-color: #F1F3F5;
-    padding: 6px 10px;
+    padding: 4px 8px;
     font-size: 13px;
     border: 1px solid transparent;
     border-radius: 20px;
@@ -309,16 +309,10 @@ input:checked + .slider:before { transform: translateX(20px); }
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 9999;
-    transition: opacity 0.3s ease;
-    display: flex;
     flex-direction: column; /* Apila el spinner y el texto */
     gap: 15px;              /* Espaciado entre el spinner y el texto */
-    
-    /* ... código existente ... */
     z-index: 9999;
     transition: opacity 0.3s ease;
-}
 .loader-text {
     font-size: 1.2em;
     font-weight: bold;
