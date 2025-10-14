@@ -7,8 +7,19 @@ export class UIManager {
         this.map = map;
         this.onStateChange = onStateChange; // Callback para notificar cambios de estado
         this.nodes = {}; // Almacenará referencias a los elementos del DOM
+        this.nodes.loader = document.querySelector('#app-loader');
         this.initControlsPanel();
         this.initOpenButton();
+    }
+    * Muestra u oculta el overlay de carga.
+     * @param {boolean} isLoading - true para mostrar el loader, false para ocultarlo.
+     */
+    setLoading(isLoading) {
+            if (this.nodes.loader) {
+                // El 'display: none;' inicial se sobrescribe a 'flex' para mostrarlo
+                this.nodes.loader.style.display = isLoading ? 'flex' : 'none';
+            }
+        }
     }
 
     initControlsPanel() {
