@@ -122,7 +122,8 @@ class GeovisorApp {
                 // REFACTORIZACIÓN: Recalcular el estilo basado en el estado actual
                 // Esto asegura que el estilo correcto (filtrado o seleccionado) sea restaurado.
                 e.target.setStyle(this.getFeatureStyle(e.target.feature));
-            }
+            },
+                
             click: () => {
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
             }
