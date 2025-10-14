@@ -53,7 +53,7 @@ export class UIManager {
     getPanelHTML() {
         // HTML del panel, incluyendo el nuevo panel de información
         return `
-            <div class.panel-close-button" title="Ocultar controles">«</div>
+            <div class="panel-close-button" title="Ocultar controles">«</div>
             <h1>Vulnerabilidad a la Intrusión Salina</h1>
             
             <div id="info-panel" class="info-panel">
@@ -65,7 +65,7 @@ export class UIManager {
                     <table id="info-table"></table>
                 </div>
             </div>
-
+    
             <div class="control-section">
                 <label for="acuifero-select">Selecciona un acuífero:</label>
                 <select id="acuifero-select"><option value="">-- Mostrar todos --</option></select>
