@@ -65,10 +65,10 @@ class GeovisorApp {
         this.uiManager.updateView(this.state);
         
         // 3. Zoom inicial al extent completo tras la carga (Mejora UX)
-        /*if (this.leafletLayers.vulnerability) {
+        if (this.leafletLayers.vulnerability) {
             this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
         }
-        */
+        
     }
 
     async loadLayers() {
