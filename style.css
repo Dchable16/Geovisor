@@ -153,7 +153,7 @@ body {
     box-shadow: var(--panel-shadow);
     width: 300px; /* Ancho fijo para el inspector */
     position: absolute;
-    top: 20px;
+    top: 90px; /*
     right: 20px;
     z-index: 1000;
     
@@ -265,7 +265,7 @@ body {
 .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .radio-group label {
     background-color: #F1F3F5;
-    padding: 8px 14px;
+    padding: 6px 10px;
     font-size: 13px;
     border: 1px solid transparent;
     border-radius: 20px;
