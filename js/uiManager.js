@@ -2,6 +2,9 @@
  * @file uiManager.js
  * @description Gestiona el panel de controles y la interacción del usuario.
  */
+
+import { CONFIG } from './config.js';
+
 export class UIManager {
     constructor(map, onStateChange) {
         this.map = map;
