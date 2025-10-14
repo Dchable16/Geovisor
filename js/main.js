@@ -112,8 +112,6 @@ class GeovisorApp {
     
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
-        layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
-    
         layer.on({
             mouseover: (e) => {
                 const targetLayer = e.target;
@@ -124,6 +122,9 @@ class GeovisorApp {
                 // REFACTORIZACIÓN: Recalcular el estilo basado en el estado actual
                 // Esto asegura que el estilo correcto (filtrado o seleccionado) sea restaurado.
                 e.target.setStyle(this.getFeatureStyle(e.target.feature));
+            }
+            click: () => {
+                this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
             }
         });
     }
