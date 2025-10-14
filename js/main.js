@@ -26,21 +26,44 @@ class GeovisorApp {
 
         this.leafletLayers = {}; // Almacenará las capas de Leaflet
 
-        // Inicializar los módulos
-        this.mapManager = new MapManager(CONFIG.mapId);
-        this.uiManager = new UIManager(this.mapManager.map, this.handleStateChange.bind(this));
-        
+        // Inicializar la aplicación
         this.init();
     }
 
-    // Método para manejar los cambios de estado provenientes de la UI
+    /**
+     * Orquesta la inicialización de la aplicación en el orden correcto
+     * para evitar errores de tiempo.
+     */
+    async init() {
+        // 1. Crear el mapa y los panes PRIMERO
+        this.mapManager = new MapManager(CONFIG.mapId);
+
+        // 2. Crear la UI y pasarle el mapa
+        this.uiManager = new UIManager(this.mapManager.map, this.handleStateChange.bind(this));
+
+        // 3. AHORA que la UI está en su lugar, añadir los controles restantes del mapa (leyenda, logo, etc.)
+        this.mapManager.initializeControls();
+
+        // 4. Cargar los datos GeoJSON
+        await this.loadLayers();
+
+        // 5. Actualizar la vista de la UI con el estado inicial
+        this.uiManager.updateView(this.state);
+    }
+
+    /**
+     * Maneja los cambios de estado provenientes de la UI.
+     * @param {object} newState - El objeto con las propiedades del estado que cambiaron.
+     */
     handleStateChange(newState) {
         this.updateState(newState);
     }
 
-    // Método centralizado para actualizar el estado y volver a renderizar
+    /**
+     * Método centralizado para actualizar el estado y volver a renderizar.
+     * @param {object} newState - El nuevo estado a fusionar con el actual.
+     */
     updateState(newState) {
-        // Fusionar el nuevo estado con el estado actual
         this.state = { ...this.state, ...newState };
         console.log("Nuevo estado:", this.state); // Para depuración
 
@@ -52,39 +75,27 @@ class GeovisorApp {
         this.render();
     }
 
-    async init() {
-        this.loadLayers();
-        this.uiManager.updateView(this.state);
-    }
-
+    /**
+     * Carga todas las capas GeoJSON de forma asíncrona.
+     */
     async loadLayers() {
         document.getElementById('loader').style.display = 'flex';
         try {
-            // --- SECCIÓN CORREGIDA ---
-    
             // Cargar capa de línea de costa (10km)
             const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
             if (coastlineData) {
-                // Paso 1: Crear el objeto de la capa con sus opciones
                 const coastlineLayer = L.geoJson(coastlineData, {
                     style: CONFIG.styles.coastline,
                     pane: 'costasPane'
                 });
-    
-                // Paso 2: Añadirla al mapa para que Leaflet la reconozca y asigne el pane
                 coastlineLayer.addTo(this.mapManager.map);
-    
-                // Paso 3: Quitarla inmediatamente para que comience oculta
                 this.mapManager.map.removeLayer(coastlineLayer);
-    
-                // Paso 4: Guardar la capa ya inicializada para su uso posterior
                 this.leafletLayers.coastline = coastlineLayer;
             }
             
             // Cargar capa de línea de costa (1km)
             const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
             if (coastline1kmData) {
-                // Repetimos el mismo proceso robusto
                 const coastline1kmLayer = L.geoJson(coastline1kmData, {
                     style: CONFIG.styles.coastline1km,
                     pane: 'costasPane'
@@ -93,10 +104,8 @@ class GeovisorApp {
                 this.mapManager.map.removeLayer(coastline1kmLayer);
                 this.leafletLayers.coastline1km = coastline1kmLayer;
             }
-    
-            // --- FIN DE LA SECCIÓN CORREGIDA ---
-    
-            // Cargar capa principal (esta parte no cambia)
+
+            // Cargar capa principal de vulnerabilidad
             const mainData = await fetchGeoJSON(CONFIG.dataUrl);
             if (mainData) {
                 this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
@@ -116,6 +125,11 @@ class GeovisorApp {
         }
     }
     
+    /**
+     * Función que se ejecuta para cada feature de la capa de vulnerabilidad.
+     * @param {object} feature - El feature GeoJSON.
+     * @param {L.Layer} layer - La capa de Leaflet correspondiente.
+     */
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
         layer.bindPopup(`<strong>Acuífero:</strong> ${NOM_ACUIF}<br><strong>Clave:</strong> ${CLAVE_ACUI}<br><strong>Vulnerabilidad:</strong> ${VULNERABIL}`);
@@ -132,28 +146,29 @@ class GeovisorApp {
                 targetLayer.bringToFront();
             },
             mouseout: (e) => {
-                // Simplemente le pedimos a la capa principal que se vuelva a renderizar
                 this.leafletLayers.vulnerability.resetStyle(e.target);
             }
         });
     }
 
+    /**
+     * Determina el estilo de un feature basado en el estado actual de la aplicación.
+     * @param {object} feature - El feature GeoJSON.
+     * @returns {object} - El objeto de estilo de Leaflet.
+     */
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
 
-        // Si hay un filtro y no coincide, aplicar estilo "muted"
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
             return CONFIG.styles.muted;
         }
 
-        // Estilo base según vulnerabilidad
         let style = {
             ...CONFIG.styles.base,
             fillColor: this.mapManager.getColor(VULNERABIL),
             fillOpacity: this.state.opacity
         };
         
-        // Si el acuífero está seleccionado, aplicar estilo de selección
         if (this.state.selectedAquifer === NOM_ACUIF) {
             style = { ...style, ...CONFIG.styles.selection };
         }
@@ -161,29 +176,33 @@ class GeovisorApp {
         return style;
     }
 
+    /**
+     * Vuelve a dibujar las capas y actualiza la UI basado en el estado actual.
+     */
     render() {
-        // Actualizar estilos de la capa de vulnerabilidad
         if (this.leafletLayers.vulnerability) {
             this.leafletLayers.vulnerability.eachLayer(layer => {
                 layer.setStyle(this.getFeatureStyle(layer.feature));
             });
         }
         
-        // Alternar visibilidad de capas adicionales
         this.toggleLayer(this.leafletLayers.coastline, this.state.isCoastlineVisible);
         this.toggleLayer(this.leafletLayers.coastline1km, this.state.isCoastline1kmVisible);
         
-        // Actualizar la vista de la UI
         this.uiManager.updateView(this.state);
     }
     
+    /**
+     * Muestra u oculta una capa en el mapa.
+     * @param {L.Layer} layer - La capa a mostrar/ocultar.
+     * @param {boolean} isVisible - True para mostrar, false para ocultar.
+     */
     toggleLayer(layer, isVisible) {
         if (!layer) return;
         
         if (isVisible && !this.mapManager.map.hasLayer(layer)) {
             layer.addTo(this.mapManager.map);
         } else if (!isVisible && this.mapManager.map.hasLayer(layer)) {
-            // CORRECCIÓN: Usar removeLayer() en lugar de remove()
             this.mapManager.map.removeLayer(layer); 
         }
     }
