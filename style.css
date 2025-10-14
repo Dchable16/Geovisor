@@ -146,6 +146,8 @@ body {
     background-color: #E9ECEF;
     color: var(--text-color);
 }
+
+/* Panel de Información Detallado (Inspector) */
 .info-panel {
     background: var(--panel-bg);
     backdrop-filter: blur(8px);
@@ -153,7 +155,7 @@ body {
     box-shadow: var(--panel-shadow);
     width: 300px; /* Ancho fijo para el inspector */
     position: absolute;
-    top: 90px; /* CORRECCIÓN: Coloca el panel debajo del control de capas */
+    top: 90px; /* CORRECCIÓN: Posicionar debajo del control de capas */
     right: 20px;
     z-index: 1000;
     
@@ -265,7 +267,7 @@ body {
 .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .radio-group label {
     background-color: #F1F3F5;
-    padding: 4px 8px;
+    padding: 4px 8px; /* CORRECCIÓN: Se reduce el padding para que quepa en una sola línea */
     font-size: 13px;
     border: 1px solid transparent;
     border-radius: 20px;
@@ -313,6 +315,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     gap: 15px;              /* Espaciado entre el spinner y el texto */
     z-index: 9999;
     transition: opacity 0.3s ease;
+}
 .loader-text {
     font-size: 1.2em;
     font-weight: bold;
@@ -367,5 +370,3 @@ input:checked + .slider:before { transform: translateX(20px); }
     .logo-container img { height: 40px; }
     .control-section h1 { font-size: 1.2em; }
 }
-
-    
