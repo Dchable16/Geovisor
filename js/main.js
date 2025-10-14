@@ -60,35 +60,45 @@ class GeovisorApp {
     async loadLayers() {
         document.getElementById('loader').style.display = 'flex';
         try {
-            // Cargar capas auxiliares en el pane 'costasPane'
+            // Cargar capas auxiliares
             const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
             if (coastlineData) {
-                this.leafletLayers.coastline = L.geoJson(coastlineData, { 
+                // 1. Crear la capa y AÑADIRLA al mapa para que reconozca el pane
+                this.leafletLayers.coastline = L.geoJson(coastlineData, {
                     style: CONFIG.styles.coastline,
-                    pane: 'costasPane' // <-- ESPECIFICAR PANE
-                });
+                    pane: 'costasPane'
+                }).addTo(this.mapManager.map);
+                
+                // 2. QUITARLA inmediatamente para respetar el estado inicial (oculto)
+                this.mapManager.map.removeLayer(this.leafletLayers.coastline);
             }
             
             const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
             if (coastline1kmData) {
-                this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { 
+                // 1. Crear la capa y AÑADIRLA al mapa
+                this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, {
                     style: CONFIG.styles.coastline1km,
-                    pane: 'costasPane' // <-- ESPECIFICAR PANE
-                });
+                    pane: 'costasPane'
+                }).addTo(this.mapManager.map);
+                
+                // 2. QUITARLA inmediatamente
+                this.mapManager.map.removeLayer(this.leafletLayers.coastline1km);
             }
     
-            // Cargar capa principal en el pane 'acuiferosPane'
+            // --- FIN DE LA SECCIÓN CORREGIDA ---
+    
+            // Cargar capa principal (esta parte no cambia)
             const mainData = await fetchGeoJSON(CONFIG.dataUrl);
             if (mainData) {
                 this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
                     mainData,
                     (feature) => this.getFeatureStyle(feature),
                     (feature, layer) => this.onEachFeature(feature, layer),
-                    'acuiferosPane' // <-- PASAR EL NOMBRE DEL PANE
+                    'acuiferosPane'
                 );
                 this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
             } else {
-                alert("No se pudo cargar la capa principal de datos...");
+                alert("No se pudo cargar la capa principal de datos. La aplicación puede no funcionar correctamente.");
             }
         } catch (error) {
             console.error("Error durante la carga de capas:", error);
