@@ -44,6 +44,11 @@ export class MapManager {
             // Opcionalmente, se puede personalizar el icono si se tienen los archivos
         });
         measureControl.addTo(this.map);
+        const container = measureControl.getContainer();
+        if (container) {
+             L.DomEvent.disableClickPropagation(container);
+             L.DomEvent.disableScrollPropagation(container);
+        }
     }
     
     addLegend() {
