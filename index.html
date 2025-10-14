@@ -32,6 +32,40 @@
             <p class="loader-text">Cargando datos geográficos</p> 
         </div>
     </main>
+    <template id="panel-template">
+        <div class="panel-close-button" title="Ocultar controles">«</div>
+        <h1>Vulnerabilidad a la Intrusión Salina</h1>
+        <div class="control-section">
+            <label for="acuifero-select">Selecciona un acuífero:</label>
+            <select id="acuifero-select"><option value="">-- Mostrar todos --</option></select>
+        </div>
+        <div class="control-section">
+            <label for="opacity-slider">Opacidad general: <span id="opacity-value"></span></label>
+            <input id="opacity-slider" type="range" min="0" max="1" step="0.05">
+        </div>
+        <div class="control-section">
+            <label>Iluminar por vulnerabilidad:</label>
+            <div class="radio-group">
+                <input type="radio" id="vul-todos" name="vulnerability" value="all" checked><label for="vul-todos">Todos</label>
+                <input type="radio" id="vul-1" name="vulnerability" value="1"><label for="vul-1">1</label>
+                <input type="radio" id="vul-2" name="vulnerability" value="2"><label for="vul-2">2</label>
+                <input type="radio" id="vul-3" name="vulnerability" value="3"><label for="vul-3">3</label>
+                <input type="radio" id="vul-4" name="vulnerability" value="4"><label for="vul-4">4</label>
+                <input type="radio" id="vul-5" name="vulnerability" value="5"><label for="vul-5">5</label>
+            </div>
+        </div>
+        <div class="control-section">
+            <label>Capas Adicionales:</label>
+            <div class="layer-toggle">
+                <span>Línea de Costa (10km)</span>
+                <label class="switch"><input type="checkbox" id="coastline-toggle"><span class="slider"></span></label>
+            </div>
+            <div class="layer-toggle" style="margin-top: 10px;">
+                <span>Línea de Costa (1km)</span>
+                <label class="switch"><input type="checkbox" id="coastline-1km-toggle"><span class="slider"></span></label>
+            </div>
+        </div>
+    </template>
     
     <!-- Leaflet JS con chequeo de integridad -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
