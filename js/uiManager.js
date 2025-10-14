@@ -5,8 +5,8 @@
 export class UIManager {
     constructor(map, onStateChange) {
         this.map = map;
-        this.onStateChange = onStateChange; // Callback para notificar cambios de estado
-        this.nodes = {}; // Almacenará referencias a los elementos del DOM
+        this.onStateChange = onStateChange;
+        this.nodes = {};
         this.initControlsPanel();
         this.initOpenButton();
     }
@@ -18,15 +18,9 @@ export class UIManager {
                 this.nodes.uiControlContainer = container;
                 container.innerHTML = this.getPanelHTML();
                 
-                // Retraso para asegurar que el botón de abrir exista y podamos alinear el panel
-                setTimeout(() => {
-                    if (this.nodes.openButton) {
-                        container.style.top = `${this.nodes.openButton.offsetTop}px`;
-                    }
-                }, 0);
-
                 this.cacheNodes(container);
                 this.addListeners();
+                
                 L.DomEvent.disableClickPropagation(container);
                 return container;
             }
@@ -41,8 +35,15 @@ export class UIManager {
                 button.innerHTML = '☰';
                 button.title = "Mostrar controles";
                 this.nodes.openButton = button;
+                
                 L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false));
                 L.DomEvent.disableClickPropagation(button);
+                
+                // Alinea el panel con el botón una vez que ambos existen
+                if (this.nodes.uiControlContainer) {
+                    this.nodes.uiControlContainer.style.top = `${button.offsetTop}px`;
+                }
+
                 return button;
             }
         });
@@ -50,9 +51,21 @@ export class UIManager {
     }
     
     getPanelHTML() {
+        // HTML del panel, incluyendo el nuevo panel de información
         return `
-            <div class="panel-close-button" title="Ocultar controles">«</div>
+            <div class.panel-close-button" title="Ocultar controles">«</div>
             <h1>Vulnerabilidad a la Intrusión Salina</h1>
+            
+            <div id="info-panel" class="info-panel">
+                <div class="info-placeholder">
+                    <p>Haz clic en un acuífero para ver sus detalles.</p>
+                </div>
+                <div class="info-content" style="display:none;">
+                    <h3 id="info-title"></h3>
+                    <table id="info-table"></table>
+                </div>
+            </div>
+
             <div class="control-section">
                 <label for="acuifero-select">Selecciona un acuífero:</label>
                 <select id="acuifero-select"><option value="">-- Mostrar todos --</option></select>
@@ -62,7 +75,7 @@ export class UIManager {
                 <input id="opacity-slider" type="range" min="0" max="1" step="0.05">
             </div>
             <div class="control-section">
-                <label>Iluminar por vulnerabilidad:</label>
+                <label>Filtrar por vulnerabilidad:</label>
                 <div class="radio-group">
                     <input type="radio" id="vul-todos" name="vulnerability" value="all" checked><label for="vul-todos">Todos</label>
                     <input type="radio" id="vul-1" name="vulnerability" value="1"><label for="vul-1">1</label>
@@ -87,6 +100,7 @@ export class UIManager {
     }
 
     cacheNodes(container) {
+        // Guarda referencias a los elementos del DOM para no tener que buscarlos cada vez
         this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
         this.nodes.opacitySlider = container.querySelector('#opacity-slider');
         this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
@@ -94,9 +108,15 @@ export class UIManager {
         this.nodes.closeButton = container.querySelector('.panel-close-button');
         this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
         this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
+        // Nodos para el panel de información
+        this.nodes.infoPlaceholder = container.querySelector('.info-placeholder');
+        this.nodes.infoContent = container.querySelector('.info-content');
+        this.nodes.infoTitle = container.querySelector('#info-title');
+        this.nodes.infoTable = container.querySelector('#info-table');
     }
 
     addListeners() {
+        // Asigna los eventos a los controles
         this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
         this.nodes.aquiferSelect.addEventListener('change', e => this.onStateChange({ selectedAquifer: e.target.value }));
         this.nodes.opacitySlider.addEventListener('input', e => this.onStateChange({ opacity: parseFloat(e.target.value) }));
@@ -121,5 +141,27 @@ export class UIManager {
         this.nodes.opacitySlider.value = state.opacity;
         this.nodes.coastlineToggle.checked = state.isCoastlineVisible;
         this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
+    }
+    
+    updateInfoPanel(properties) {
+        if (!properties) {
+            this.nodes.infoContent.style.display = 'none';
+            this.nodes.infoPlaceholder.style.display = 'block';
+            return;
+        }
+
+        this.nodes.infoPlaceholder.style.display = 'none';
+        this.nodes.infoContent.style.display = 'block';
+        
+        this.nodes.infoTitle.textContent = properties.NOM_ACUIF;
+
+        const details = {
+            "Clave:": properties.CLAVE_ACUI,
+            "Vulnerabilidad:": properties.VULNERABIL
+        };
+
+        this.nodes.infoTable.innerHTML = Object.entries(details)
+            .map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`)
+            .join('');
     }
 }
