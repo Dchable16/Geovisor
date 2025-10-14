@@ -27,7 +27,15 @@ export class UIManager {
             onAdd: () => {
                 const container = L.DomUtil.create('div', 'leaflet-custom-controls collapsed');
                 this.nodes.uiControlContainer = container;
-                container.innerHTML = this.getPanelHTML();
+                
+                // CÓDIGO MODIFICADO: Carga el contenido desde la plantilla oculta
+                const template = document.querySelector('#panel-template');
+                if (template) {
+                     // Clonar el contenido de la plantilla e insertarlo en el control Leaflet
+                    container.appendChild(template.content.cloneNode(true));
+                } else {
+                    console.error("No se encontró la plantilla del panel de control.");
+                }
                 
                 // Retraso para asegurar que el botón de abrir exista y podamos alinear el panel
                 setTimeout(() => {
@@ -36,7 +44,8 @@ export class UIManager {
                     }
                 }, 0);
 
-                this.cacheNodes(container);
+                // La búsqueda de nodos ahora ocurre en el 'container' después de la inserción.
+                this.cacheNodes(container); 
                 this.addListeners();
                 L.DomEvent.disableClickPropagation(container);
                 return container;
@@ -60,43 +69,6 @@ export class UIManager {
         new OpenButtonControl({ position: 'topleft' }).addTo(this.map);
     }
     
-    getPanelHTML() {
-        return `
-            <div class="panel-close-button" title="Ocultar controles">«</div>
-            <h1>Vulnerabilidad a la Intrusión Salina</h1>
-            <div class="control-section">
-                <label for="acuifero-select">Selecciona un acuífero:</label>
-                <select id="acuifero-select"><option value="">-- Mostrar todos --</option></select>
-            </div>
-            <div class="control-section">
-                <label for="opacity-slider">Opacidad general: <span id="opacity-value"></span></label>
-                <input id="opacity-slider" type="range" min="0" max="1" step="0.05">
-            </div>
-            <div class="control-section">
-                <label>Iluminar por vulnerabilidad:</label>
-                <div class="radio-group">
-                    <input type="radio" id="vul-todos" name="vulnerability" value="all" checked><label for="vul-todos">Todos</label>
-                    <input type="radio" id="vul-1" name="vulnerability" value="1"><label for="vul-1">1</label>
-                    <input type="radio" id="vul-2" name="vulnerability" value="2"><label for="vul-2">2</label>
-                    <input type="radio" id="vul-3" name="vulnerability" value="3"><label for="vul-3">3</label>
-                    <input type="radio" id="vul-4" name="vulnerability" value="4"><label for="vul-4">4</label>
-                    <input type="radio" id="vul-5" name="vulnerability" value="5"><label for="vul-5">5</label>
-                </div>
-            </div>
-            <div class="control-section">
-                <label>Capas Adicionales:</label>
-                <div class="layer-toggle">
-                    <span>Línea de Costa (10km)</span>
-                    <label class="switch"><input type="checkbox" id="coastline-toggle"><span class="slider"></span></label>
-                </div>
-                <div class="layer-toggle" style="margin-top: 10px;">
-                    <span>Línea de Costa (1km)</span>
-                    <label class="switch"><input type="checkbox" id="coastline-1km-toggle"><span class="slider"></span></label>
-                </div>
-            </div>
-        `;
-    }
-
     cacheNodes(container) {
         this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
         this.nodes.opacitySlider = container.querySelector('#opacity-slider');
