@@ -18,7 +18,6 @@ export class UIManager {
                 this.nodes.uiControlContainer = container;
                 container.innerHTML = this.getPanelHTML();
                 
-                // Retraso para asegurar que el botón de abrir exista y podamos alinear el panel
                 setTimeout(() => {
                     if (this.nodes.openButton) {
                         container.style.top = `${this.nodes.openButton.offsetTop}px`;
@@ -38,7 +37,7 @@ export class UIManager {
         const OpenButtonControl = L.Control.extend({
             onAdd: () => {
                 const button = L.DomUtil.create('div', 'leaflet-open-button is-visible');
-                button.innerHTML = '☰';
+                button.innerHTML = '<i class="fas fa-bars"></i>';
                 button.title = "Mostrar controles";
                 this.nodes.openButton = button;
                 L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false));
@@ -51,9 +50,9 @@ export class UIManager {
     
     getPanelHTML() {
         return `
-            <div class="panel-close-button" title="Ocultar controles">«</div>
+            <div class="panel-close-button" title="Ocultar controles"><i class="fas fa-times"></i></div>
             <h1>Vulnerabilidad a la Intrusión Salina</h1>
-                <div id="info-panel" class="info-panel">
+            <div id="info-panel" class="info-panel">
                 <div class="info-placeholder">
                     <i class="fas fa-info-circle"></i>
                     <p>Haz clic en un acuífero para ver sus detalles.</p>
@@ -137,28 +136,27 @@ export class UIManager {
         this.nodes.coastlineToggle.checked = state.isCoastlineVisible;
         this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
     }
-}
 
-updateInfoPanel(properties) {
-    if (!properties) {
-        // Si no hay propiedades, muestra el placeholder
-        this.nodes.infoContent.style.display = 'none';
-        this.nodes.infoPlaceholder.style.display = 'block';
-        return;
+    // *** ESTA FUNCIÓN ESTABA FUERA DE LA CLASE, AHORA ESTÁ DENTRO ***
+    updateInfoPanel(properties) {
+        if (!properties) {
+            this.nodes.infoContent.style.display = 'none';
+            this.nodes.infoPlaceholder.style.display = 'block';
+            return;
+        }
+
+        this.nodes.infoPlaceholder.style.display = 'none';
+        this.nodes.infoContent.style.display = 'block';
+        
+        this.nodes.infoTitle.textContent = properties.NOM_ACUIF;
+
+        const details = {
+            "Clave:": properties.CLAVE_ACUI,
+            "Nivel de Vulnerabilidad:": properties.VULNERABIL
+        };
+
+        this.nodes.infoTable.innerHTML = Object.entries(details)
+            .map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`)
+            .join('');
     }
-
-    this.nodes.infoPlaceholder.style.display = 'none';
-    this.nodes.infoContent.style.display = 'block';
-    
-    this.nodes.infoTitle.textContent = properties.NOM_ACUIF;
-
-    // Formatear los datos en una tabla
-    const details = {
-        "Clave:": properties.CLAVE_ACUI,
-        "Nivel de Vulnerabilidad:": properties.VULNERABIL
-    };
-
-    this.nodes.infoTable.innerHTML = Object.entries(details)
-        .map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`)
-        .join('');
 }
