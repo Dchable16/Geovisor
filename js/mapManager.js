@@ -6,39 +6,41 @@ import { CONFIG } from './config.js';
 
 export class MapManager {
     constructor(mapId) {
+        // 1. Inicializa el mapa
         this.map = L.map(mapId, {
             center: CONFIG.initialCoords,
             zoom: CONFIG.initialZoom,
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false
         });
-        this.addControls();
-    }
-    createPanes() {
-        // Pane para las capas principales de acuíferos
-        this.map.createPane('acuiferosPane');
-        this.map.getPane('acuiferosPane').style.zIndex = 450;
 
-        // Pane para las líneas de costa, para que siempre estén encima
-        this.map.createPane('costasPane');
-        this.map.getPane('costasPane').style.zIndex = 460;
+        // 2. Crea los panes para el orden de las capas
+        this.createPanes();
     }
 
-    addControls() {
+    // MÉTODO NUEVO: Se llamará DESPUÉS de que la UI se haya inicializado
+    initializeControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
         L.control.layers(CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.map);
         this.addLegend();
         this.addLogo();
     }
 
+    createPanes() {
+        this.map.createPane('acuiferosPane');
+        this.map.getPane('acuiferosPane').style.zIndex = 450;
+        this.map.createPane('costasPane');
+        this.map.getPane('costasPane').style.zIndex = 460;
+    }
+
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction, paneName) {
         return L.geoJson(data, {
             style: styleFunction,
-            onEachFeature: onEachFeatureFunction, // <-- COMA AÑADIDA
+            onEachFeature: onEachFeatureFunction,
             pane: paneName
         }).addTo(this.map);
     }
-    
+
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
         legend.onAdd = () => {
@@ -54,7 +56,7 @@ export class MapManager {
         };
         legend.addTo(this.map);
     }
-    
+
     addLogo() {
         const LogoControl = L.Control.extend({
             onAdd: map => {
