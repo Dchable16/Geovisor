@@ -267,7 +267,7 @@ body {
 .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .radio-group label {
     background-color: #F1F3F5;
-    padding: 4px 8px; /* CORRECCIÓN: Se reduce el padding para que quepa en una sola línea */
+    padding: 4px 8px;
     font-size: 13px;
     border: 1px solid transparent;
     border-radius: 20px;
