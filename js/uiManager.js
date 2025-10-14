@@ -132,12 +132,12 @@ export class UIManager {
                              .sort((a, b) => b - a); // Ordenar de 5 a 1 (Máximo a Mínimo)
 
         grades.forEach(grade => {
-            const label = CONFIG.vulnerabilityMap[grade].label;
+            // Se comenta o elimina la línea que obtiene la etiqueta, ya no es necesaria
+            // const label = CONFIG.vulnerabilityMap[grade].label; 
             const id = `vul-${grade}`;
             radioHTML += `
                 <input type="radio" id="${id}" name="vulnerability" value="${grade}">
-                <label for="${id}">${grade} (${label})</label>
-            `;
+                <label for="${id}">${grade}</label> `;
         });
         
         // Insertar después del radio "Todos"
