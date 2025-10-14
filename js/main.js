@@ -40,13 +40,19 @@ class GeovisorApp {
 
     // Método centralizado para actualizar el estado y volver a renderizar
     updateState(newState) {
-        // Fusionar el nuevo estado con el estado actual
         this.state = { ...this.state, ...newState };
-        console.log("Nuevo estado:", this.state); // Para depuración
+        console.log("Nuevo estado:", this.state);
 
-        if (newState.selectedAquifer) {
-             const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
-             this.mapManager.fitBounds(group.getBounds());
+        // CORRECCIÓN DE LÓGICA: Manejar el zoom al seleccionar o deseleccionar un acuífero
+        if (newState.selectedAquifer !== undefined) {
+             if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
+                 // Acuífero seleccionado: hacer zoom a sus límites
+                 const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
+                 this.mapManager.fitBounds(group.getBounds());
+             } else if (this.leafletLayers.vulnerability) {
+                 // Acuífero deseleccionado (valor null o ""): zoom a la extensión completa
+                 this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
+             }
         }
 
         this.render();
