@@ -101,6 +101,8 @@ export class UIManager {
                 } else {
                     console.error("No se encontró la plantilla del panel de control.");
                 }
+
+                this.generateVulnerabilityRadios(container); 
                 
                 // Retraso para asegurar que el botón de abrir exista y podamos alinear el panel
                 setTimeout(() => {
