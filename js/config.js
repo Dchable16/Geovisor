@@ -20,6 +20,15 @@ export const CONFIG = {
         "Océanos (ESRI)": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', { attribution:'&copy; Esri' }),
         "Gris Oscuro (ESRI)": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { attribution:'&copy; Esri' })
     },
+    vulnerabilityMap: {
+        '5': { color: '#D90404', label: 'Muy Alta' }, // Rojo (Máximo)
+        '4': { color: '#F25C05', label: 'Alta' },
+        '3': { color: '#F2B705', label: 'Media' },
+        '2': { color: '#99C140', label: 'Baja' },
+        '1': { color: '#2DC937', label: 'Muy Baja' }, // Verde (Mínimo)
+        'default': { color: '#CCCCCC', label: 'Sin Datos' }
+    },
+    
     styles: {
         base: { weight: 1.5, opacity: 1, color: 'white' },
         muted: { fillColor: '#A9A9A9', weight: 1, color: '#A9A9A9', fillOpacity: 0.2 },
