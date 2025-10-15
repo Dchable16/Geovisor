@@ -140,6 +140,19 @@ export class MapManager {
         });
     }
 
+    addPrintControl() {
+        L.easyPrint({
+            title: 'Exportar/Imprimir Mapa',
+            position: 'topright', // Colocado junto al control de capas
+            exportOnly: true, // No queremos que se abra la ventana de impresión, solo exportar
+            filename: 'geovisor_exportacion',
+            hideControlContainer: false, // Asegura que los botones sean visibles
+            // Opciones de exportación: 'simple' o 'mapOnly'
+            sizeModes: ['A4Landscape', 'A4Portrait', 'A3Landscape', 'A3Portrait'],
+            defaultSize: 'A4Landscape'
+        }).addTo(this.map);
+    }
+
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
         const vulnerabilityMap = CONFIG.vulnerabilityMap; // Obtener el mapa centralizado
