@@ -85,16 +85,18 @@ export class MapManager {
             // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - SOLUCIÓN ESTABLE Y CORREGIDA
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
                 const bounds = layer.getBounds();
-                const southWest = bounds.getSouthWest();
-                const northEast = bounds.getNorthEast();
+                const sw = bounds.getSouthWest();
+                const ne = bounds.getNorthEast();
                 
-                // Cálculo de ancho y alto de la caja delimitadora (Aproximación)
-                const width_m = southWest.distanceTo(L.latLng(southWest.lat, northEast.lng));
-                const height_m = southWest.distanceTo(L.latLng(northEast.lat, southWest.lng));
+                // CRÍTICO: Medición de los lados anclada al punto SW
+                // Ancho: Distancia de SW a la esquina SE
+                const width_m = sw.distanceTo(L.latLng(sw.lat, ne.lng));
+                // Alto: Distancia de SW a la esquina NW
+                const height_m = sw.distanceTo(L.latLng(ne.lat, sw.lng));
                 
                 const areaSqM = width_m * height_m;
 
-                // Formato de salida corregido para asegurar decimales y unidades
+                // Formato de salida: Muestra el área con mayor precisión para evitar el '0'
                 if (areaSqM >= 1000000) {
                     measurementText = (areaSqM / 1000000).toFixed(3) + ' km² (Caja Aprox.)';
                 } else if (areaSqM >= 10000) {
