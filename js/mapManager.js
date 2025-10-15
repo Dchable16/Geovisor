@@ -50,11 +50,13 @@ export class MapManager {
         });
         measureControl.addTo(this.map);
 
-        // CORRECCIÓN CRÍTICA DE BUG: Prevenir la propagación de clics al mapa.
         const container = measureControl.getContainer();
         if (container) {
              L.DomEvent.disableClickPropagation(container);
              L.DomEvent.disableScrollPropagation(container);
+             
+             // SOLUCIÓN DEFINITIVA: Detener mousedown para evitar el arrastre del mapa.
+             L.DomEvent.on(container, 'mousedown', L.DomEvent.stopPropagation); 
         }
     }
     
