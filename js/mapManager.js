@@ -1,7 +1,7 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet.
- * Versión 3.0: Exportación de alta calidad con html-to-image y cálculos precisos con Turf.js.
+ * Versión 3.1: Solución definitiva para la barra de herramientas de dibujo.
  */
 
 import { CONFIG } from './config.js';
@@ -13,7 +13,6 @@ export class MapManager {
             zoom: CONFIG.initialZoom,
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false,
-            // IMPORTANTE: Esta opción es clave para que la exportación de imagen funcione correctamente.
             preferCanvas: true
         });
         this.drawnItems = new L.FeatureGroup();
@@ -27,7 +26,6 @@ export class MapManager {
         this.addLegend();
         this.addLogo();
         this.addDrawControl();
-        // Se reemplaza el control de impresión anterior por nuestro botón personalizado.
         this.addCustomPrintControl();
     }
 
@@ -39,9 +37,13 @@ export class MapManager {
     }
 
     addDrawControl() {
+        // SOLUCIÓN: Se elimina la personalización que intentaba centrar la barra.
+        // Ahora se posicionará correctamente en 'topleft' como es el estándar y sin conflictos.
         const drawControl = new L.Control.Draw({
-            position: 'topleft',
-            edit: { featureGroup: this.drawnItems },
+            position: 'topleft', // Posición estándar y estable
+            edit: { 
+                featureGroup: this.drawnItems 
+            },
             draw: {
                 polygon: { showArea: true, metric: true },
                 polyline: { allowIntersection: false, metric: true },
@@ -52,13 +54,7 @@ export class MapManager {
             }
         });
 
-        // Posiciona la barra de dibujo en el centro
-        const addedControl = this.map.addControl(drawControl);
-        const controlContainer = addedControl.getContainer().parentNode;
-        if (controlContainer) {
-            L.DomUtil.removeClass(controlContainer, 'leaflet-left');
-            L.DomUtil.addClass(controlContainer, 'leaflet-center');
-        }
+        this.map.addControl(drawControl);
 
         this.map.on(L.Draw.Event.CREATED, (e) => {
             const layer = e.layer;
@@ -72,7 +68,6 @@ export class MapManager {
                 measurementText = length >= 1000 ? (length / 1000).toFixed(2) + ' km' : Math.round(length) + ' m';
 
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                // SOLUCIÓN DEFINITIVA CON TURF.JS
                 const geojson = layer.toGeoJSON();
                 const areaSqM = turf.area(geojson);
 
@@ -121,21 +116,18 @@ export class MapManager {
                     const mapNode = document.getElementById(CONFIG.mapId);
                     const loader = document.getElementById('app-loader');
                     
-                    // Muestra el loader durante la exportación
                     if(loader) loader.style.display = 'flex';
 
                     try {
                         const dataUrl = await htmlToImage.toPng(mapNode, {
-                            quality: 1.0, // Máxima calidad
-                            pixelRatio: 2, // Doble resolución para mayor nitidez
-                            // Excluir controles de la imagen final para un mapa limpio
+                            quality: 1.0,
+                            pixelRatio: 2,
                             filter: (node) => {
-                                 const exclusionClasses = ['leaflet-control-zoom', 'leaflet-control-layers', 'leaflet-draw', 'leaflet-control-custom', 'leaflet-center'];
+                                 const exclusionClasses = ['leaflet-control-zoom', 'leaflet-control-layers', 'leaflet-draw', 'leaflet-control-custom'];
                                  return !exclusionClasses.some((classname) => node.classList?.contains(classname));
                             }
                         });
                         
-                        // Crear un enlace y simular un clic para descargar la imagen
                         const link = document.createElement('a');
                         link.download = 'mapa-exportado.png';
                         link.href = dataUrl;
@@ -145,7 +137,6 @@ export class MapManager {
                         console.error('Error al exportar el mapa:', error);
                         alert('No se pudo exportar el mapa. Inténtelo de nuevo.');
                     } finally {
-                        // Oculta el loader al finalizar
                         if(loader) loader.style.display = 'none';
                     }
                 });
@@ -156,7 +147,6 @@ export class MapManager {
         this.map.addControl(new PrintControl());
     }
 
-    // --- El resto de tus funciones (addLegend, addLogo, getColor, fitBounds) permanecen igual ---
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
         const vulnerabilityMap = CONFIG.vulnerabilityMap;
@@ -178,6 +168,7 @@ export class MapManager {
         };
         legend.addTo(this.map);
     }
+    
     addLogo() {
         const LogoControl = L.Control.extend({
             onAdd: map => {
@@ -189,11 +180,13 @@ export class MapManager {
         });
         new LogoControl({ position: 'bottomright' }).addTo(this.map);
     }
+
     getColor(v) {
         const value = String(v);
         const entry = CONFIG.vulnerabilityMap[value];
         return entry ? entry.color : CONFIG.vulnerabilityMap.default.color;
     }
+
     fitBounds(bounds) {
         if (bounds) {
             this.map.fitBounds(bounds.pad(0.1));
