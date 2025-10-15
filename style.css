@@ -1,8 +1,7 @@
 /**
  * @file style.css
  * @description Hoja de estilos mejorada para el Geovisor.
- * Versión 2.0: Paleta de colores moderna, tipografía profesional,
- * iconos, microinteracciones y diseño responsivo pulido.
+ * Versión 2.1: Mejoras responsivas, optimización de impresión.
 */
 
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
@@ -16,7 +15,7 @@
     --shadow-color: rgba(0, 0, 0, 0.15);
     --panel-shadow: 0 4px 12px var(--shadow-color);
     --border-radius: 8px;
-    --accent-color: #007BFF; /* Azul brillante y accesible */
+    --accent-color: #007BFF;
     --accent-hover: #0056b3;
     --font-sans: 'Roboto', sans-serif;
     --text-color: #333;
@@ -67,7 +66,7 @@ body {
 
 .map-container {
     flex-grow: 1;
-    position: relative; /* Para el posicionamiento del loader */
+    position: relative;
 }
 
 #map {
@@ -94,7 +93,6 @@ body {
     transform: translateX(calc(-100% - 15px));
 }
 
-/* Botón para abrir panel */
 .leaflet-open-button {
     background-color: white;
     width: 40px;
@@ -124,7 +122,6 @@ body {
     color: white;
 }
 
-/* Botón para cerrar panel */
 .panel-close-button {
     position: absolute;
     top: 15px;
@@ -147,19 +144,16 @@ body {
     color: var(--text-color);
 }
 
-/* Panel de Información Detallado (Inspector) */
 .info-panel {
     background: var(--panel-bg);
     backdrop-filter: blur(8px);
     border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
-    width: 300px; /* Ancho fijo para el inspector */
+    width: 300px;
     position: absolute;
-    top: 90px; /* CORRECCIÓN: Posicionar debajo del control de capas */
+    top: 90px;
     right: 20px;
     z-index: 1000;
-    
-    /* Animación de entrada/salida */
     transform: translateX(calc(100% + 20px));
     opacity: 0;
     transition: transform var(--animation-speed) var(--animation-easing), opacity var(--animation-speed) var(--animation-easing);
@@ -216,22 +210,9 @@ body {
     font-size: 1em;
 }
 
-/* RESPONSIVIDAD para el panel de información */
-@media (max-width: 768px) {
-    .info-panel {
-        width: calc(100vw - 40px);
-        top: 70px; /* Bajo el header */
-        right: 20px;
-    }
-}
-
 /* --- 5. ELEMENTOS DE UI DENTRO DEL PANEL --- */
-.control-section {
-    margin-bottom: 24px;
-}
-.control-section:last-child {
-    margin-bottom: 0;
-}
+.control-section { margin-bottom: 24px; }
+.control-section:last-child { margin-bottom: 0; }
 .control-section > label {
     display: block;
     font-weight: bold;
@@ -243,13 +224,11 @@ body {
     text-align: center;
     color: var(--text-color);
     margin: 0 0 24px 0;
-    padding-right: 30px; /* Espacio para el botón de cerrar */
+    padding-right: 30px;
     font-size: 1.4em;
     line-height: 1.2;
 }
-#acuifero-select, #opacity-slider {
-    width: 100%;
-}
+#acuifero-select, #opacity-slider { width: 100%; }
 #acuifero-select {
     padding: 10px;
     border-radius: var(--border-radius);
@@ -263,7 +242,6 @@ body {
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-/* Estilo de los radio buttons tipo "píldora" */
 .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .radio-group label {
     background-color: #F1F3F5;
@@ -280,12 +258,8 @@ body {
     color: white;
     font-weight: bold;
 }
-.radio-group label:hover {
-    border-color: var(--accent-color);
-}
+.radio-group label:hover { border-color: var(--accent-color); }
 
-
-/* Interruptor de Capa (Toggle Switch) */
 .layer-toggle { display: flex; justify-content: space-between; align-items: center; }
 .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
 .switch input { opacity: 0; width: 0; height: 0; }
@@ -311,15 +285,15 @@ input:checked + .slider:before { transform: translateX(20px); }
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: column; /* Apila el spinner y el texto */
-    gap: 15px;              /* Espaciado entre el spinner y el texto */
+    flex-direction: column;
+    gap: 15px;
     z-index: 9999;
     transition: opacity 0.3s ease;
 }
 .loader-text {
     font-size: 1.2em;
     font-weight: bold;
-    color: var(--accent-color); /* Usar el color principal para prominencia */
+    color: var(--accent-color);
     margin: 0;
 }
 .spinner {
@@ -351,12 +325,10 @@ input:checked + .slider:before { transform: translateX(20px); }
     background-color: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    margin: 0 10px 10px 0 !important; /* Ajusta el margen si es necesario */
+    margin: 0 10px 10px 0 !important;
 }
-
-/* AQUÍ CONTROLAS EL TAMAÑO DEL LOGO */
 .leaflet-logo-control img {
-    height: 35px; /* <-- Cambia este valor al tamaño que desees */
+    height: 35px;
     width: auto;
 }
 .leaflet-top.leaflet-right { z-index: 1010 !important; }
@@ -365,49 +337,103 @@ input:checked + .slider:before { transform: translateX(20px); }
 @media (max-width: 768px) {
     :root {
         --header-height: 60px;
-        --panel-width: calc(100vw - 50px);
+        --panel-width: calc(100vw - 40px);
     }
     .logo-container img { height: 40px; }
     .control-section h1 { font-size: 1.2em; }
+
+    /* MEJORA MÓVIL: Panel de información como "bottom sheet" */
+    .info-panel {
+        width: 100%;
+        max-height: 45vh; /* Limitar altura en móvil */
+        top: auto;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        /* Animación desde abajo */
+        transform: translateY(100%);
+    }
+    .info-panel.is-visible {
+        transform: translateY(0);
+    }
+    #info-panel-content {
+         max-height: 35vh; /* Ajustar altura del contenido */
+    }
+
+    /* MEJORA MÓVIL: Reubicar leyenda para evitar solapamiento */
+    .leaflet-bottom.leaflet-left {
+        /* Mover a la esquina superior y ajustar para no chocar con el control de capas */
+        top: 10px;
+        bottom: auto;
+        left: auto;
+        right: 10px;
+        width: auto;
+    }
+     .info.legend {
+        /* Hacerla un poco más pequeña en móvil */
+        font-size: 12px;
+        line-height: 1.6;
+        padding: 8px 12px;
+    }
+    .info.legend h4 { font-size: 14px; }
+    .info.legend i { width: 14px; height: 14px; }
 }
 .leaflet-top.leaflet-center {
-    eft: 50% !important; 
+    left: 50% !important; 
     transform: translate(-50%, 0) !important;
 }
 
-/* --- 9. ESTILOS DE IMPRESIÓN (LIMPIEZA DE MAPA PROFESIONAL) --- */
+
+/* --- 9. MEJORAS DE UX ADICIONALES --- */
+
+/* MEJORA: Indicador de carga para la exportación de easyPrint */
+body.leaflet-control-easyPrint-exporting::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 10000;
+}
+body.leaflet-control-easyPrint-exporting::after {
+    content: 'Exportando...';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 80px); /* Posicionar debajo del spinner */
+    z-index: 10001;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+body.leaflet-control-easyPrint-exporting .spinner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-top: -25px;
+    margin-left: -25px;
+    z-index: 10001;
+}
+
+
+/* --- 10. ESTILOS DE IMPRESIÓN --- */
 @media print {
-    /* OCULTAR TODO EL SHELL DE LA APLICACIÓN */
-    .main-header, 
-    .loader-overlay,
-    .info-panel, 
-    .leaflet-custom-controls, 
-    .leaflet-open-button {
+    .main-header, .loader-overlay, .info-panel, .leaflet-custom-controls, .leaflet-open-button {
         display: none !important;
     }
-
-    /* OCULTAR TODOS LOS BOTONES INDIVIDUALES Y CONTENEDORES DE CONTROL */
-    /* CRÍTICO: Ocultamos los controles, pero no su contenedor padre (.leaflet-control-container),
-       lo que permite que el mapa se centre correctamente. */
-    .leaflet-control-zoom, 
-    .leaflet-control-layers,
-    .leaflet-control-draw,
-    .leaflet-easyPrint-button, 
-    .leaflet-center, /* Barra de Dibujo Centrada */
-    .info.legend, /* Leyenda */
-    .leaflet-logo-control { 
+    .leaflet-control-zoom, .leaflet-control-layers, .leaflet-control-draw,
+    .leaflet-easyPrint-button, .leaflet-center, .info.legend, .leaflet-logo-control { 
         display: none !important;
         visibility: hidden !important;
     }
-    
-    /* HACER VISIBLE SÓLO LA ATRIBUCIÓN (BUENA PRÁCTICA) */
     .leaflet-control-attribution {
         visibility: visible !important;
         display: block !important;
         font-size: 8px !important;
     }
-
-    /* FORZAR LA IMAGEN A LLENAR TODA LA PÁGINA IMPRESA (Optimización de espacio) */
     body, #map, .map-container {
         width: 100% !important;
         height: auto !important;
