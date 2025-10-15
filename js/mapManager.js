@@ -57,7 +57,45 @@ export class MapManager {
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.preventDefault);
         }
         this.map.on(L.Draw.Event.CREATED, (e) => {
-            this.drawnItems.addLayer(e.layer);
+            const layer = e.layer;
+            this.drawnItems.addLayer(layer);
+            
+            let measurementText = 'Medición no disponible';
+            const type = e.layerType;
+            
+            // 1. Extraer medición del Tooltip nativo de Leaflet.Draw
+            if (layer.getTooltip()) {
+                measurementText = layer.getTooltip().getContent();
+                layer.unbindTooltip(); // Desactivar el tooltip flotante
+            } else if (layer instanceof L.Marker) {
+                measurementText = 'Ubicación agregada';
+            }
+            
+            // 2. Pedir Nombre al Usuario (Método simple: usa un prompt JS)
+            const defaultName = `Dibujo de ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            const layerName = prompt(`Ingrese un nombre para su dibujo:\n(Medición: ${measurementText})`, defaultName);
+            
+            const finalName = layerName || defaultName;
+
+            // 3. Crear el contenido persistente (Popup)
+            const popupContent = `
+                <h4>${finalName}</h4>
+                <p><strong>Medición:</strong> ${measurementText}</p>
+                <p style="font-size: 0.8em; color: #888;">Utilice el botón de Edición (lápiz) para modificar la geometría.</p>
+            `;
+
+            // 4. Bindear y configurar el Popup para abrir al hacer clic
+            layer.bindPopup(popupContent, { closeButton: true });
+            
+            // Abrir el popup inmediatamente para confirmar la acción
+            layer.openPopup(); 
+            
+            // 5. Bindeo de evento CLICK (garantiza que el popup se abre al hacer clic posterior)
+            layer.on('click', (ev) => {
+                if (!layer.isPopupOpen()) {
+                    layer.openPopup(ev.latlng);
+                }
+            });
         });
     }
 
