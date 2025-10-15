@@ -1,6 +1,7 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet.
+ * Versión 2.2: Cálculo de área preciso y motor de impresión estable.
  */
 
 import { CONFIG } from './config.js';
@@ -13,7 +14,7 @@ export class MapManager {
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false
         });
-        this.drawnItems = new L.FeatureGroup(); 
+        this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
         this.addControls();
     }
@@ -25,7 +26,6 @@ export class MapManager {
         this.addLogo();
         this.addDrawControl();
         this.addPrintControl();
-        const drawContainer = document.querySelector('.leaflet-draw');
     }
 
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
@@ -34,7 +34,7 @@ export class MapManager {
             onEachFeature: onEachFeatureFunction
         }).addTo(this.map);
     }
-    
+
     addDrawControl() {
         const drawControl = new L.Control.Draw({
             position: 'topleft',
@@ -52,7 +52,6 @@ export class MapManager {
             }
         });
 
-        // Posicionar la barra de dibujo en el centro superior
         const addedControl = this.map.addControl(drawControl);
         const controlContainer = addedControl.getContainer().parentNode;
         if (controlContainer) {
@@ -82,8 +81,8 @@ export class MapManager {
                 measurementText = distance >= 1000 ? (distance / 1000).toFixed(2) + ' km' : Math.round(distance) + ' m';
 
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                // CORRECCIÓN: Usar L.GeometryUtil para un cálculo geodésico preciso.
-                // Esta utilidad viene incluida en leaflet.draw.js
+                // SOLUCIÓN DEFINITIVA: Usar L.GeometryUtil para un cálculo geodésico preciso.
+                // Esta utilidad viene incluida con leaflet.draw.js y funciona correctamente.
                 const latlngs = layer.getLatLngs()[0];
                 const areaSqM = L.GeometryUtil.geodesicArea(latlngs);
 
@@ -99,7 +98,7 @@ export class MapManager {
                 const radius = layer.getRadius();
                 const areaSqM = Math.PI * radius * radius;
                 measurementText = areaSqM >= 1000000 ? (areaSqM / 1000000).toFixed(3) + ' km²' : areaSqM.toFixed(2) + ' m²';
-            
+
             } else if (layer instanceof L.Marker) {
                 measurementText = 'Ubicación agregada';
             }
@@ -120,54 +119,44 @@ export class MapManager {
     }
 
     addPrintControl() {
-        // MEJORA: Usar leaflet.browser.print para mayor velocidad y control.
-        L.control.browserPrint({
-            title: 'Exportar mapa como imagen PNG',
+        // SOLUCIÓN DEFINITIVA: Volver a leaflet-easyprint que es estable.
+        // La opción 'exportOnly: true' hace que la descarga de PNG sea directa y lo más rápida posible.
+        L.easyPrint({
+            title: 'Exportar Mapa como Imagen',
             position: 'bottomright',
-            printModes: [
-                L.Control.BrowserPrint.Mode.Custom("Exportar PNG", "A4", {
-					title: "Exportar PNG",
-				})
-            ],
-            // Oculta el modo de impresión (Ctrl+P) para que solo se vea la exportación a imagen.
-            printModesToHide: [L.Control.BrowserPrint.Mode.Alert, L.Control.BrowserPrint.Mode.Print],
-            closePopupsOnPrint: true
+            exportOnly: true, // Clave para la rapidez: descarga directa de PNG.
+            filename: 'geovisor_exportacion',
+            hideControlContainer: true, // Oculta otros botones en la imagen final.
+            // El spinner en style.css dará feedback visual inmediato al usuario.
         }).addTo(this.map);
     }
 
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
-        const vulnerabilityMap = CONFIG.vulnerabilityMap; // Obtener el mapa centralizado
-        
+        const vulnerabilityMap = CONFIG.vulnerabilityMap;
+
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend');
             div.innerHTML = '<h4>Vulnerabilidad</h4>';
-
-            // Obtener y ordenar los grados de mayor a menor (5 a 1) para la leyenda
             const sortedGrades = Object.keys(vulnerabilityMap)
-                                       .filter(key => key !== 'default') 
-                                       .sort((a, b) => b - a); 
+                .filter(key => key !== 'default')
+                .sort((a, b) => b - a);
 
             sortedGrades.forEach(grade => {
                 const { color, label } = vulnerabilityMap[grade];
-
-                div.innerHTML +=
-                    `<i style="background:${color}"></i> ${label} (Nivel ${grade})<br>`;
+                div.innerHTML += `<i style="background:${color}"></i> ${label} (Nivel ${grade})<br>`;
             });
 
-            // Añadir el valor por defecto/sin datos
             const defaultEntry = vulnerabilityMap['default'];
             div.innerHTML += `<i style="background:${defaultEntry.color}; border: 1px solid #666;"></i> ${defaultEntry.label}`;
 
-            // Mejoras de UX: Evitar que los clics o el scroll afecten al mapa
             L.DomEvent.disableClickPropagation(div);
             L.DomEvent.disableScrollPropagation(div);
-            
             return div;
         };
         legend.addTo(this.map);
     }
-    
+
     addLogo() {
         const LogoControl = L.Control.extend({
             onAdd: map => {
@@ -180,20 +169,10 @@ export class MapManager {
         new LogoControl({ position: 'bottomright' }).addTo(this.map);
     }
 
-    /**
-     * Obtiene el color de simbología usando el mapa centralizado de CONFIG.
-     * @param {string|number} v - El valor de vulnerabilidad (1-5).
-     * @returns {string} El código de color HTML.
-     */
     getColor(v) {
-        const value = String(v); // Asegurar que es string para la clave del mapa
+        const value = String(v);
         const entry = CONFIG.vulnerabilityMap[value];
-        
-        if (entry) {
-            return entry.color;
-        }
-        
-        return CONFIG.vulnerabilityMap.default.color;
+        return entry ? entry.color : CONFIG.vulnerabilityMap.default.color;
     }
 
     fitBounds(bounds) {
