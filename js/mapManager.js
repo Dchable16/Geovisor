@@ -70,7 +70,6 @@ export class MapManager {
                 const latlngs = layer.getLatLngs();
                 
                 for (let i = 0; i < latlngs.length - 1; i++) {
-                    // Usar distanceTo() de Core Leaflet (estable)
                     distance += latlngs[i].distanceTo(latlngs[i+1]); 
                 }
                 
@@ -80,27 +79,29 @@ export class MapManager {
                     measurementText = Math.round(distance) + ' m';
                 }
 
-            // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - SOLUCIÓN ESTABLE
+            // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - CORRECCIÓN ESTABLE
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
                 const bounds = layer.getBounds();
                 const southWest = bounds.getSouthWest();
                 const northEast = bounds.getNorthEast();
                 
-                // Calcular el ancho (distancia entre esquinas de la misma latitud)
-                const width_m = L.latLng(northEast.lat, southWest.lng).distanceTo(L.latLng(northEast.lat, northEast.lng));
+                // CRÍTICO: Medir el ancho y alto desde la esquina SouthWest (cálculo estable)
+                // Ancho: Distancia de SW a la esquina (SW.lat, NE.lng)
+                const width_m = southWest.distanceTo(L.latLng(southWest.lat, northEast.lng));
                 
-                // Calcular el alto (distancia entre esquinas de la misma longitud)
-                const height_m = L.latLng(southWest.lat, northEast.lng).distanceTo(L.latLng(northEast.lat, northEast.lng));
+                // Alto: Distancia de SW a la esquina (NE.lat, SW.lng)
+                const height_m = southWest.distanceTo(L.latLng(northEast.lat, southWest.lng));
                 
                 const areaSqM = width_m * height_m;
 
-                // Formato simple y estable
+                // Formato de salida, asegurando decimales para áreas pequeñas
                 if (areaSqM >= 1000000) {
                     measurementText = (areaSqM / 1000000).toFixed(3) + ' km² (Caja Aprox.)';
                 } else if (areaSqM >= 10000) {
                     measurementText = (areaSqM / 10000).toFixed(2) + ' ha (Caja Aprox.)';
                 } else {
-                    measurementText = Math.round(areaSqM) + ' m² (Caja Aprox.)';
+                    // Muestra el valor exacto con 2 decimales para evitar el '0'
+                    measurementText = areaSqM.toFixed(2) + ' m² (Caja Aprox.)';
                 }
 
             // 3. CÁLCULO DE ÁREA (Círculo/Radio) - ESTABLE
@@ -112,30 +113,6 @@ export class MapManager {
             } else if (layer instanceof L.Marker) {
                 measurementText = 'Ubicación agregada';
             }
-            
-            // ... (El resto del código del popup se mantiene sin cambios) ...
-            
-            const defaultName = `Dibujo de ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-            const layerName = prompt(`Ingrese un nombre para su dibujo:\n(Medición: ${measurementText})`, defaultName);
-            
-            const finalName = layerName || defaultName;
-
-            const popupContent = `
-                <h4>${finalName}</h4>
-                <p><strong>Medición:</strong> ${measurementText}</p>
-                <p style="font-size: 0.8em; color: #888;">Utilice el botón de Edición (lápiz) para modificar la geometría.</p>
-            `;
-
-            layer.bindPopup(popupContent, { closeButton: true });
-            layer.openPopup(); 
-            
-            layer.on('click', (ev) => {
-                if (!layer.isPopupOpen()) {
-                    layer.openPopup(ev.latlng);
-                }
-            });
-        });
-    }
 
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
