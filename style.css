@@ -392,18 +392,13 @@ input:checked + .slider:before { transform: translateX(20px); }
         display: none !important;
     }
 
-    /* Ocultar todos los botones de Leaflet (Zoom, Capas, Barra de Dibujo, EasyPrint) */
-    .leaflet-control-container {
-        /* Hacemos visible el contenedor principal, pero ocultamos los controles dentro */
-        visibility: visible !important;
-    }
-    
     /* Ocultar elementos individuales dentro del contenedor de control */
     .leaflet-control-zoom, 
     .leaflet-control-layers,
     .leaflet-control-draw,
     .leaflet-easyPrint-button, 
-    .leaflet-center { /* La barra de dibujo centrada */
+    .leaflet-center,
+    .leaflet-control-geocoder { /* Si se añade un geocodificador */
         display: none !important;
     }
 
@@ -411,8 +406,13 @@ input:checked + .slider:before { transform: translateX(20px); }
     .loader-overlay {
         display: none !important;
     }
+
+    /* Ocultar la leyenda para la impresión limpia (opcional, pero profesional) */
+    .info.legend {
+        display: none !important;
+    }
     
-    /* Mostrar la atribución legal (opcional) */
+    /* Mostrar la atribución legal (es una buena práctica) */
     .leaflet-control-attribution {
         visibility: visible !important;
         font-size: 8px !important;
