@@ -25,10 +25,6 @@ export class MapManager {
         this.addLogo();
         this.addDrawControl();
         const drawContainer = document.querySelector('.leaflet-draw');
-        if (drawContainer) {
-             drawContainer.style.left = '50%';
-             drawContainer.style.transform = 'translateX(-50%)';
-        }
     }
 
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
@@ -56,8 +52,18 @@ export class MapManager {
         });
         this.map.addControl(drawControl);
         
+        const addedControl = this.map.addControl(drawControl); // Capturamos la referencia del control
+
+        // 1. CENTRADO FINAL (Solución Canónica): Manipular la clase del contenedor
+        const controlContainer = addedControl.getContainer().parentNode; 
+        if (controlContainer) {
+            L.DomUtil.removeClass(controlContainer, 'leaflet-left');
+            L.DomUtil.addClass(controlContainer, 'leaflet-center');
+        }
+        
         const toolbar = document.querySelector('.leaflet-draw-toolbar');
         if (toolbar) {
+            // 2. Corrección de Bug de Movimiento del Mapa (Estable)
             L.DomEvent.disableClickPropagation(toolbar);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.stopPropagation);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.preventDefault);
