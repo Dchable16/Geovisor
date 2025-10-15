@@ -41,7 +41,6 @@ export class MapManager {
                 remove: true 
             },
             draw: {
-                // Configuración mínima para que muestre mediciones simples
                 polyline: { allowIntersection: false, metric: true },
                 polygon: { showArea: true, metric: true },
                 circle: { metric: true },
@@ -54,7 +53,6 @@ export class MapManager {
         
         const toolbar = document.querySelector('.leaflet-draw-toolbar');
         if (toolbar) {
-            // Corrección de Bug de Movimiento del Mapa (Estable)
             L.DomEvent.disableClickPropagation(toolbar);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.stopPropagation);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.preventDefault);
@@ -82,17 +80,19 @@ export class MapManager {
                     measurementText = Math.round(distance) + ' m';
                 }
 
-            // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - SOLUCIÓN ESTABLE Y CORREGIDA
+            // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - SOLUCIÓN ESTABLE Y FINAL
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
                 const bounds = layer.getBounds();
                 const sw = bounds.getSouthWest();
                 const ne = bounds.getNorthEast();
                 
-                // CRÍTICO: Medición de los lados anclada al punto SW
-                // Ancho: Distancia de SW a la esquina SE
-                const width_m = sw.distanceTo(L.latLng(sw.lat, ne.lng));
-                // Alto: Distancia de SW a la esquina NW
-                const height_m = sw.distanceTo(L.latLng(ne.lat, sw.lng));
+                // Definir las esquinas necesarias para el cálculo de distancia.
+                const se_corner = L.latLng(sw.lat, ne.lng);
+                const nw_corner = L.latLng(ne.lat, sw.lng);
+                
+                // Ancho y Alto calculados usando distanceTo() de Leaflet Core.
+                const width_m = sw.distanceTo(se_corner);
+                const height_m = sw.distanceTo(nw_corner);
                 
                 const areaSqM = width_m * height_m;
 
@@ -102,8 +102,8 @@ export class MapManager {
                 } else if (areaSqM >= 10000) {
                     measurementText = (areaSqM / 10000).toFixed(2) + ' ha (Caja Aprox.)';
                 } else {
-                    // Muestra el valor exacto con 2 decimales para evitar el '0'
-                    measurementText = areaSqM.toFixed(2) + ' m² (Caja Aprox.)';
+                    // Muestra 3 decimales para ver áreas muy pequeñas (ej. 0.005 m²)
+                    measurementText = areaSqM.toFixed(3) + ' m² (Caja Aprox.)';
                 }
 
             // 3. CÁLCULO DE ÁREA (Círculo/Radio) - ESTABLE
