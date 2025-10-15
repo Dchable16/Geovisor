@@ -3,6 +3,15 @@
  * @description Gestiona la creación y manipulación del mapa Leaflet.
  */
 import { CONFIG } from './config.js';
+if (typeof L !== 'undefined' && typeof L.PM !== 'undefined') {
+    L.PM.setGlobalOptions({
+        tooltips: true,
+        measure: true, // Habilitar medición para todas las herramientas
+        measureTargets: true,
+        measurementUnit: 'kilometers', // Unidades métricas
+        allowSelfIntersection: false,
+    });
+}
 
 export class MapManager {
     constructor(mapId) {
@@ -14,6 +23,10 @@ export class MapManager {
         });
         this.drawnItems = new L.FeatureGroup(); 
         this.map.addLayer(this.drawnItems);
+        if (this.map.pm && this.map.pm.setLang) {
+            this.map.pm.setLang('es'); 
+        }
+
         this.addControls();
     }
 
@@ -33,32 +46,26 @@ export class MapManager {
     }
 
     addPMControl() {
+        if (!this.map.pm) {
+            console.error("Leaflet.PM (Geoman) no se inicializó en el mapa.");
+            return;
+        }
+
         this.map.pm.addControls({
             position: 'topleft',
-            drawCircleMarker: false, // Ocultar si no se usa
+            drawCircleMarker: false, 
             drawMarker: true,
             editMode: true,
             dragMode: true,
-            cutToolbar: false, // Ocultar si no se usa
+            cutToolbar: false, 
             removalMode: true,
-            
-            // CRÍTICO: Activar el control nativo de medición de PM
-            measureControl: true, 
-        });
-        
-        // CRÍTICO: Configurar opciones de PM para unidades en español (métrica)
-        this.map.pm.setGlobalOptions({
-            tooltips: true,
-            measure: true, // Habilitar medición para todas las herramientas
-            measureTargets: true,
-            measurementUnit: 'kilometers', // Unidades métricas
-            allowSelfIntersection: false,
+            measureControl: true, // CRÍTICO: Activar el control de medición
         });
 
-        // Opcional: Escucha el evento de creación para la capa de dibujo, si necesita procesamiento GeoJSON
+        this.map.pm.setLang('es'); 
+
         this.map.on('pm:create', (e) => {
              console.log('Geometría PM creada:', e.layer, e.shape);
-             // Las mediciones son persistentes y editables a través de la interfaz nativa de PM.
         });
     }
     
