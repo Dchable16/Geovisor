@@ -2,7 +2,27 @@
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet.
  */
+
 import { CONFIG } from './config.js';
+
+/**
+ * Calcula la distancia total de una polilínea usando el método distanceTo de Leaflet (cálculo esférico aproximado).
+ * @param {L.LatLng[]} latlngs 
+ * @returns {string} Distancia formateada.
+ */
+function calculatePolylineDistance(latlngs) {
+    let distance = 0;
+    for (let i = 0; i < latlngs.length - 1; i++) {
+        // Usa la función distanceTo de Core Leaflet (siempre disponible)
+        distance += latlngs[i].distanceTo(latlngs[i+1]);
+    }
+    
+    // Formateo manual simple
+    if (distance > 1000) {
+        return (distance / 1000).toFixed(2) + ' km';
+    }
+    return Math.round(distance) + ' m';
+}
 
 export class MapManager {
     constructor(mapId) {
