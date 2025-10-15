@@ -34,6 +34,23 @@ export class MapManager {
             onEachFeature: onEachFeatureFunction
         }).addTo(this.map);
     }
+    
+    _calculateProjectedPolygonArea(latlngs) {
+        if (!latlngs || latlngs.length < 3) {
+            return 0;
+        }
+
+        let area = 0;
+        const projectedPoints = latlngs.map(latlng => L.CRS.EPSG3857.project(latlng));
+
+        for (let i = 0, j = projectedPoints.length - 1; i < projectedPoints.length; j = i++) {
+            const p1 = projectedPoints[i];
+            const p2 = projectedPoints[j];
+            area += p1.x * p2.y - p2.x * p1.y;
+        }
+
+        return Math.abs(area / 2);
+    }
 
     addDrawControl() {
         const drawControl = new L.Control.Draw({
@@ -43,7 +60,6 @@ export class MapManager {
                 remove: true 
             },
             draw: {
-                // Configuración mínima para que muestre mediciones simples
                 polyline: { allowIntersection: false, metric: true },
                 polygon: { showArea: true, metric: true },
                 circle: { metric: true },
@@ -56,15 +72,14 @@ export class MapManager {
         const addedControl = this.map.addControl(drawControl);
         const controlContainer = addedControl.getContainer().parentNode; 
         if (controlContainer) {
-            L.DomUtil.removeClass(controlContainer, 'leaflet-left'); // Quitar la alineación 'left: 0'
-            L.DomUtil.addClass(controlContainer, 'leaflet-center');  // Aplicar nuestra clase de centrado
+            L.DomUtil.removeClass(controlContainer, 'leaflet-left');
+            L.DomUtil.addClass(controlContainer, 'leaflet-center');
         }
         
         this.map.addControl(drawControl);
         
         const toolbar = document.querySelector('.leaflet-draw-toolbar');
         if (toolbar) {
-            // Corrección de Bug de Movimiento del Mapa (Estable)
             L.DomEvent.disableClickPropagation(toolbar);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.stopPropagation);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.preventDefault);
@@ -77,7 +92,6 @@ export class MapManager {
             
             let measurementText = 'Medición no disponible';
             
-            // 1. CÁLCULO DE DISTANCIA (Polilínea) - ESTABLE
             if (layer instanceof L.Polyline) {
                 let distance = 0;
                 const latlngs = layer.getLatLngs();
@@ -92,29 +106,19 @@ export class MapManager {
                     measurementText = Math.round(distance) + ' m';
                 }
 
-            // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - SOLUCIÓN ESTABLE Y CORREGIDA
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                const bounds = layer.getBounds();
-                const southWest = bounds.getSouthWest();
-                const northEast = bounds.getNorthEast();
-                
-                // Cálculo de ancho y alto de la caja delimitadora (Aproximación)
-                const width_m = southWest.distanceTo(L.latLng(southWest.lat, northEast.lng));
-                const height_m = southWest.distanceTo(L.latLng(northEast.lat, southWest.lng));
-                
-                const areaSqM = width_m * height_m;
+                // CORRECCIÓN: Usar el cálculo de área preciso
+                const latlngs = layer.getLatLngs()[0]; // Usamos el anillo exterior
+                const areaSqM = this._calculateProjectedPolygonArea(latlngs);
 
-                // Formato de salida corregido para asegurar decimales y unidades
                 if (areaSqM >= 1000000) {
-                    measurementText = (areaSqM / 1000000).toFixed(3) + ' km² (Caja Aprox.)';
+                    measurementText = (areaSqM / 1000000).toFixed(3) + ' km²';
                 } else if (areaSqM >= 10000) {
-                    measurementText = (areaSqM / 10000).toFixed(2) + ' ha (Caja Aprox.)';
+                    measurementText = (areaSqM / 10000).toFixed(2) + ' ha';
                 } else {
-                    // Muestra el valor exacto con 2 decimales para evitar el '0'
-                    measurementText = areaSqM.toFixed(2) + ' m² (Caja Aprox.)';
+                    measurementText = areaSqM.toFixed(2) + ' m²';
                 }
 
-            // 3. CÁLCULO DE ÁREA (Círculo/Radio) - ESTABLE
             } else if (layer instanceof L.Circle) {
                 const radius = layer.getRadius();
                 const areaSqM = Math.PI * radius * radius;
@@ -124,13 +128,11 @@ export class MapManager {
                 measurementText = 'Ubicación agregada';
             }
 
-            // 4. Pedir Nombre al Usuario
             const defaultName = `Dibujo de ${type.charAt(0).toUpperCase() + type.slice(1)}`;
             const layerName = prompt(`Ingrese un nombre para su dibujo:\n(Medición: ${measurementText})`, defaultName);
             
             const finalName = layerName || defaultName;
 
-            // 5. Crear y Bindear el contenido persistente (Popup)
             const popupContent = `
                 <h4>${finalName}</h4>
                 <p><strong>Medición:</strong> ${measurementText}</p>
@@ -140,7 +142,6 @@ export class MapManager {
             layer.bindPopup(popupContent, { closeButton: true });
             layer.openPopup(); 
             
-            // 6. Bindeo de evento CLICK
             layer.on('click', (ev) => {
                 if (!layer.isPopupOpen()) {
                     layer.openPopup(ev.latlng);
@@ -150,14 +151,15 @@ export class MapManager {
     }
 
     addPrintControl() {
+        // MEJORA: Optimizado para ser más rápido y robusto
         L.easyPrint({
-            title: 'Exportar/Imprimir Mapa',
-            position: 'bottomright', // Mover a la esquina inferior derecha para evitar solapamiento
-            exportOnly: false, // Permitir flujo de impresión nativa (PDF rápido)
+            title: 'Exportar Mapa como Imagen',
+            position: 'bottomright',
+            exportOnly: true, // Clave para la rapidez: descarga directa de PNG
             filename: 'geovisor_exportacion',
-            hideControlContainer: false,
+            hideControlContainer: true, // Oculta otros botones en la imagen final
             sizeModes: ['Current', 'A4Landscape', 'A4Portrait'], 
-            defaultSize: 'Current' // El modo más rápido por defecto
+            defaultSize: 'Current'
         }).addTo(this.map);
     }
 
