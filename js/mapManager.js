@@ -60,6 +60,39 @@ export class MapManager {
             this.drawnItems.addLayer(e.layer);
         });
     }
+
+    addLegend() {
+        const legend = L.control({ position: 'bottomleft' });
+        const vulnerabilityMap = CONFIG.vulnerabilityMap; // Obtener el mapa centralizado
+        
+        legend.onAdd = () => {
+            const div = L.DomUtil.create('div', 'info legend');
+            div.innerHTML = '<h4>Vulnerabilidad</h4>';
+
+            // Obtener y ordenar los grados de mayor a menor (5 a 1) para la leyenda
+            const sortedGrades = Object.keys(vulnerabilityMap)
+                                       .filter(key => key !== 'default') 
+                                       .sort((a, b) => b - a); 
+
+            sortedGrades.forEach(grade => {
+                const { color, label } = vulnerabilityMap[grade];
+
+                div.innerHTML +=
+                    `<i style="background:${color}"></i> ${label} (Nivel ${grade})<br>`;
+            });
+
+            // Añadir el valor por defecto/sin datos
+            const defaultEntry = vulnerabilityMap['default'];
+            div.innerHTML += `<i style="background:${defaultEntry.color}; border: 1px solid #666;"></i> ${defaultEntry.label}`;
+
+            // Mejoras de UX: Evitar que los clics o el scroll afecten al mapa
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
+            
+            return div;
+        };
+        legend.addTo(this.map);
+    }
     
     addLogo() {
         const LogoControl = L.Control.extend({
