@@ -51,18 +51,21 @@ export class MapManager {
             }
         });
         this.map.addControl(drawControl);
+        
         const toolbar = document.querySelector('.leaflet-draw-toolbar');
         if (toolbar) {
+            // Corrección de Bug de Movimiento del Mapa (Estable)
             L.DomEvent.disableClickPropagation(toolbar);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.stopPropagation);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.preventDefault);
         }
+        
         this.map.on(L.Draw.Event.CREATED, (e) => {
             const layer = e.layer;
+            const type = e.layerType;
             this.drawnItems.addLayer(layer);
             
             let measurementText = 'Medición no disponible';
-            const type = e.layerType;
             
             // 1. CÁLCULO DE DISTANCIA (Polilínea) - ESTABLE
             if (layer instanceof L.Polyline) {
@@ -79,22 +82,19 @@ export class MapManager {
                     measurementText = Math.round(distance) + ' m';
                 }
 
-            // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - CORRECCIÓN ESTABLE
+            // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - SOLUCIÓN ESTABLE Y CORREGIDA
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
                 const bounds = layer.getBounds();
                 const southWest = bounds.getSouthWest();
                 const northEast = bounds.getNorthEast();
                 
-                // CRÍTICO: Medir el ancho y alto desde la esquina SouthWest (cálculo estable)
-                // Ancho: Distancia de SW a la esquina (SW.lat, NE.lng)
+                // Cálculo de ancho y alto de la caja delimitadora (Aproximación)
                 const width_m = southWest.distanceTo(L.latLng(southWest.lat, northEast.lng));
-                
-                // Alto: Distancia de SW a la esquina (NE.lat, SW.lng)
                 const height_m = southWest.distanceTo(L.latLng(northEast.lat, southWest.lng));
                 
                 const areaSqM = width_m * height_m;
 
-                // Formato de salida, asegurando decimales para áreas pequeñas
+                // Formato de salida corregido para asegurar decimales y unidades
                 if (areaSqM >= 1000000) {
                     measurementText = (areaSqM / 1000000).toFixed(3) + ' km² (Caja Aprox.)';
                 } else if (areaSqM >= 10000) {
@@ -113,6 +113,31 @@ export class MapManager {
             } else if (layer instanceof L.Marker) {
                 measurementText = 'Ubicación agregada';
             }
+
+            // 4. Pedir Nombre al Usuario
+            const defaultName = `Dibujo de ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            const layerName = prompt(`Ingrese un nombre para su dibujo:\n(Medición: ${measurementText})`, defaultName);
+            
+            const finalName = layerName || defaultName;
+
+            // 5. Crear y Bindear el contenido persistente (Popup)
+            const popupContent = `
+                <h4>${finalName}</h4>
+                <p><strong>Medición:</strong> ${measurementText}</p>
+                <p style="font-size: 0.8em; color: #888;">Utilice el botón de Edición (lápiz) para modificar la geometría.</p>
+            `;
+
+            layer.bindPopup(popupContent, { closeButton: true });
+            layer.openPopup(); 
+            
+            // 6. Bindeo de evento CLICK
+            layer.on('click', (ev) => {
+                if (!layer.isPopupOpen()) {
+                    layer.openPopup(ev.latlng);
+                }
+            });
+        });
+    }
 
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
