@@ -50,13 +50,17 @@ export class MapManager {
         });
         measureControl.addTo(this.map);
 
+        // CORRECCIÓN DEFINITIVA DEL BUG DE MOVIMIENTO:
         const container = measureControl.getContainer();
         if (container) {
+             // 1. Deshabilitar propagación de clics, scroll y eventos táctiles
              L.DomEvent.disableClickPropagation(container);
              L.DomEvent.disableScrollPropagation(container);
              
-             // SOLUCIÓN DEFINITIVA: Detener mousedown para evitar el arrastre del mapa.
-             L.DomEvent.on(container, 'mousedown', L.DomEvent.stopPropagation); 
+             // 2. Detener el evento mousedown y evitar la acción por defecto
+             // Esto previene que el clic active el handler de arrastre del mapa.
+             L.DomEvent.on(container, 'mousedown', L.DomEvent.stopPropagation)
+                       .on(container, 'mousedown', L.DomEvent.preventDefault); // <--- CORRECCIÓN CLAVE
         }
     }
     
