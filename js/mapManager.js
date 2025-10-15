@@ -36,8 +36,7 @@ export class MapManager {
 
     addDrawControl() {
         const drawControl = new L.Control.Draw({
-            // Mantenemos la posición base 'topleft' para manipular su contenedor
-            position: 'topleft', 
+            position: 'topleft',
             edit: {
                 featureGroup: this.drawnItems, 
                 remove: true 
@@ -52,20 +51,11 @@ export class MapManager {
                 circlemarker: false,
             }
         });
-        
-        const addedControl = this.map.addControl(drawControl); 
-        
-        // 1. CENTRADO FINAL (Solución Canónica): Manipular la clase del contenedor
-        // El parentNode es el contenedor de esquina (leaflet-top leaflet-left)
-        const controlContainer = addedControl.getContainer().parentNode; 
-        if (controlContainer) {
-            L.DomUtil.removeClass(controlContainer, 'leaflet-left'); // Quitar la posición izquierda
-            L.DomUtil.addClass(controlContainer, 'leaflet-center');  // Añadir la clase de centrado (definida en style.css)
-        }
+        this.map.addControl(drawControl);
         
         const toolbar = document.querySelector('.leaflet-draw-toolbar');
         if (toolbar) {
-            // 2. Corrección de Bug de Movimiento del Mapa (Estable)
+            // Corrección de Bug de Movimiento del Mapa (Estable)
             L.DomEvent.disableClickPropagation(toolbar);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.stopPropagation);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.preventDefault);
@@ -92,28 +82,29 @@ export class MapManager {
                 } else {
                     measurementText = Math.round(distance) + ' m';
                 }
-    
-            // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - SOLUCIÓN ESTABLE FINAL
+
+            // 2. CÁLCULO DE ÁREA (Polígono y Rectángulo) - SOLUCIÓN ESTABLE Y CORREGIDA
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
                 const bounds = layer.getBounds();
-                const sw = bounds.getSouthWest();
-                const ne = bounds.getNorthEast();
+                const southWest = bounds.getSouthWest();
+                const northEast = bounds.getNorthEast();
                 
-                // Cálculo de ancho y alto basado en el Bounding Box (Aproximación más estable del Core)
-                const width_m = sw.distanceTo(L.latLng(sw.lat, ne.lng));
-                const height_m = sw.distanceTo(L.latLng(ne.lat, sw.lng));
+                // Cálculo de ancho y alto de la caja delimitadora (Aproximación)
+                const width_m = southWest.distanceTo(L.latLng(southWest.lat, northEast.lng));
+                const height_m = southWest.distanceTo(L.latLng(northEast.lat, southWest.lng));
                 
                 const areaSqM = width_m * height_m;
-    
-                // Formato de salida: Usa 4 decimales para evitar el '0' en áreas pequeñas
+
+                // Formato de salida corregido para asegurar decimales y unidades
                 if (areaSqM >= 1000000) {
-                    measurementText = (areaSqM / 1000000).toFixed(4) + ' km² (Caja Aprox.)';
+                    measurementText = (areaSqM / 1000000).toFixed(3) + ' km² (Caja Aprox.)';
                 } else if (areaSqM >= 10000) {
-                    measurementText = (areaSqM / 10000).toFixed(3) + ' ha (Caja Aprox.)';
+                    measurementText = (areaSqM / 10000).toFixed(2) + ' ha (Caja Aprox.)';
                 } else {
-                    measurementText = areaSqM.toFixed(4) + ' m² (Caja Aprox.)';
+                    // Muestra el valor exacto con 2 decimales para evitar el '0'
+                    measurementText = areaSqM.toFixed(2) + ' m² (Caja Aprox.)';
                 }
-    
+
             // 3. CÁLCULO DE ÁREA (Círculo/Radio) - ESTABLE
             } else if (layer instanceof L.Circle) {
                 const radius = layer.getRadius();
@@ -123,24 +114,24 @@ export class MapManager {
             } else if (layer instanceof L.Marker) {
                 measurementText = 'Ubicación agregada';
             }
-    
+
             // 4. Pedir Nombre al Usuario
             const defaultName = `Dibujo de ${type.charAt(0).toUpperCase() + type.slice(1)}`;
             const layerName = prompt(`Ingrese un nombre para su dibujo:\n(Medición: ${measurementText})`, defaultName);
             
             const finalName = layerName || defaultName;
-    
+
             // 5. Crear y Bindear el contenido persistente (Popup)
             const popupContent = `
                 <h4>${finalName}</h4>
                 <p><strong>Medición:</strong> ${measurementText}</p>
                 <p style="font-size: 0.8em; color: #888;">Utilice el botón de Edición (lápiz) para modificar la geometría.</p>
             `;
-    
+
             layer.bindPopup(popupContent, { closeButton: true });
             layer.openPopup(); 
             
-            // 6. Bindeo de evento CLICK (Abre al hacer clic)
+            // 6. Bindeo de evento CLICK
             layer.on('click', (ev) => {
                 if (!layer.isPopupOpen()) {
                     layer.openPopup(ev.latlng);
