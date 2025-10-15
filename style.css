@@ -370,7 +370,3 @@ input:checked + .slider:before { transform: translateX(20px); }
     .logo-container img { height: 40px; }
     .control-section h1 { font-size: 1.2em; }
 }
-.leaflet-top.leaflet-center {
-    left: 50%;
-    transform: translate(-50%, 0);
-}
