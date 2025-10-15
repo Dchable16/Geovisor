@@ -77,14 +77,19 @@ export class MapManager {
             let defaultName = `Dibujo ${type.charAt(0).toUpperCase() + type.slice(1)}`;
 
             if (layer instanceof L.Polyline) {
-                // CORRECCIÓN: Usar L.GeometryUtil.geodesicLength
-                const distance = L.GeometryUtil.geodesicLength(layer.getLatLngs());
-                const formattedDistance = L.GeometryUtil.readableDistance(distance, null, true); 
-                measurementValue = formattedDistance;
-                measurementHtml = `<strong>Distancia:</strong> ${formattedDistance}<br>`;
-
+                // VERIFICACIÓN ROBUSTA: Se asegura que la función exista antes de llamarla
+                if (L.GeometryUtil && L.GeometryUtil.geodesicLength) {
+                    const distance = L.GeometryUtil.geodesicLength(layer.getLatLngs());
+                    const formattedDistance = L.GeometryUtil.readableDistance(distance, null, true); 
+                    measurementValue = formattedDistance;
+                    measurementHtml = `<strong>Distancia:</strong> ${formattedDistance}<br>`;
+                } else {
+                    // Fallback si la función no carga:
+                    measurementValue = 'Distancia no calculada (Error de librería)';
+                    measurementHtml = `<strong>Distancia:</strong> ${measurementValue}<br>`;
+                }
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle || layer instanceof L.Circle) {
-                // Cálculo de área
+                // El cálculo de área es menos propenso a errores de dependencia
                 const area = L.GeometryUtil.geodesicArea(layer.getLatLngs ? layer.getLatLngs() : L.GeometryUtil.polygonToLatLngs(layer));
                 const formattedArea = L.GeometryUtil.readableArea(area, true, true);
                 measurementValue = formattedArea;
