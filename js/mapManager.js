@@ -82,8 +82,7 @@ export class MapManager {
             let measurementHtml = '';
             
             if (layer instanceof L.Polyline) {
-                // Cálculo de distancia (se utiliza el método interno de Draw o GeometryUtil)
-                const distance = L.GeometryUtil.length(layer.getLatLngs());
+                const distance = L.GeometryUtil.geodesicLength(layer.getLatLngs());
                 const formattedDistance = L.GeometryUtil.readableDistance(distance, null, true); // Usa unidades métricas
                 layer.properties.measurement = formattedDistance;
                 measurementHtml = `<strong>Distancia:</strong> ${formattedDistance}<br>`;
