@@ -22,7 +22,7 @@ export class MapManager {
         L.control.layers(CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.map);
         this.addLegend();
         this.addLogo();
-         this.addPMControl(); 
+        this.addPMControl(); 
     }
 
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
