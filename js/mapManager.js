@@ -36,7 +36,7 @@ export class MapManager {
 
     addDrawControl() {
         const drawControl = new L.Control.Draw({
-            position: 'topleft',
+            position: 'topcenter',
             edit: {
                 featureGroup: this.drawnItems, 
                 remove: true 
