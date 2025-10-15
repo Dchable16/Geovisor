@@ -12,6 +12,8 @@ export class MapManager {
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false
         });
+        this.drawnItems = new L.FeatureGroup(); 
+        this.map.addLayer(this.drawnItems);
         this.addControls();
     }
 
