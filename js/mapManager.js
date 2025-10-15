@@ -1,7 +1,7 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet.
- * Versión 2.2: Cálculo de área preciso y motor de impresión estable.
+ * Versión 3.0: Exportación de alta calidad con html-to-image y cálculos precisos con Turf.js.
  */
 
 import { CONFIG } from './config.js';
@@ -12,7 +12,9 @@ export class MapManager {
             center: CONFIG.initialCoords,
             zoom: CONFIG.initialZoom,
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
-            zoomControl: false
+            zoomControl: false,
+            // IMPORTANTE: Esta opción es clave para que la exportación de imagen funcione correctamente.
+            preferCanvas: true
         });
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
@@ -25,7 +27,8 @@ export class MapManager {
         this.addLegend();
         this.addLogo();
         this.addDrawControl();
-        this.addPrintControl();
+        // Se reemplaza el control de impresión anterior por nuestro botón personalizado.
+        this.addCustomPrintControl();
     }
 
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
@@ -38,10 +41,7 @@ export class MapManager {
     addDrawControl() {
         const drawControl = new L.Control.Draw({
             position: 'topleft',
-            edit: {
-                featureGroup: this.drawnItems,
-                remove: true
-            },
+            edit: { featureGroup: this.drawnItems },
             draw: {
                 polygon: { showArea: true, metric: true },
                 polyline: { allowIntersection: false, metric: true },
@@ -52,6 +52,7 @@ export class MapManager {
             }
         });
 
+        // Posiciona la barra de dibujo en el centro
         const addedControl = this.map.addControl(drawControl);
         const controlContainer = addedControl.getContainer().parentNode;
         if (controlContainer) {
@@ -59,104 +60,124 @@ export class MapManager {
             L.DomUtil.addClass(controlContainer, 'leaflet-center');
         }
 
-        const toolbar = document.querySelector('.leaflet-draw-toolbar');
-        if (toolbar) {
-            L.DomEvent.disableClickPropagation(toolbar);
-            L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.stopPropagation);
-        }
-
         this.map.on(L.Draw.Event.CREATED, (e) => {
             const layer = e.layer;
-            const type = e.layerType;
             this.drawnItems.addLayer(layer);
-
             let measurementText = 'Medición no disponible';
 
             if (layer instanceof L.Polyline) {
-                let distance = 0;
                 const latlngs = layer.getLatLngs();
-                for (let i = 0; i < latlngs.length - 1; i++) {
-                    distance += latlngs[i].distanceTo(latlngs[i + 1]);
-                }
-                measurementText = distance >= 1000 ? (distance / 1000).toFixed(2) + ' km' : Math.round(distance) + ' m';
+                const geojsonLine = L.polyline(latlngs).toGeoJSON();
+                const length = turf.length(geojsonLine, { units: 'meters' });
+                measurementText = length >= 1000 ? (length / 1000).toFixed(2) + ' km' : Math.round(length) + ' m';
 
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                // SOLUCIÓN DEFINITIVA: Usar L.GeometryUtil para un cálculo geodésico preciso.
-                // Esta utilidad viene incluida con leaflet.draw.js y funciona correctamente.
-                const latlngs = layer.getLatLngs()[0];
-                const areaSqM = L.GeometryUtil.geodesicArea(latlngs);
+                // SOLUCIÓN DEFINITIVA CON TURF.JS
+                const geojson = layer.toGeoJSON();
+                const areaSqM = turf.area(geojson);
 
-                if (areaSqM >= 1000000) {
-                    measurementText = (areaSqM / 1000000).toFixed(3) + ' km²';
-                } else if (areaSqM >= 10000) {
-                    measurementText = (areaSqM / 10000).toFixed(2) + ' ha';
+                if (areaSqM > 0) {
+                     if (areaSqM >= 1000000) {
+                        measurementText = (areaSqM / 1000000).toFixed(3) + ' km²';
+                    } else if (areaSqM >= 10000) {
+                        measurementText = (areaSqM / 10000).toFixed(2) + ' ha';
+                    } else {
+                        measurementText = areaSqM.toFixed(2) + ' m²';
+                    }
                 } else {
-                    measurementText = areaSqM.toFixed(2) + ' m²';
+                    measurementText = "Área no calculable. Verifique la geometría.";
                 }
 
             } else if (layer instanceof L.Circle) {
                 const radius = layer.getRadius();
                 const areaSqM = Math.PI * radius * radius;
                 measurementText = areaSqM >= 1000000 ? (areaSqM / 1000000).toFixed(3) + ' km²' : areaSqM.toFixed(2) + ' m²';
-
-            } else if (layer instanceof L.Marker) {
-                measurementText = 'Ubicación agregada';
             }
 
-            const defaultName = `Dibujo de ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            const defaultName = `Dibujo de ${e.layerType.charAt(0).toUpperCase() + e.layerType.slice(1)}`;
             const layerName = prompt(`Ingrese un nombre para su dibujo:\n(Medición: ${measurementText})`, defaultName);
-
             const finalName = layerName || defaultName;
 
-            const popupContent = `
-                <h4>${finalName}</h4>
-                <p><strong>Medición:</strong> ${measurementText}</p>
-                <p style="font-size: 0.8em; color: #888;">Utilice el botón de Edición (lápiz) para modificar.</p>
-            `;
-
-            layer.bindPopup(popupContent, { closeButton: true }).openPopup();
+            const popupContent = `<h4>${finalName}</h4><p><strong>Medición:</strong> ${measurementText}</p>`;
+            layer.bindPopup(popupContent).openPopup();
         });
     }
 
-    addPrintControl() {
-        // SOLUCIÓN DEFINITIVA: Volver a leaflet-easyprint que es estable.
-        // La opción 'exportOnly: true' hace que la descarga de PNG sea directa y lo más rápida posible.
-        L.easyPrint({
-            title: 'Exportar Mapa como Imagen',
-            position: 'bottomright',
-            exportOnly: true, // Clave para la rapidez: descarga directa de PNG.
-            filename: 'geovisor_exportacion',
-            hideControlContainer: true, // Oculta otros botones en la imagen final.
-            // El spinner en style.css dará feedback visual inmediato al usuario.
-        }).addTo(this.map);
+    addCustomPrintControl() {
+        const PrintControl = L.Control.extend({
+            options: {
+                position: 'bottomright'
+            },
+            onAdd: (map) => {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                container.style.backgroundColor = 'white';
+                container.style.width = '30px';
+                container.style.height = '30px';
+                container.style.cursor = 'pointer';
+                container.title = 'Exportar mapa como imagen de alta calidad';
+                container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="padding: 4px;"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>`;
+                
+                L.DomEvent.on(container, 'click', async () => {
+                    const mapNode = document.getElementById(CONFIG.mapId);
+                    const loader = document.getElementById('app-loader');
+                    
+                    // Muestra el loader durante la exportación
+                    if(loader) loader.style.display = 'flex';
+
+                    try {
+                        const dataUrl = await htmlToImage.toPng(mapNode, {
+                            quality: 1.0, // Máxima calidad
+                            pixelRatio: 2, // Doble resolución para mayor nitidez
+                            // Excluir controles de la imagen final para un mapa limpio
+                            filter: (node) => {
+                                 const exclusionClasses = ['leaflet-control-zoom', 'leaflet-control-layers', 'leaflet-draw', 'leaflet-control-custom', 'leaflet-center'];
+                                 return !exclusionClasses.some((classname) => node.classList?.contains(classname));
+                            }
+                        });
+                        
+                        // Crear un enlace y simular un clic para descargar la imagen
+                        const link = document.createElement('a');
+                        link.download = 'mapa-exportado.png';
+                        link.href = dataUrl;
+                        link.click();
+
+                    } catch (error) {
+                        console.error('Error al exportar el mapa:', error);
+                        alert('No se pudo exportar el mapa. Inténtelo de nuevo.');
+                    } finally {
+                        // Oculta el loader al finalizar
+                        if(loader) loader.style.display = 'none';
+                    }
+                });
+
+                return container;
+            }
+        });
+        this.map.addControl(new PrintControl());
     }
 
+    // --- El resto de tus funciones (addLegend, addLogo, getColor, fitBounds) permanecen igual ---
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
         const vulnerabilityMap = CONFIG.vulnerabilityMap;
-
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend');
             div.innerHTML = '<h4>Vulnerabilidad</h4>';
             const sortedGrades = Object.keys(vulnerabilityMap)
                 .filter(key => key !== 'default')
                 .sort((a, b) => b - a);
-
             sortedGrades.forEach(grade => {
                 const { color, label } = vulnerabilityMap[grade];
                 div.innerHTML += `<i style="background:${color}"></i> ${label} (Nivel ${grade})<br>`;
             });
-
             const defaultEntry = vulnerabilityMap['default'];
             div.innerHTML += `<i style="background:${defaultEntry.color}; border: 1px solid #666;"></i> ${defaultEntry.label}`;
-
             L.DomEvent.disableClickPropagation(div);
             L.DomEvent.disableScrollPropagation(div);
             return div;
         };
         legend.addTo(this.map);
     }
-
     addLogo() {
         const LogoControl = L.Control.extend({
             onAdd: map => {
@@ -168,13 +189,11 @@ export class MapManager {
         });
         new LogoControl({ position: 'bottomright' }).addTo(this.map);
     }
-
     getColor(v) {
         const value = String(v);
         const entry = CONFIG.vulnerabilityMap[value];
         return entry ? entry.color : CONFIG.vulnerabilityMap.default.color;
     }
-
     fitBounds(bounds) {
         if (bounds) {
             this.map.fitBounds(bounds.pad(0.1));
