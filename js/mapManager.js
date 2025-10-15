@@ -48,6 +48,7 @@ export class MapManager {
                 marker: true,
                 circlemarker: false,
             }
+            position: 'topcenter'
         });
         this.map.addControl(drawControl);
         
