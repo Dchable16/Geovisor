@@ -441,3 +441,11 @@ body.leaflet-control-easyPrint-exporting .spinner {
         padding: 0 !important;
     }
 }
+/* --- 11. CORRECCIÓN PARA LA BARRA DE DIBUJO --- */
+/*
+ * Soluciona el problema de los botones apilados, forzando
+ * a que se muestren en una línea horizontal.
+*/
+.leaflet-draw-toolbar a {
+    float: left !important;
+}
