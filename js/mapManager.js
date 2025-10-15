@@ -32,18 +32,25 @@ export class MapManager {
 
     addMeasureControl() {
         const measureControl = L.control.measure({
-            position: 'topleft', // Se posiciona junto a los controles de zoom
+            position: 'topleft', 
             primaryLengthUnit: 'kilometers', 
             secondaryLengthUnit: 'meters',
             primaryAreaUnit: 'hectares',
             secondaryAreaUnit: 'sqmeters',
-            activeColor: '#ff7f50', // Color coral
-            completedColor: '#007BFF', // Color azul del tema
-            localization: 'es', // Localización en español
-            // Añadir un icono de cinta métrica si es posible
-            // Opcionalmente, se puede personalizar el icono si se tienen los archivos
+            activeColor: '#ff7f50', 
+            completedColor: '#007BFF', 
+            localization: 'es', 
+            // AJUSTE: Forzar unidades para asegurar la traducción de etiquetas
+            units: {
+                kilometers: { label: 'km', display: 'Kilómetros', decimals: 2 },
+                meters: { label: 'm', display: 'Metros' },
+                hectares: { label: 'ha', display: 'Hectáreas' },
+                sqmeters: { label: 'm²', display: 'Metros Cuadrados' }
+            }
         });
         measureControl.addTo(this.map);
+
+        // CORRECCIÓN CRÍTICA DE BUG: Prevenir la propagación de clics al mapa.
         const container = measureControl.getContainer();
         if (container) {
              L.DomEvent.disableClickPropagation(container);
