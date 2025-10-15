@@ -20,7 +20,7 @@ export class MapManager {
         L.control.layers(CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.map);
         this.addLegend();
         this.addLogo();
-        this.addMeasureControl();
+        this.addDrawControl();
     }
 
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
@@ -30,38 +30,54 @@ export class MapManager {
         }).addTo(this.map);
     }
 
-    addMeasureControl() {
-        const measureControl = L.control.measure({
-            position: 'topleft', 
-            primaryLengthUnit: 'kilometers', 
-            secondaryLengthUnit: 'meters',
-            primaryAreaUnit: 'hectares',
-            secondaryAreaUnit: 'sqmeters',
-            activeColor: '#ff7f50', 
-            completedColor: '#007BFF', 
-            localization: 'es', 
-            // AJUSTE: Forzar unidades para asegurar la traducción de etiquetas
-            units: {
-                kilometers: { label: 'km', display: 'Kilómetros', decimals: 2 },
-                meters: { label: 'm', display: 'Metros' },
-                hectares: { label: 'ha', display: 'Hectáreas' },
-                sqmeters: { label: 'm²', display: 'Metros Cuadrados' }
+    addDrawControl() {
+        const drawControl = new L.Control.Draw({
+            position: 'topleft',
+            edit: {
+                featureGroup: this.drawnItems, // Permite editar los elementos dibujados
+                remove: true // Permite eliminar los elementos dibujados
+            },
+            draw: {
+                polyline: {
+                    allowIntersection: false,
+                    shapeOptions: { color: '#f357a1' },
+                    metric: true // Muestra la distancia en kilómetros/metros
+                },
+                polygon: {
+                    allowIntersection: false,
+                    showArea: true, // Muestra el área al terminar de dibujar
+                    shapeOptions: { color: '#f357a1' },
+                    metric: true
+                },
+                circle: {
+                    shapeOptions: { color: '#f357a1' },
+                    metric: true
+                },
+                rectangle: {
+                    shapeOptions: { color: '#f357a1' },
+                    metric: true
+                },
+                marker: true,
+                circlemarker: false,
             }
         });
-        measureControl.addTo(this.map);
+        this.map.addControl(drawControl);
 
-        // CORRECCIÓN DEFINITIVA DEL BUG DE MOVIMIENTO:
-        const container = measureControl.getContainer();
-        if (container) {
-             // 1. Deshabilitar propagación de clics, scroll y eventos táctiles
-             L.DomEvent.disableClickPropagation(container);
-             L.DomEvent.disableScrollPropagation(container);
-             
-             // 2. Detener el evento mousedown y evitar la acción por defecto
-             // Esto previene que el clic active el handler de arrastre del mapa.
-             L.DomEvent.on(container, 'mousedown', L.DomEvent.stopPropagation)
-                       .on(container, 'mousedown', L.DomEvent.preventDefault); // <--- CORRECCIÓN CLAVE
-        }
+        // CÓDIGO NUEVO: Evento para manejar el dibujo
+        this.map.on(L.Draw.Event.CREATED, (e) => {
+            const layer = e.layer;
+            this.drawnItems.addLayer(layer);
+            
+            // Opcional: Mostrar una alerta con la medida obtenida
+            let measure = '';
+            if (layer instanceof L.Polyline) {
+                 // La medición se muestra automáticamente por el plugin, pero puedes añadir tu lógica aquí.
+                 measure = 'Distancia dibujada.'; 
+            } else if (layer instanceof L.Polygon || layer instanceof L.Circle || layer instanceof L.Rectangle) {
+                 measure = 'Área dibujada.';
+            }
+            console.log(measure, layer);
+        });
     }
     
     addLegend() {
