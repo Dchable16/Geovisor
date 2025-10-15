@@ -24,6 +24,7 @@ export class MapManager {
         this.addLegend();
         this.addLogo();
         this.addDrawControl();
+        this.addPrintControl();
         const drawContainer = document.querySelector('.leaflet-draw');
     }
 
