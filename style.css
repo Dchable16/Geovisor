@@ -1,7 +1,7 @@
 /**
  * @file style.css
  * @description Hoja de estilos mejorada para el Geovisor.
- * Versión 2.1: Mejoras responsivas, optimización de impresión.
+ * Versión 2.2: Corrección de la barra de herramientas de dibujo.
 */
 
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
@@ -342,28 +342,24 @@ input:checked + .slider:before { transform: translateX(20px); }
     .logo-container img { height: 40px; }
     .control-section h1 { font-size: 1.2em; }
 
-    /* MEJORA MÓVIL: Panel de información como "bottom sheet" */
     .info-panel {
         width: 100%;
-        max-height: 45vh; /* Limitar altura en móvil */
+        max-height: 45vh;
         top: auto;
         bottom: 0;
         right: 0;
         left: 0;
         border-radius: var(--border-radius) var(--border-radius) 0 0;
-        /* Animación desde abajo */
         transform: translateY(100%);
     }
     .info-panel.is-visible {
         transform: translateY(0);
     }
     #info-panel-content {
-         max-height: 35vh; /* Ajustar altura del contenido */
+         max-height: 35vh;
     }
 
-    /* MEJORA MÓVIL: Reubicar leyenda para evitar solapamiento */
     .leaflet-bottom.leaflet-left {
-        /* Mover a la esquina superior y ajustar para no chocar con el control de capas */
         top: 10px;
         bottom: auto;
         left: auto;
@@ -371,7 +367,6 @@ input:checked + .slider:before { transform: translateX(20px); }
         width: auto;
     }
      .info.legend {
-        /* Hacerla un poco más pequeña en móvil */
         font-size: 12px;
         line-height: 1.6;
         padding: 8px 12px;
@@ -386,8 +381,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 
 /* --- 9. MEJORAS DE UX ADICIONALES --- */
-
-/* MEJORA: Indicador de carga para la exportación de easyPrint */
 body.leaflet-control-easyPrint-exporting::before {
     content: '';
     position: fixed;
@@ -403,7 +396,7 @@ body.leaflet-control-easyPrint-exporting::after {
     position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, 80px); /* Posicionar debajo del spinner */
+    transform: translate(-50%, 80px);
     z-index: 10001;
     font-size: 1.2em;
     font-weight: bold;
@@ -417,7 +410,6 @@ body.leaflet-control-easyPrint-exporting .spinner {
     margin-left: -25px;
     z-index: 10001;
 }
-
 
 /* --- 10. ESTILOS DE IMPRESIÓN --- */
 @media print {
@@ -441,11 +433,17 @@ body.leaflet-control-easyPrint-exporting .spinner {
         padding: 0 !important;
     }
 }
+
 /* --- 11. CORRECCIÓN PARA LA BARRA DE DIBUJO --- */
 /*
- * Soluciona el problema de los botones apilados, forzando
- * a que se muestren en una línea horizontal.
+ * Esta regla específica asegura que la barra de herramientas de dibujo
+ * no sea afectada por otros estilos y se muestre correctamente.
 */
+.leaflet-draw.leaflet-control {
+    position: relative !important;
+    left: auto !important; /* Resetea el posicionamiento conflictivo */
+}
+
 .leaflet-draw-toolbar a {
-    float: left !important;
+    float: left !important; /* Fuerza el alineamiento horizontal de los botones */
 }
