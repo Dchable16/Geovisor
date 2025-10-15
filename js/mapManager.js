@@ -152,10 +152,10 @@ export class MapManager {
     addPrintControl() {
         L.easyPrint({
             title: 'Exportar/Imprimir Mapa',
-            position: 'topright', 
-            exportOnly: true, // CRÍTICO: Exporta solo la vista actual como imagen (PNG/JPEG)
+            position: 'bottomright', // CRÍTICO: Mover a la esquina inferior derecha para evitar solapamiento
+            exportOnly: true, // Exporta directamente la imagen, sin abrir la ventana de diálogo de impresión
             filename: 'geovisor_exportacion',
-            hideControlContainer: false, // Asegura que los botones sean visibles
+
         }).addTo(this.map);
     }
 
