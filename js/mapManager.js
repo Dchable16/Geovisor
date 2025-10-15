@@ -52,6 +52,14 @@ export class MapManager {
                 circlemarker: false,
             }
         });
+
+        const addedControl = this.map.addControl(drawControl);
+        const controlContainer = addedControl.getContainer().parentNode; 
+        if (controlContainer) {
+            L.DomUtil.removeClass(controlContainer, 'leaflet-left'); // Quitar la alineación 'left: 0'
+            L.DomUtil.addClass(controlContainer, 'leaflet-center');  // Aplicar nuestra clase de centrado
+        }
+        
         this.map.addControl(drawControl);
         
         const toolbar = document.querySelector('.leaflet-draw-toolbar');
