@@ -5,25 +5,6 @@
 
 import { CONFIG } from './config.js';
 
-/**
- * Calcula la distancia total de una polilínea usando el método distanceTo de Leaflet (cálculo esférico aproximado).
- * @param {L.LatLng[]} latlngs 
- * @returns {string} Distancia formateada.
- */
-function calculatePolylineDistance(latlngs) {
-    let distance = 0;
-    for (let i = 0; i < latlngs.length - 1; i++) {
-        // Usa la función distanceTo de Core Leaflet (siempre disponible)
-        distance += latlngs[i].distanceTo(latlngs[i+1]);
-    }
-    
-    // Formateo manual simple
-    if (distance > 1000) {
-        return (distance / 1000).toFixed(2) + ' km';
-    }
-    return Math.round(distance) + ' m';
-}
-
 export class MapManager {
     constructor(mapId) {
         this.map = L.map(mapId, {
@@ -83,34 +64,54 @@ export class MapManager {
             let measurementText = 'Medición no disponible';
             const type = e.layerType;
             
-            // 1. Extraer medición del Tooltip nativo de Leaflet.Draw
-            if (layer.getTooltip()) {
-                measurementText = layer.getTooltip().getContent();
-                layer.unbindTooltip(); // Desactivar el tooltip flotante
+            // 1. CÁLCULO ESTABLE DE DISTANCIA (Polilínea, Círculo)
+            if (layer instanceof L.Polyline) {
+                let distance = 0;
+                const latlngs = layer.getLatLngs();
+                
+                // Iterar sobre los puntos para sumar las distancias con la función distanceTo de Core Leaflet
+                for (let i = 0; i < latlngs.length - 1; i++) {
+                    distance += latlngs[i].distanceTo(latlngs[i+1]); 
+                }
+                
+                // Formato simple y estable
+                if (distance >= 1000) {
+                    measurementText = (distance / 1000).toFixed(2) + ' km';
+                } else {
+                    measurementText = Math.round(distance) + ' m';
+                }
+
+            // 2. CÁLCULO DE ÁREA (Rectángulo, Polígono, Círculo)
+            } else if (layer instanceof L.Circle) {
+                // Cálculo de área de un círculo (el radio está en metros)
+                const radius = layer.getRadius();
+                const areaSqM = Math.PI * radius * radius;
+                measurementText = (areaSqM / 1000000).toFixed(3) + ' km² (Aprox)';
+            } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+                 // Advertencia: Sin librería de geometría, el cálculo de área para Polígonos es complejo.
+                measurementText = 'Área: Usar herramienta Círculo o instalar librería de geometría.';
             } else if (layer instanceof L.Marker) {
                 measurementText = 'Ubicación agregada';
             }
             
-            // 2. Pedir Nombre al Usuario (Método simple: usa un prompt JS)
+            // 3. Pedir Nombre al Usuario
             const defaultName = `Dibujo de ${type.charAt(0).toUpperCase() + type.slice(1)}`;
             const layerName = prompt(`Ingrese un nombre para su dibujo:\n(Medición: ${measurementText})`, defaultName);
             
             const finalName = layerName || defaultName;
 
-            // 3. Crear el contenido persistente (Popup)
+            // 4. Crear el contenido persistente (Popup)
             const popupContent = `
                 <h4>${finalName}</h4>
                 <p><strong>Medición:</strong> ${measurementText}</p>
                 <p style="font-size: 0.8em; color: #888;">Utilice el botón de Edición (lápiz) para modificar la geometría.</p>
             `;
 
-            // 4. Bindear y configurar el Popup para abrir al hacer clic
+            // 5. Bindear y configurar el Popup
             layer.bindPopup(popupContent, { closeButton: true });
-            
-            // Abrir el popup inmediatamente para confirmar la acción
             layer.openPopup(); 
             
-            // 5. Bindeo de evento CLICK (garantiza que el popup se abre al hacer clic posterior)
+            // 6. Bindeo de evento CLICK
             layer.on('click', (ev) => {
                 if (!layer.isPopupOpen()) {
                     layer.openPopup(ev.latlng);
