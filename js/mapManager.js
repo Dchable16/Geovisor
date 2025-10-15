@@ -152,10 +152,12 @@ export class MapManager {
     addPrintControl() {
         L.easyPrint({
             title: 'Exportar/Imprimir Mapa',
-            position: 'bottomright', // CRÍTICO: Mover a la esquina inferior derecha para evitar solapamiento
-            exportOnly: true, // Exporta directamente la imagen, sin abrir la ventana de diálogo de impresión
+            position: 'bottomright', // Mover a la esquina inferior derecha
+            exportOnly: false, // Permitir que el botón active la ventana de impresión nativa (para PDF rápido)
             filename: 'geovisor_exportacion',
-
+            hideControlContainer: false,
+            sizeModes: ['Current', 'A4Landscape', 'A4Portrait', 'A3Landscape', 'A3Portrait'],
+            defaultSize: 'A4Landscape'
         }).addTo(this.map);
     }
 
