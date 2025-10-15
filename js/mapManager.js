@@ -35,81 +35,57 @@ export class MapManager {
         }).addTo(this.map);
     }
     
-    _calculateProjectedPolygonArea(latlngs) {
-        if (!latlngs || latlngs.length < 3) {
-            return 0;
-        }
-
-        let area = 0;
-        const projectedPoints = latlngs.map(latlng => L.CRS.EPSG3857.project(latlng));
-
-        for (let i = 0, j = projectedPoints.length - 1; i < projectedPoints.length; j = i++) {
-            const p1 = projectedPoints[i];
-            const p2 = projectedPoints[j];
-            area += p1.x * p2.y - p2.x * p1.y;
-        }
-
-        return Math.abs(area / 2);
-    }
-
     addDrawControl() {
         const drawControl = new L.Control.Draw({
             position: 'topleft',
             edit: {
-                featureGroup: this.drawnItems, 
-                remove: true 
+                featureGroup: this.drawnItems,
+                remove: true
             },
             draw: {
-                polyline: { allowIntersection: false, metric: true },
                 polygon: { showArea: true, metric: true },
-                circle: { metric: true },
+                polyline: { allowIntersection: false, metric: true },
                 rectangle: { metric: true },
+                circle: { metric: true },
                 marker: true,
                 circlemarker: false,
             }
         });
 
+        // Posicionar la barra de dibujo en el centro superior
         const addedControl = this.map.addControl(drawControl);
-        const controlContainer = addedControl.getContainer().parentNode; 
+        const controlContainer = addedControl.getContainer().parentNode;
         if (controlContainer) {
             L.DomUtil.removeClass(controlContainer, 'leaflet-left');
             L.DomUtil.addClass(controlContainer, 'leaflet-center');
         }
-        
-        this.map.addControl(drawControl);
-        
+
         const toolbar = document.querySelector('.leaflet-draw-toolbar');
         if (toolbar) {
             L.DomEvent.disableClickPropagation(toolbar);
             L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.stopPropagation);
-            L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.preventDefault);
         }
-        
+
         this.map.on(L.Draw.Event.CREATED, (e) => {
             const layer = e.layer;
             const type = e.layerType;
             this.drawnItems.addLayer(layer);
-            
+
             let measurementText = 'Medición no disponible';
-            
+
             if (layer instanceof L.Polyline) {
                 let distance = 0;
                 const latlngs = layer.getLatLngs();
-                
                 for (let i = 0; i < latlngs.length - 1; i++) {
-                    distance += latlngs[i].distanceTo(latlngs[i+1]); 
+                    distance += latlngs[i].distanceTo(latlngs[i + 1]);
                 }
-                
-                if (distance >= 1000) {
-                    measurementText = (distance / 1000).toFixed(2) + ' km';
-                } else {
-                    measurementText = Math.round(distance) + ' m';
-                }
+                measurementText = distance >= 1000 ? (distance / 1000).toFixed(2) + ' km' : Math.round(distance) + ' m';
 
             } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                // CORRECCIÓN: Usar el cálculo de área preciso
-                const latlngs = layer.getLatLngs()[0]; // Usamos el anillo exterior
-                const areaSqM = this._calculateProjectedPolygonArea(latlngs);
+                // CORRECCIÓN: Usar L.GeometryUtil para un cálculo geodésico preciso.
+                // Esta utilidad viene incluida en leaflet.draw.js
+                const latlngs = layer.getLatLngs()[0];
+                const areaSqM = L.GeometryUtil.geodesicArea(latlngs);
 
                 if (areaSqM >= 1000000) {
                     measurementText = (areaSqM / 1000000).toFixed(3) + ' km²';
@@ -122,44 +98,40 @@ export class MapManager {
             } else if (layer instanceof L.Circle) {
                 const radius = layer.getRadius();
                 const areaSqM = Math.PI * radius * radius;
-                measurementText = (areaSqM / 1000000).toFixed(3) + ' km² (Radio)';
-                
+                measurementText = areaSqM >= 1000000 ? (areaSqM / 1000000).toFixed(3) + ' km²' : areaSqM.toFixed(2) + ' m²';
+            
             } else if (layer instanceof L.Marker) {
                 measurementText = 'Ubicación agregada';
             }
 
             const defaultName = `Dibujo de ${type.charAt(0).toUpperCase() + type.slice(1)}`;
             const layerName = prompt(`Ingrese un nombre para su dibujo:\n(Medición: ${measurementText})`, defaultName);
-            
+
             const finalName = layerName || defaultName;
 
             const popupContent = `
                 <h4>${finalName}</h4>
                 <p><strong>Medición:</strong> ${measurementText}</p>
-                <p style="font-size: 0.8em; color: #888;">Utilice el botón de Edición (lápiz) para modificar la geometría.</p>
+                <p style="font-size: 0.8em; color: #888;">Utilice el botón de Edición (lápiz) para modificar.</p>
             `;
 
-            layer.bindPopup(popupContent, { closeButton: true });
-            layer.openPopup(); 
-            
-            layer.on('click', (ev) => {
-                if (!layer.isPopupOpen()) {
-                    layer.openPopup(ev.latlng);
-                }
-            });
+            layer.bindPopup(popupContent, { closeButton: true }).openPopup();
         });
     }
 
     addPrintControl() {
-        // MEJORA: Optimizado para ser más rápido y robusto
-        L.easyPrint({
-            title: 'Exportar Mapa como Imagen',
+        // MEJORA: Usar leaflet.browser.print para mayor velocidad y control.
+        L.control.browserPrint({
+            title: 'Exportar mapa como imagen PNG',
             position: 'bottomright',
-            exportOnly: true, // Clave para la rapidez: descarga directa de PNG
-            filename: 'geovisor_exportacion',
-            hideControlContainer: true, // Oculta otros botones en la imagen final
-            sizeModes: ['Current', 'A4Landscape', 'A4Portrait'], 
-            defaultSize: 'Current'
+            printModes: [
+                L.Control.BrowserPrint.Mode.Custom("Exportar PNG", "A4", {
+					title: "Exportar PNG",
+				})
+            ],
+            // Oculta el modo de impresión (Ctrl+P) para que solo se vea la exportación a imagen.
+            printModesToHide: [L.Control.BrowserPrint.Mode.Alert, L.Control.BrowserPrint.Mode.Print],
+            closePopupsOnPrint: true
         }).addTo(this.map);
     }
 
