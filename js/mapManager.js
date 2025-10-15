@@ -11,6 +11,7 @@ if (typeof L !== 'undefined' && typeof L.PM !== 'undefined') {
         measurementUnit: 'kilometers', // Unidades métricas
         allowSelfIntersection: false,
     });
+    L.PM.setLang('es'); 
 }
 
 export class MapManager {
@@ -23,10 +24,6 @@ export class MapManager {
         });
         this.drawnItems = new L.FeatureGroup(); 
         this.map.addLayer(this.drawnItems);
-        if (this.map.pm && this.map.pm.setLang) {
-            this.map.pm.setLang('es'); 
-        }
-
         this.addControls();
     }
 
@@ -47,10 +44,10 @@ export class MapManager {
 
     addPMControl() {
         if (!this.map.pm) {
-            console.error("Leaflet.PM (Geoman) no se inicializó en el mapa.");
+            // Este console.error ya no debería ejecutarse.
+            console.error("Leaflet.PM (Geoman) no se inicializó en el mapa, falló el adjunto.");
             return;
         }
-
         this.map.pm.addControls({
             position: 'topleft',
             drawCircleMarker: false, 
@@ -59,11 +56,8 @@ export class MapManager {
             dragMode: true,
             cutToolbar: false, 
             removalMode: true,
-            measureControl: true, // CRÍTICO: Activar el control de medición
+            measureControl: true, 
         });
-
-        this.map.pm.setLang('es'); 
-
         this.map.on('pm:create', (e) => {
              console.log('Geometría PM creada:', e.layer, e.shape);
         });
