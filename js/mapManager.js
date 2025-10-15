@@ -65,20 +65,79 @@ export class MapManager {
         });
         this.map.addControl(drawControl);
 
-        // CÓDIGO NUEVO: Evento para manejar el dibujo
         this.map.on(L.Draw.Event.CREATED, (e) => {
             const layer = e.layer;
             this.drawnItems.addLayer(layer);
             
-            // Opcional: Mostrar una alerta con la medida obtenida
-            let measure = '';
+            let measurement = '';
+            
+            // 1. Determinar y formatear la medición final
             if (layer instanceof L.Polyline) {
-                 // La medición se muestra automáticamente por el plugin, pero puedes añadir tu lógica aquí.
-                 measure = 'Distancia dibujada.'; 
-            } else if (layer instanceof L.Polygon || layer instanceof L.Circle || layer instanceof L.Rectangle) {
-                 measure = 'Área dibujada.';
+                measurement = 'Línea dibujada.'; 
+
+            } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+                // Cálculo de área para Polygon/Rectangle
+                const area = L.GeometryUtil.geodesicArea(layer.getLatLngs());
+                const formattedArea = L.GeometryUtil.formattedNumber(area / 10000, 2) + ' ha';
+                measurement = `Área: ${formattedArea}`;
+
+            } else if (layer instanceof L.Circle) {
+                // Cálculo de área para Circle
+                const radius = layer.getRadius() / 1000;
+                const area = Math.PI * radius * radius;
+                const formattedArea = L.GeometryUtil.formattedNumber(area, 2) + ' km²';
+                measurement = `Área (aprox): ${formattedArea}`;
+                
+            } else if (layer instanceof L.Marker) {
+                measurement = 'Punto de Interés';
             }
-            console.log(measure, layer);
+            
+            // 2. Crear el contenido del Popup con opción de nombrar
+            const defaultName = layer.options.title || measurement;
+            const popupContent = `
+                <div class="draw-popup">
+                    <strong>Tipo:</strong> ${e.layerType}<br>
+                    <strong>Medición:</strong> ${measurement}<br><br>
+                    <label for="layer-name">Nombre:</label>
+                    <input type="text" id="layer-name" value="${defaultName}" style="width: 90%; margin-bottom: 5px;"><br>
+                    <button class="save-name-btn" style="background-color: var(--accent-color); color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">Guardar Nombre</button>
+                </div>
+            `;
+            
+            // 3. Bindear el popup y mostrarlo
+            layer.bindPopup(popupContent);
+            layer.openPopup();
+            
+            // 4. Implementar la lógica para guardar el nombre (listener dentro del popup)
+            layer.on('popupopen', () => {
+                const popupDiv = layer.getPopup().getElement();
+                const saveButton = popupDiv.querySelector('.save-name-btn');
+                const nameInput = popupDiv.querySelector('#layer-name');
+                
+                if (saveButton && nameInput) {
+                    // Prevenir la propagación del clic dentro del popup para evitar errores
+                    L.DomEvent.disableClickPropagation(popupDiv); 
+                    
+                    saveButton.onclick = () => {
+                        const newName = nameInput.value || measurement;
+                        
+                        // Guardar el nuevo nombre como una opción de la capa
+                        layer.options.title = newName; 
+                        
+                        // Opcional: Actualizar el tooltip (etiqueta persistente)
+                        if (layer.getTooltip()) {
+                            layer.setTooltipContent(newName);
+                        } else {
+                            layer.bindTooltip(newName, { permanent: true, direction: 'right', opacity: 0.9 }).openTooltip();
+                        }
+                        
+                        layer.closePopup();
+                    };
+                }
+            });
+            
+            // 5. Mostrar la etiqueta persistente por defecto
+            layer.bindTooltip(defaultName, { permanent: true, direction: 'right', opacity: 0.9 }).openTooltip();
         });
     }
     
