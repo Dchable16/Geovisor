@@ -24,6 +24,11 @@ export class MapManager {
         this.addLegend();
         this.addLogo();
         this.addDrawControl();
+        const drawContainer = document.querySelector('.leaflet-draw');
+        if (drawContainer) {
+             drawContainer.style.left = '50%';
+             drawContainer.style.transform = 'translateX(-50%)';
+        }
     }
 
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
