@@ -65,79 +65,90 @@ export class MapManager {
         });
         this.map.addControl(drawControl);
 
+        // MANEJADOR PRINCIPAL: Evento para manejar el dibujo y agregar el Popup/Nombre
         this.map.on(L.Draw.Event.CREATED, (e) => {
             const layer = e.layer;
+            const type = e.layerType;
             this.drawnItems.addLayer(layer);
             
-            let measurement = '';
+            // 1. Inicializar propiedades de la capa (donde se guardará el nombre)
+            layer.properties = {
+                name: `Dibujo ${type.charAt(0).toUpperCase() + type.slice(1)}`, // Nombre inicial
+                measurement: '',
+                type: type
+            };
             
-            // 1. Determinar y formatear la medición final
+            // 2. Determinar y calcular la medición final
+            let measurementHtml = '';
+            
             if (layer instanceof L.Polyline) {
-                measurement = 'Línea dibujada.'; 
+                // Cálculo de distancia (se utiliza el método interno de Draw o GeometryUtil)
+                const distance = L.GeometryUtil.length(layer.getLatLngs());
+                const formattedDistance = L.GeometryUtil.readableDistance(distance, null, true); // Usa unidades métricas
+                layer.properties.measurement = formattedDistance;
+                measurementHtml = `<strong>Distancia:</strong> ${formattedDistance}<br>`;
 
-            } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                // Cálculo de área para Polygon/Rectangle
-                const area = L.GeometryUtil.geodesicArea(layer.getLatLngs());
-                const formattedArea = L.GeometryUtil.formattedNumber(area / 10000, 2) + ' ha';
-                measurement = `Área: ${formattedArea}`;
-
-            } else if (layer instanceof L.Circle) {
-                // Cálculo de área para Circle
-                const radius = layer.getRadius() / 1000;
-                const area = Math.PI * radius * radius;
-                const formattedArea = L.GeometryUtil.formattedNumber(area, 2) + ' km²';
-                measurement = `Área (aprox): ${formattedArea}`;
-                
-            } else if (layer instanceof L.Marker) {
-                measurement = 'Punto de Interés';
+            } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle || layer instanceof L.Circle) {
+                // Cálculo de área (requiere leaflet-geometryutil)
+                const area = L.GeometryUtil.geodesicArea(layer.getLatLngs ? layer.getLatLngs() : L.GeometryUtil.polygonToLatLngs(layer));
+                const formattedArea = L.GeometryUtil.readableArea(area, true, true);
+                layer.properties.measurement = formattedArea;
+                measurementHtml = `<strong>Área:</strong> ${formattedArea}<br>`;
             }
             
-            // 2. Crear el contenido del Popup con opción de nombrar
-            const defaultName = layer.options.title || measurement;
+            // 3. Crear el contenido del Popup (Permite al usuario nombrar y guardar)
             const popupContent = `
                 <div class="draw-popup">
-                    <strong>Tipo:</strong> ${e.layerType}<br>
-                    <strong>Medición:</strong> ${measurement}<br><br>
-                    <label for="layer-name">Nombre:</label>
-                    <input type="text" id="layer-name" value="${defaultName}" style="width: 90%; margin-bottom: 5px;"><br>
-                    <button class="save-name-btn" style="background-color: var(--accent-color); color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">Guardar Nombre</button>
+                    <h4>Guardar Medición</h4>
+                    ${measurementHtml}
+                    <label for="layer-name-${layer._leaflet_id}"><strong>Nombre:</strong></label>
+                    <input type="text" id="layer-name-${layer._leaflet_id}" value="${layer.properties.name}" style="width: 90%; margin-bottom: 5px;"><br>
+                    <button class="save-name-btn" data-layer-id="${layer._leaflet_id}" style="background-color: var(--accent-color); color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">Guardar</button>
                 </div>
             `;
             
-            // 3. Bindear el popup y mostrarlo
-            layer.bindPopup(popupContent);
+            // 4. Bindeamos el Popup que aparecerá al terminar el dibujo (para nombrar)
+            layer.bindPopup(popupContent, { 
+                closeButton: true,
+                autoClose: false, // Evita que se cierre si el usuario hace clic fuera mientras edita
+                closeOnClick: false // Necesario para la edición en el popup
+            });
             layer.openPopup();
             
-            // 4. Implementar la lógica para guardar el nombre (listener dentro del popup)
+            // 5. Asignar el listener para guardar el nombre
             layer.on('popupopen', () => {
                 const popupDiv = layer.getPopup().getElement();
                 const saveButton = popupDiv.querySelector('.save-name-btn');
-                const nameInput = popupDiv.querySelector('#layer-name');
+                const nameInput = popupDiv.querySelector(`#layer-name-${layer._leaflet_id}`);
                 
                 if (saveButton && nameInput) {
-                    // Prevenir la propagación del clic dentro del popup para evitar errores
-                    L.DomEvent.disableClickPropagation(popupDiv); 
-                    
-                    saveButton.onclick = () => {
-                        const newName = nameInput.value || measurement;
+                    L.DomEvent.disableClickPropagation(popupDiv);
+                    L.DomEvent.on(saveButton, 'click', () => {
+                        // Guardar el nombre en las propiedades persistentes
+                        layer.properties.name = nameInput.value;
+                        layer.closePopup(); 
                         
-                        // Guardar el nuevo nombre como una opción de la capa
-                        layer.options.title = newName; 
-                        
-                        // Opcional: Actualizar el tooltip (etiqueta persistente)
-                        if (layer.getTooltip()) {
-                            layer.setTooltipContent(newName);
-                        } else {
-                            layer.bindTooltip(newName, { permanent: true, direction: 'right', opacity: 0.9 }).openTooltip();
-                        }
-                        
-                        layer.closePopup();
-                    };
+                        // Opcional: Abrir inmediatamente el popup persistente para confirmación
+                        layer.openPopup(); 
+                    });
                 }
             });
             
-            // 5. Mostrar la etiqueta persistente por defecto
-            layer.bindTooltip(defaultName, { permanent: true, direction: 'right', opacity: 0.9 }).openTooltip();
+            // 6. Asignar el evento CLICK que abrirá el Popup PERSISTENTE (Cumple con el requisito "activarse al darle clic")
+            layer.on('click', () => {
+                const persistentContent = `
+                    <div class="info-popup">
+                        <h4>${layer.properties.name}</h4>
+                        ${layer.properties.measurement}<br>
+                        <hr style="border-top: 1px solid #ddd; margin: 5px 0;">
+                        <span style="font-size: 0.8em; color: #888;">Clic en Editar (✏️) para modificar o borrar.</span>
+                    </div>
+                `;
+                layer.bindPopup(persistentContent, { closeButton: true, autoClose: true, closeOnClick: true }).openPopup();
+            });
+            
+            // 7. Abrir el popup de edición al terminar (Paso 4)
+            layer.openPopup(); 
         });
     }
     
