@@ -377,44 +377,41 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 /* --- 9. ESTILOS DE IMPRESIÓN (LIMPIEZA DE MAPA PROFESIONAL) --- */
 @media print {
-    /* Ocultar la cabecera y el logo del encabezado */
-    .main-header {
-        display: none !important;
-    }
-    
-    /* Ocultar el panel de controles lateral y su botón de abrir */
-    .leaflet-custom-controls, .leaflet-open-button {
-        display: none !important;
-    }
-
-    /* Ocultar el inspector de detalles del acuífero */
-    .info-panel {
+    /* OCULTAR TODO EL SHELL DE LA APLICACIÓN */
+    .main-header, 
+    .loader-overlay,
+    .info-panel, 
+    .leaflet-custom-controls, 
+    .leaflet-open-button {
         display: none !important;
     }
 
-    /* Ocultar elementos individuales dentro del contenedor de control */
+    /* OCULTAR TODOS LOS BOTONES INDIVIDUALES Y CONTENEDORES DE CONTROL */
+    /* CRÍTICO: Ocultamos los controles, pero no su contenedor padre (.leaflet-control-container),
+       lo que permite que el mapa se centre correctamente. */
     .leaflet-control-zoom, 
     .leaflet-control-layers,
     .leaflet-control-draw,
     .leaflet-easyPrint-button, 
-    .leaflet-center,
-    .leaflet-control-geocoder { /* Si se añade un geocodificador */
+    .leaflet-center, /* Barra de Dibujo Centrada */
+    .info.legend, /* Leyenda */
+    .leaflet-logo-control { 
         display: none !important;
-    }
-
-    /* Ocultar el loader si estuviera activo */
-    .loader-overlay {
-        display: none !important;
-    }
-
-    /* Ocultar la leyenda para la impresión limpia (opcional, pero profesional) */
-    .info.legend {
-        display: none !important;
+        visibility: hidden !important;
     }
     
-    /* Mostrar la atribución legal (es una buena práctica) */
+    /* HACER VISIBLE SÓLO LA ATRIBUCIÓN (BUENA PRÁCTICA) */
     .leaflet-control-attribution {
         visibility: visible !important;
+        display: block !important;
         font-size: 8px !important;
+    }
+
+    /* FORZAR LA IMAGEN A LLENAR TODA LA PÁGINA IMPRESA (Optimización de espacio) */
+    body, #map, .map-container {
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 }
