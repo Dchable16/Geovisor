@@ -374,3 +374,37 @@ input:checked + .slider:before { transform: translateX(20px); }
     eft: 50% !important; 
     transform: translate(-50%, 0) !important;
 }
+
+/* --- 9. ESTILOS DE IMPRESIÓN (LIMPIEZA DE MAPA) --- */
+@media print {
+    /* Ocultar la cabecera del visor */
+    .main-header {
+        display: none !important;
+    }
+    
+    /* Ocultar el panel de controles lateral y su botón de abrir */
+    .leaflet-custom-controls, .leaflet-open-button {
+        display: none !important;
+    }
+
+    /* Ocultar el inspector de detalles del acuífero (info-panel) */
+    .info-panel {
+        display: none !important;
+    }
+
+    /* Ocultar todos los controles de Leaflet (Zoom, Capas, Barra de Dibujo, Leyenda) */
+    .leaflet-control-container {
+        visibility: hidden;
+    }
+
+    /* Ocultar el loader si estuviera activo */
+    .loader-overlay {
+        display: none !important;
+    }
+    
+    /* Mostrar la atribución legal (opcional, pero recomendado) */
+    .leaflet-control-attribution {
+        visibility: visible !important;
+        font-size: 8px !important;
+    }
+}
