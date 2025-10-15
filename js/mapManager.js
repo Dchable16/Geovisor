@@ -3,16 +3,6 @@
  * @description Gestiona la creación y manipulación del mapa Leaflet.
  */
 import { CONFIG } from './config.js';
-if (typeof L !== 'undefined' && typeof L.PM !== 'undefined') {
-    L.PM.setGlobalOptions({
-        tooltips: true,
-        measure: true, // Habilitar medición para todas las herramientas
-        measureTargets: true,
-        measurementUnit: 'kilometers', // Unidades métricas
-        allowSelfIntersection: false,
-    });
-    L.PM.setLang('es'); 
-}
 
 export class MapManager {
     constructor(mapId) {
@@ -32,7 +22,7 @@ export class MapManager {
         L.control.layers(CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.map);
         this.addLegend();
         this.addLogo();
-        this.addPMControl(); 
+        this.addDrawControl();
     }
 
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
@@ -42,58 +32,33 @@ export class MapManager {
         }).addTo(this.map);
     }
 
-    addPMControl() {
-        if (!this.map.pm) {
-            // Este console.error ya no debería ejecutarse.
-            console.error("Leaflet.PM (Geoman) no se inicializó en el mapa, falló el adjunto.");
-            return;
-        }
-        this.map.pm.addControls({
+    addDrawControl() {
+        const drawControl = new L.Control.Draw({
             position: 'topleft',
-            drawCircleMarker: false, 
-            drawMarker: true,
-            editMode: true,
-            dragMode: true,
-            cutToolbar: false, 
-            removalMode: true,
-            measureControl: true, 
+            edit: {
+                featureGroup: this.drawnItems, 
+                remove: true 
+            },
+            draw: {
+                // Configuración mínima para que muestre mediciones simples
+                polyline: { allowIntersection: false, metric: true },
+                polygon: { showArea: true, metric: true },
+                circle: { metric: true },
+                rectangle: { metric: true },
+                marker: true,
+                circlemarker: false,
+            }
         });
-        this.map.on('pm:create', (e) => {
-             console.log('Geometría PM creada:', e.layer, e.shape);
+        this.map.addControl(drawControl);
+        const toolbar = document.querySelector('.leaflet-draw-toolbar');
+        if (toolbar) {
+            L.DomEvent.disableClickPropagation(toolbar);
+            L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.stopPropagation);
+            L.DomEvent.on(toolbar, 'mousedown', L.DomEvent.preventDefault);
+        }
+        this.map.on(L.Draw.Event.CREATED, (e) => {
+            this.drawnItems.addLayer(e.layer);
         });
-    }
-    
-    addLegend() {
-        const legend = L.control({ position: 'bottomleft' });
-        const vulnerabilityMap = CONFIG.vulnerabilityMap; // Obtener el mapa centralizado
-        
-        legend.onAdd = () => {
-            const div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML = '<h4>Vulnerabilidad</h4>';
-
-            // Obtener y ordenar los grados de mayor a menor (5 a 1) para la leyenda
-            const sortedGrades = Object.keys(vulnerabilityMap)
-                                       .filter(key => key !== 'default') 
-                                       .sort((a, b) => b - a); 
-
-            sortedGrades.forEach(grade => {
-                const { color, label } = vulnerabilityMap[grade];
-
-                div.innerHTML +=
-                    `<i style="background:${color}"></i> ${label} (Nivel ${grade})<br>`;
-            });
-
-            // Añadir el valor por defecto/sin datos
-            const defaultEntry = vulnerabilityMap['default'];
-            div.innerHTML += `<i style="background:${defaultEntry.color}; border: 1px solid #666;"></i> ${defaultEntry.label}`;
-
-            // Mejoras de UX: Evitar que los clics o el scroll afecten al mapa
-            L.DomEvent.disableClickPropagation(div);
-            L.DomEvent.disableScrollPropagation(div);
-            
-            return div;
-        };
-        legend.addTo(this.map);
     }
     
     addLogo() {
