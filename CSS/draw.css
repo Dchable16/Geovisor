@@ -10,7 +10,6 @@
 	margin-bottom: 12px;
 }
 
-/* CORRECCIÓN: Se cambió la ruta de 'spritesheet.svg' a 'images/spritesheet.svg' */
 .leaflet-draw-draw-polyline,
 .leaflet-draw-draw-polygon,
 .leaflet-draw-draw-rectangle,
