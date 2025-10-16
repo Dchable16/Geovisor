@@ -334,48 +334,57 @@ input:checked + .slider:before { transform: translateX(20px); }
 .leaflet-top.leaflet-right { z-index: 1010 !important; }
 
 /* --- 8. BARRA DE HERRAMIENTAS DE DIBUJO --- */
-.leaflet-draw-toolbar {
+.leaflet-draw.leaflet-control {
     margin-top: 10px !important;
-    border: 1px solid #ddd !important;
-    border-radius: 4px !important;
-    background: white !important;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.2) !important;
+}
+
+.leaflet-draw-section {
     display: flex !important;
     flex-direction: row !important;
-    flex-wrap: nowrap !important; /* Evita el salto de línea */
-    max-width: none !important; /* Permite que la barra se expanda */
-    padding: 2px !important;
-    height: 30px !important; /* Altura fija */
-    overflow: hidden !important; /* Oculta el desbordamiento */
+    flex-wrap: nowrap !important;
+    gap: 2px !important;
 }
 
-.leaflet-bar {
+.leaflet-draw-toolbar {
+    margin: 0 !important;
     border: none !important;
+    background: none !important;
     box-shadow: none !important;
-    background: transparent !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 2px !important;
 }
 
-.leaflet-draw-toolbar > a {
-    background-color: #fff !important;
-    border: 1px solid #e0e0e0 !important;
-    width: 28px !important;
-    height: 28px !important;
-    min-width: 28px !important;
-    min-height: 28px !important;
-    line-height: 26px !important;
-    display: inline-flex !important;
+.leaflet-draw-toolbar a {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    line-height: 22px !important;
+    display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    text-decoration: none !important;
-    color: #333 !important;
-    float: none !important;
+    background-color: #fff !important;
+    border: 1px solid #ddd !important;
+    border-radius: 2px !important;
+    margin: 0 !important;
+    padding: 0 !important;
     text-indent: -9999px !important;
     position: relative !important;
-    margin: 0 1px !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
-    transition: all 0.15s ease !important;
-    background-size: 252px 28px !important; /* Ajustado para el tamaño de 28px */
+    transition: all 0.1s ease !important;
+    background-size: 216px 24px !important;
+}
+
+.leaflet-draw-toolbar a:hover {
+    background-color: #f5f5f5 !important;
+    border-color: #999 !important;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-toolbar-button-enabled {
+    background-color: #e9e9e9 !important;
+    border-color: #aaa !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1) !important;
 }
 
 /* Ajustes para los tooltips */
@@ -385,88 +394,89 @@ input:checked + .slider:before { transform: translateX(20px); }
     white-space: nowrap !important;
     z-index: 10000 !important;
     pointer-events: none !important;
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    color: white !important;
+    border-radius: 3px !important;
 }
 
-/* Posiciones de los iconos en el sprite (ajustadas para el tamaño de 28px) */
+/* Posiciones de los iconos en el sprite (ajustadas para 24px) */
 .leaflet-draw-toolbar .leaflet-draw-draw-polyline {
     background-position: 0 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-polygon {
-    background-position: -28px 0 !important;
+    background-position: -24px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-rectangle {
-    background-position: -56px 0 !important;
+    background-position: -48px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-circle {
-    background-position: -84px 0 !important;
+    background-position: -72px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-marker {
-    background-position: -112px 0 !important;
+    background-position: -96px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-edit-edit {
-    background-position: -140px 0 !important;
+    background-position: -120px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-edit-remove {
-    background-position: -168px 0 !important;
+    background-position: -144px 0 !important;
 }
 
-/* Estilo para el botón activo */
-.leaflet-draw-toolbar a.leaflet-draw-toolbar-button-enabled {
-    background-color: #f0f0f0 !important;
-    border-color: #aaa !important;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1) !important;
-}
-
-.leaflet-draw-toolbar a:hover {
-    background-color: #f8f8f8 !important;
-    border-color: #999 !important;
-}
-
-/* Asegurar que los botones de edición estén en la misma línea */
+/* Ajustes para los botones de acción */
 .leaflet-draw-actions {
-    display: inline-flex !important;
+    display: flex !important;
     position: relative !important;
     top: 0 !important;
     left: 0 !important;
     background: none !important;
     border: none !important;
     padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 0 0 4px !important;
     box-shadow: none !important;
-    border-radius: 0 !important;
+    gap: 2px !important;
 }
 
 .leaflet-draw-actions li {
     float: none !important;
     display: inline-block !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .leaflet-draw-actions a {
+    width: 24px !important;
+    height: 24px !important;
+    line-height: 22px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 2px !important;
     background-color: #fff !important;
-    border: 1px solid #e0e0e0 !important;
-    width: 28px !important;
-    height: 28px !important;
-    line-height: 28px !important;
-    margin: 0 1px !important;
+    border: 1px solid #ddd !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.leaflet-draw-actions a:hover {
+    background-color: #f5f5f5 !important;
+    border-color: #999 !important;
 }
 
 /* Ajustes para pantallas pequeñas */
 @media (max-width: 768px) {
-    .leaflet-draw-toolbar {
-        height: 32px !important;
-    }
-    
-    .leaflet-draw-toolbar > a,
+    .leaflet-draw-toolbar a,
     .leaflet-draw-actions a {
-        width: 30px !important;
-        height: 30px !important;
-        min-width: 30px !important;
-        min-height: 30px !important;
-        line-height: 30px !important;
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        min-height: 28px !important;
+        line-height: 26px !important;
     }
     
-    .leaflet-draw-toolbar > a {
-        background-size: 270px 30px !important;
+    .leaflet-draw-toolbar a {
+        background-size: 252px 28px !important;
     }
 }
 
