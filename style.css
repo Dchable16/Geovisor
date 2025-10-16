@@ -342,25 +342,41 @@ input:checked + .slider:before { transform: translateX(20px); }
     box-shadow: 0 1px 5px rgba(0,0,0,0.4) !important;
     display: flex !important;
     flex-direction: row !important;
+    flex-wrap: wrap !important;
+    max-width: 300px !important; /* Ancho máximo para evitar que se estire demasiado */
+    padding: 2px !important; /* Reducir el padding */
 }
 
-.leaflet-draw-toolbar a {
+.leaflet-draw-toolbar > a {
     background-color: #fff !important;
-    border-bottom: 1px solid #ccc !important;
-    width: 30px !important;
-    height: 30px !important;
-    line-height: 30px !important;
-    display: block !important;
+    border: 1px solid #ddd !important;
+    width: 24px !important; /* Reducido de 30px */
+    height: 24px !important; /* Reducido de 30px */
+    min-width: 24px !important;
+    min-height: 24px !important;
+    line-height: 22px !important;
+    display: inline-block !important;
     text-align: center !important;
     text-decoration: none !important;
     color: #333 !important;
     float: none !important;
     text-indent: -9999px !important;
     position: relative !important;
+    margin: 1px !important; /* Reducir el margen entre iconos */
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
 }
 
-.leaflet-draw-toolbar a:last-child {
-    border-right: none !important;
+.leaflet-draw-toolbar > a:first-child {
+    border-top-left-radius: 3px !important;
+    border-bottom-left-radius: 3px !important;
+}
+
+.leaflet-draw-toolbar > a:last-child {
+    border-top-right-radius: 3px !important;
+    border-bottom-right-radius: 3px !important;
+    border-right: 1px solid #ddd !important;
 }
 
 .leaflet-draw-toolbar a:hover {
@@ -368,27 +384,48 @@ input:checked + .slider:before { transform: translateX(20px); }
     border-color: #999 !important;
 }
 
-/* Posiciones de los iconos en el sprite */
+/* Ajustar el tamaño de los iconos en el sprite */
+.leaflet-draw-toolbar a {
+    background-size: 216px 24px !important; /* Ajustado para iconos más pequeños */
+}
+
+/* Posiciones de los iconos en el sprite (ajustadas para el nuevo tamaño) */
 .leaflet-draw-toolbar .leaflet-draw-draw-polyline {
-    background-position: -2px -2px !important;
+    background-position: 0 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-polygon {
-    background-position: -31px -2px !important;
+    background-position: -24px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-rectangle {
-    background-position: -62px -2px !important;
+    background-position: -48px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-circle {
-    background-position: -93px -2px !important;
+    background-position: -72px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-marker {
-    background-position: -125px -2px !important;
+    background-position: -96px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-edit-edit {
-    background-position: -156px -2px !important;
+    background-position: -120px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-edit-remove {
-    background-position: -187px -2px !important;
+    background-position: -144px 0 !important;
+}
+
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 768px) {
+    .leaflet-draw-toolbar {
+        max-width: 100% !important;
+        margin: 5px 0 !important;
+    }
+    
+    .leaflet-draw-toolbar > a {
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        min-height: 28px !important;
+        line-height: 26px !important;
+    }
 }
 
 /* --- 9. RESPONSIVIDAD --- */
