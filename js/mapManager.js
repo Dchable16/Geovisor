@@ -1,7 +1,7 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet.
- * Versión 6.0: Posiciona la barra de dibujo en la esquina superior derecha.
+ * Versión 3.1: Solución definitiva para la barra de herramientas de dibujo.
  */
 
 import { CONFIG } from './config.js';
@@ -37,10 +37,10 @@ export class MapManager {
     }
 
     addDrawControl() {
-        // SOLUCIÓN: Se cambia la posición a 'topright' para que aparezca
-        // debajo del control de capas.
+        // SOLUCIÓN: Se elimina la personalización que intentaba centrar la barra.
+        // Ahora se posicionará correctamente en 'topleft' como es el estándar y sin conflictos.
         const drawControl = new L.Control.Draw({
-            position: 'topright', 
+            position: 'topleft', // Posición estándar y estable
             edit: { 
                 featureGroup: this.drawnItems 
             },
