@@ -21,15 +21,63 @@
     border-bottom-right-radius: 0;
 }
 
-/* Usar los sprites locales */
+/* Deshabilitar los sprites por defecto para evitar duplicación */
 .leaflet-draw-toolbar a {
-    background-image: url('images/spritesheet.svg');
-    background-repeat: no-repeat;
-    background-size: 300px 30px;
+    background-image: none !important;
 }
 
-.leaflet-retina .leaflet-draw-toolbar a {
-    background-image: url('images/spritesheet-2x.svg');
+/* Usar solo los sprites del CDN */
+.leaflet-draw-toolbar a.leaflet-draw-draw-polyline {
+    background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/images/spritesheet.png') !important;
+    background-position: -2px -2px !important;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-draw-polygon {
+    background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/images/spritesheet.png') !important;
+    background-position: -31px -2px !important;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-draw-rectangle {
+    background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/images/spritesheet.png') !important;
+    background-position: -62px -2px !important;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-draw-circle {
+    background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/images/spritesheet.png') !important;
+    background-position: -92px -2px !important;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-draw-marker {
+    background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/images/spritesheet.png') !important;
+    background-position: -122px -2px !important;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-edit-edit {
+    background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/images/spritesheet.png') !important;
+    background-position: -152px -2px !important;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-edit-remove {
+    background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/images/spritesheet.png') !important;
+    background-position: -182px -2px !important;
+}
+
+/* Estilos para pantallas retina */
+@media only screen and (-webkit-min-device-pixel-ratio: 2),
+       only screen and (min--moz-device-pixel-ratio: 2),
+       only screen and (-o-min-device-pixel-ratio: 2/1),
+       only screen and (min-device-pixel-ratio: 2),
+       only screen and (min-resolution: 2dppx) {
+    .leaflet-draw-toolbar a.leaflet-draw-draw-polyline,
+    .leaflet-draw-toolbar a.leaflet-draw-draw-polygon,
+    .leaflet-draw-toolbar a.leaflet-draw-draw-rectangle,
+    .leaflet-draw-toolbar a.leaflet-draw-draw-circle,
+    .leaflet-draw-toolbar a.leaflet-draw-draw-marker,
+    .leaflet-draw-toolbar a.leaflet-draw-edit-edit,
+    .leaflet-draw-toolbar a.leaflet-draw-edit-remove {
+        background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/images/spritesheet-2x.png') !important;
+        background-size: 300px 30px !important;
+    }
 }
 
 .leaflet-draw a {
@@ -212,6 +260,7 @@
     cursor: crosshair;
 }
 
+/* Estilos para tooltips de dibujo */
 .leaflet-draw-tooltip {
     background: #363636;
     background: rgba(0,0,0,0.8);
@@ -222,26 +271,72 @@
     margin: 0;
     padding: 4px 8px;
     position: absolute;
-    left: 50%;
-    bottom: 100%;
     white-space: nowrap;
     z-index: 6;
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: none;
-    transform: translateX(-50%);
-    margin-bottom: 8px;
+    /* Posición por defecto, se ajustará con JavaScript */
+    left: 0;
+    top: 0;
 }
 
+/* Asegurar que los tooltips no se salgan de la pantalla */
+.leaflet-draw-tooltip.leaflet-draw-tooltip-top {
+    margin-top: -30px;
+}
+
+.leaflet-draw-tooltip.leaflet-draw-tooltip-bottom {
+    margin-top: 10px;
+}
+
+.leaflet-draw-tooltip.leaflet-draw-tooltip-left {
+    margin-left: -10px;
+}
+
+.leaflet-draw-tooltip.leaflet-draw-tooltip-right {
+    margin-left: 10px;
+}
+
+/* Posicionamiento del triángulo del tooltip */
 .leaflet-draw-tooltip:before {
     content: "";
     position: absolute;
+    border-style: solid;
+    pointer-events: none;
+}
+
+/* Posición del triángulo según la posición del tooltip */
+.leaflet-draw-tooltip.leaflet-draw-tooltip-top:before {
     top: 100%;
     left: 50%;
     margin-left: -5px;
     border-width: 5px 5px 0;
-    border-style: solid;
     border-color: rgba(0,0,0,0.8) transparent transparent;
+}
+
+.leaflet-draw-tooltip.leaflet-draw-tooltip-bottom:before {
+    bottom: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 0 5px 5px;
+    border-color: transparent transparent rgba(0,0,0,0.8);
+}
+
+.leaflet-draw-tooltip.leaflet-draw-tooltip-left:before {
+    left: 100%;
+    top: 50%;
+    margin-top: -5px;
+    border-width: 5px 0 5px 5px;
+    border-color: transparent transparent transparent rgba(0,0,0,0.8);
+}
+
+.leaflet-draw-tooltip.leaflet-draw-tooltip-right:before {
+    right: 100%;
+    top: 50%;
+    margin-top: -5px;
+    border-width: 5px 5px 5px 0;
+    border-color: transparent rgba(0,0,0,0.8) transparent transparent;
 }
 
 .leaflet-draw-tooltip-single {
