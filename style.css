@@ -334,71 +334,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 .leaflet-top.leaflet-right { z-index: 1010 !important; }
 
 /* --- 8. BARRA DE HERRAMIENTAS DE DIBUJO --- */
-.leaflet-draw-section {
-    position: relative;
-}
-
-.leaflet-draw-toolbar {
-    margin-top: 12px;
-    margin-bottom: 12px;
-}
-
-.leaflet-draw-toolbar-top {
-    margin-top: 0;
-}
-
-.leaflet-draw-toolbar a {
-    background-image: url('./images/spritesheet.svg');
-    background-repeat: no-repeat;
-    display: block;
-    text-align: center;
-    text-decoration: none;
-    position: relative;
-    width: 30px;
-    height: 30px;
-    line-height: 30px;
-    border: 1px solid #ccc;
-    background-color: #fff;
-    border-radius: 4px;
-    margin-right: 5px;
-    float: left;
-}
-
-/* Ajuste para pantallas táctiles */
-.leaflet-touch .leaflet-draw-toolbar a {
-    width: 34px;
-    height: 34px;
-    line-height: 34px;
-}
-
-/* Posiciones de los iconos en el sprite (30x30) */
-.leaflet-draw-toolbar .leaflet-draw-draw-polyline {
-    background-position: -2px -2px;
-}
-.leaflet-draw-toolbar .leaflet-draw-draw-polygon {
-    background-position: -31px -2px;
-}
-.leaflet-draw-toolbar .leaflet-draw-draw-rectangle {
-    background-position: -62px -2px;
-}
-.leaflet-draw-toolbar .leaflet-draw-draw-circle {
-    background-position: -92px -2px;
-}
-.leaflet-draw-toolbar .leaflet-draw-draw-marker {
-    background-position: -122px -2px;
-}
-.leaflet-draw-toolbar .leaflet-draw-edit-edit {
-    background-position: -152px -2px;
-}
-.leaflet-draw-toolbar .leaflet-draw-edit-remove {
-    background-position: -182px -2px;
-}
-
-/* Estilos para pantallas con alta densidad de píxeles */
-.leaflet-retina .leaflet-draw-toolbar a {
-    background-image: url('./images/spritesheet-2x.svg');
-    background-size: 300px 30px;
-}
+/* Los estilos de Leaflet.draw se han movido a draw.css */
 
 /* Estilos para los tooltips */
 .leaflet-draw-tooltip {
