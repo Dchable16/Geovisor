@@ -336,95 +336,137 @@ input:checked + .slider:before { transform: translateX(20px); }
 /* --- 8. BARRA DE HERRAMIENTAS DE DIBUJO --- */
 .leaflet-draw-toolbar {
     margin-top: 10px !important;
-    border: 1px solid #ccc !important;
+    border: 1px solid #ddd !important;
     border-radius: 4px !important;
     background: white !important;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.4) !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2) !important;
     display: flex !important;
     flex-direction: row !important;
-    flex-wrap: wrap !important;
-    max-width: 300px !important; /* Ancho máximo para evitar que se estire demasiado */
-    padding: 2px !important; /* Reducir el padding */
+    flex-wrap: nowrap !important; /* Evita el salto de línea */
+    max-width: none !important; /* Permite que la barra se expanda */
+    padding: 2px !important;
+    height: 30px !important; /* Altura fija */
+    overflow: hidden !important; /* Oculta el desbordamiento */
+}
+
+.leaflet-bar {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
 }
 
 .leaflet-draw-toolbar > a {
     background-color: #fff !important;
-    border: 1px solid #ddd !important;
-    width: 24px !important; /* Reducido de 30px */
-    height: 24px !important; /* Reducido de 30px */
-    min-width: 24px !important;
-    min-height: 24px !important;
-    line-height: 22px !important;
-    display: inline-block !important;
-    text-align: center !important;
+    border: 1px solid #e0e0e0 !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    line-height: 26px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     text-decoration: none !important;
     color: #333 !important;
     float: none !important;
     text-indent: -9999px !important;
     position: relative !important;
-    margin: 1px !important; /* Reducir el margen entre iconos */
+    margin: 0 1px !important;
     padding: 0 !important;
     box-sizing: border-box !important;
-    transition: all 0.2s ease !important;
+    transition: all 0.15s ease !important;
+    background-size: 252px 28px !important; /* Ajustado para el tamaño de 28px */
 }
 
-.leaflet-draw-toolbar > a:first-child {
-    border-top-left-radius: 3px !important;
-    border-bottom-left-radius: 3px !important;
+/* Ajustes para los tooltips */
+.leaflet-draw-tooltip {
+    margin-top: -10px !important;
+    margin-left: 10px !important;
+    white-space: nowrap !important;
+    z-index: 10000 !important;
+    pointer-events: none !important;
 }
 
-.leaflet-draw-toolbar > a:last-child {
-    border-top-right-radius: 3px !important;
-    border-bottom-right-radius: 3px !important;
-    border-right: 1px solid #ddd !important;
-}
-
-.leaflet-draw-toolbar a:hover {
-    background-color: #f4f4f4 !important;
-    border-color: #999 !important;
-}
-
-/* Ajustar el tamaño de los iconos en el sprite */
-.leaflet-draw-toolbar a {
-    background-size: 216px 24px !important; /* Ajustado para iconos más pequeños */
-}
-
-/* Posiciones de los iconos en el sprite (ajustadas para el nuevo tamaño) */
+/* Posiciones de los iconos en el sprite (ajustadas para el tamaño de 28px) */
 .leaflet-draw-toolbar .leaflet-draw-draw-polyline {
     background-position: 0 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-polygon {
-    background-position: -24px 0 !important;
+    background-position: -28px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-rectangle {
-    background-position: -48px 0 !important;
+    background-position: -56px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-circle {
-    background-position: -72px 0 !important;
+    background-position: -84px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-marker {
-    background-position: -96px 0 !important;
+    background-position: -112px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-edit-edit {
-    background-position: -120px 0 !important;
+    background-position: -140px 0 !important;
 }
 .leaflet-draw-toolbar .leaflet-draw-edit-remove {
-    background-position: -144px 0 !important;
+    background-position: -168px 0 !important;
+}
+
+/* Estilo para el botón activo */
+.leaflet-draw-toolbar a.leaflet-draw-toolbar-button-enabled {
+    background-color: #f0f0f0 !important;
+    border-color: #aaa !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+.leaflet-draw-toolbar a:hover {
+    background-color: #f8f8f8 !important;
+    border-color: #999 !important;
+}
+
+/* Asegurar que los botones de edición estén en la misma línea */
+.leaflet-draw-actions {
+    display: inline-flex !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+.leaflet-draw-actions li {
+    float: none !important;
+    display: inline-block !important;
+}
+
+.leaflet-draw-actions a {
+    background-color: #fff !important;
+    border: 1px solid #e0e0e0 !important;
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    margin: 0 1px !important;
 }
 
 /* Ajustes para pantallas pequeñas */
 @media (max-width: 768px) {
     .leaflet-draw-toolbar {
-        max-width: 100% !important;
-        margin: 5px 0 !important;
+        height: 32px !important;
+    }
+    
+    .leaflet-draw-toolbar > a,
+    .leaflet-draw-actions a {
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        min-height: 30px !important;
+        line-height: 30px !important;
     }
     
     .leaflet-draw-toolbar > a {
-        width: 28px !important;
-        height: 28px !important;
-        min-width: 28px !important;
-        min-height: 28px !important;
-        line-height: 26px !important;
+        background-size: 270px 30px !important;
     }
 }
 
