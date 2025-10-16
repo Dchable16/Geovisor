@@ -430,22 +430,14 @@ body.leaflet-control-easyPrint-exporting .spinner {
 }
 
 /* --- 11. SOLUCIÓN DEFINITIVA PARA LA BARRA DE DIBUJO --- */
-/*
- * Se anulan los estilos de 'float' y se reemplazan con Flexbox
- * para forzar la alineación horizontal de los botones.
-*/
 .leaflet-draw-toolbar {
     display: flex;
     flex-direction: row;
 }
 
-/*
- * Se anula el float, se oculta el texto y se asegura que el botón
- * tenga el tamaño correcto para mostrar el ícono.
-*/
 .leaflet-draw-toolbar a {
     float: none !important; 
     text-indent: -9999px !important; /* Oculta el texto visualmente */
-    width: 30px !important; /* Asegura el ancho correcto */
-    height: 30px !important; /* Asegura el alto correcto */
+    width: 30px !important;
+    height: 30px !important;
 }
