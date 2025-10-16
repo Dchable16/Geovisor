@@ -1,12 +1,51 @@
 /*
  * Leaflet.draw assumes that you have already included the Leaflet CSS.
  */
-.leaflet-draw-toolbar-top {
-	margin-top: 12px;
+.leaflet-draw-section {
+    position: relative;
 }
-.leaflet-draw-toolbar-bottom {
-	margin-bottom: 12px;
+
+.leaflet-draw-toolbar {
+    margin-top: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    background: white;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+    display: flex;
+    flex-wrap: nowrap;
+    padding: 2px;
+    height: 34px;
 }
+
+.leaflet-draw-toolbar a {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    min-width: 30px;
+    margin: 0 2px;
+    border-radius: 2px;
+    text-decoration: none;
+    position: relative;
+    transition: all 0.1s ease;
+}
+
+.leaflet-draw-toolbar a:hover {
+    background-color: #f4f4f4;
+    border-color: #999;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-toolbar-button-enabled {
+    background-color: #f4f4f4;
+    border-color: #aaa;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Iconos */
 .leaflet-draw-draw-polyline,
 .leaflet-draw-draw-polygon,
 .leaflet-draw-draw-rectangle,
@@ -14,9 +53,11 @@
 .leaflet-draw-draw-marker,
 .leaflet-draw-edit-edit,
 .leaflet-draw-edit-remove {
-	background-image: url('images/spritesheet.svg');
-	background-repeat: no-repeat;
+    background-image: url('images/spritesheet.svg');
+    background-repeat: no-repeat;
+    background-position: 0 0;
 }
+
 .leaflet-retina .leaflet-draw-draw-polyline,
 .leaflet-retina .leaflet-draw-draw-polygon,
 .leaflet-retina .leaflet-draw-draw-rectangle,
@@ -24,108 +65,116 @@
 .leaflet-retina .leaflet-draw-draw-marker,
 .leaflet-retina .leaflet-draw-edit-edit,
 .leaflet-retina .leaflet-draw-edit-remove {
-	background-image: url('images/spritesheet-2x.svg');
-	background-size: 270px 30px;
+    background-image: url('images/spritesheet-2x.svg');
+    background-size: 270px 30px;
 }
-.leaflet-draw-section {
-	position: relative;
-}
-.leaflet-draw-toolbar {
-	border: 1px solid #999;
-	border-bottom: 0;
-}
-.leaflet-draw-toolbar:last-of-type {
-	border-bottom: 1px solid #999;
-}
-.leaflet-draw-toolbar a {
-	background-color: #fff;
-	border-bottom: 1px solid #999;
-	color: #000;
-	display: block;
-	float: left;
-	height: 30px;
-	width: 30px;
-	border-radius: 0;
-}
-.leaflet-draw-toolbar a:last-child {
-	border-right: 0;
-}
-.leaflet-draw-toolbar a:hover,
-.leaflet-draw-toolbar a.leaflet-draw-toolbar-button-enabled {
-	background-color: #f4f4f4;
-}
-.leaflet-draw-toolbar a.leaflet-draw-toolbar-button-enabled {
-	cursor: default;
-}
+
+/* Posiciones de los iconos */
 .leaflet-draw-toolbar .leaflet-draw-draw-polyline {
-	background-position: -2px -2px;
+    background-position: -2px -2px;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-polygon {
-	background-position: -32px -2px;
+    background-position: -32px -2px;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-rectangle {
-	background-position: -62px -2px;
+    background-position: -62px -2px;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-circle {
-	background-position: -92px -2px;
+    background-position: -92px -2px;
 }
 .leaflet-draw-toolbar .leaflet-draw-draw-marker {
-	background-position: -122px -2px;
+    background-position: -122px -2px;
 }
 .leaflet-draw-toolbar .leaflet-draw-edit-edit {
-	background-position: -152px -2px;
+    background-position: -152px -2px;
 }
 .leaflet-draw-toolbar .leaflet-draw-edit-remove {
-	background-position: -182px -2px;
+    background-position: -182px -2px;
 }
+
+/* Menú de acciones */
 .leaflet-draw-actions {
-	display: none;
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	position: absolute;
-	top: 30px;
-	left: 0;
-	background-color: #999;
-	border-radius: 4px;
+    display: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 34px;
+    left: 0;
+    background-color: #fff;
+    border: 1px solid #999;
+    border-radius: 4px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
 }
-.leaflet-draw-actions-top {
-	top: 0;
-	left: 30px;
-	border-radius: 0 4px 4px 0;
-	border-left: 1px solid #b3b3b3;
-}
-.leaflet-draw-actions-bottom {
-	border-radius: 4px 4px 0 0;
-	border-bottom: 1px solid #b3b3b3;
-}
+
 .leaflet-draw-actions li {
-	float: left;
+    display: block;
+    margin: 0;
+    padding: 0;
 }
+
 .leaflet-draw-actions a {
-	background-color: #999;
-	border-color: #aaa;
-	color: #fff;
-	display: block;
-	text-align: center;
-	text-decoration: none;
-	line-height: 30px;
-	height: 30px;
+    display: block;
+    padding: 5px 15px;
+    text-align: left;
+    white-space: nowrap;
+    color: #333;
+    background-color: #fff;
+    border: none;
+    border-bottom: 1px solid #eee;
+    margin: 0;
+    border-radius: 0;
+    height: auto;
+    min-width: 120px;
 }
+
 .leaflet-draw-actions a:hover {
-	background-color: #a6a6a6;
+    background-color: #f4f4f4;
+    color: #000;
 }
+
+.leaflet-draw-actions li:last-child a {
+    border-bottom: none;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.leaflet-draw-actions li:first-child a {
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+
+/* Tooltips */
 .leaflet-draw-tooltip {
-	background: rgba(0,0,0,0.8);
-	border: 0;
-	border-radius: 4px;
-	color: #fff;
-	font-size: 12px;
-	margin-left: 20px;
-	margin-top: -21px;
-	padding: 8px;
-	position: absolute;
-	white-space: nowrap;
-	z-index: 6;
-	box-shadow: none;
+    background: rgba(0,0,0,0.8);
+    border: 0;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 12px;
+    margin-left: 10px;
+    margin-top: -15px;
+    padding: 4px 8px;
+    position: absolute;
+    white-space: nowrap;
+    z-index: 6;
+    pointer-events: none;
+}
+
+/* Ajustes para pantallas táctiles */
+.leaflet-touch .leaflet-draw-toolbar a {
+    width: 34px;
+    height: 34px;
+    line-height: 34px;
+}
+
+.leaflet-touch .leaflet-draw-actions {
+    top: 38px;
+}
+
+/* Limpiar floats */
+.leaflet-draw-toolbar:after {
+    content: "";
+    display: table;
+    clear: both;
 }
