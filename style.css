@@ -1,7 +1,7 @@
 /**
  * @file style.css
  * @description Hoja de estilos mejorada para el Geovisor.
- * Versión 5.0: Limpia, sin conflictos y con la solución definitiva para la barra de dibujo.
+ * Versión 6.0: Restaurado el botón del panel y limpieza final.
 */
 
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
@@ -91,6 +91,35 @@ body {
 
 .leaflet-custom-controls.collapsed {
     transform: translateX(calc(-100% - 15px));
+}
+
+.leaflet-open-button {
+    background-color: white;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border-radius: 50%;
+    box-shadow: var(--panel-shadow);
+    transition: all var(--animation-speed) var(--animation-easing);
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.leaflet-open-button.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+    transition-delay: 0.1s;
+}
+
+.leaflet-open-button:hover {
+    background-color: var(--accent-color);
+    color: white;
 }
 
 .panel-close-button {
