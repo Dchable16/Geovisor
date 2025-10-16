@@ -191,8 +191,7 @@ export class MapManager {
             layer.bindPopup(popupContent);
         }
     }
-    }
-
+    
     addCustomPrintControl() {
         const PrintControl = L.Control.extend({
             options: {
