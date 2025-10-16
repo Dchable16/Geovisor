@@ -424,4 +424,3 @@ input:checked + .slider:before { transform: translateX(20px); }
     .info.legend h4 { font-size: 14px; }
     .info.legend i { width: 14px; height: 14px; }
 }
-
