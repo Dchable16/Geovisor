@@ -1,7 +1,7 @@
 /**
  * @file style.css
  * @description Hoja de estilos mejorada para el Geovisor.
- * Versión 3.0: Solución definitiva para la barra de herramientas de dibujo.
+ * Versión 4.0: Solución definitiva para la barra de herramientas de dibujo (alineación y texto).
 */
 
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
@@ -433,14 +433,19 @@ body.leaflet-control-easyPrint-exporting .spinner {
 /*
  * Se anulan los estilos de 'float' y se reemplazan con Flexbox
  * para forzar la alineación horizontal de los botones.
- * Esta es una solución moderna y robusta que garantiza el funcionamiento.
 */
 .leaflet-draw-toolbar {
     display: flex;
     flex-direction: row;
 }
 
+/*
+ * Se anula el float, se oculta el texto y se asegura que el botón
+ * tenga el tamaño correcto para mostrar el ícono.
+*/
 .leaflet-draw-toolbar a {
-    /* Se anula el float original para que Flexbox tome el control total */
     float: none !important; 
+    text-indent: -9999px !important; /* Oculta el texto visualmente */
+    width: 30px !important; /* Asegura el ancho correcto */
+    height: 30px !important; /* Asegura el alto correcto */
 }
