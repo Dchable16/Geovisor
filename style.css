@@ -44,6 +44,7 @@ html, body {
 body {
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .main-header {
@@ -55,7 +56,9 @@ body {
     padding: 0 2.5%;
     background-color: var(--header-bg);
     border-bottom: 1px solid var(--border-color);
-    z-index: 2000;
+    position: relative;
+    z-index: 2000; /* Aseguramos que el encabezado esté por encima de todo */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .logo-container img {
@@ -85,8 +88,11 @@ body {
     transition: transform var(--animation-speed) var(--animation-easing);
     position: absolute;
     left: 0;
-    z-index: 1000;
+    top: 80px; /* Ajuste para que no se solape con el encabezado */
+    z-index: 1000; /* Aseguramos que esté por encima de los controles de Leaflet */
     transform: translateX(0);
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
 }
 
 .leaflet-custom-controls.collapsed {
@@ -310,6 +316,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 /* --- 7. OTROS CONTROLES DE LEAFLET --- */
+/* Ajustes para la leyenda y controles de capas */
 .info.legend {
     background: var(--panel-bg);
     backdrop-filter: blur(8px);
@@ -318,20 +325,63 @@ input:checked + .slider:before { transform: translateX(20px); }
     box-shadow: var(--panel-shadow);
     line-height: 1.8;
     color: #333;
+    z-index: 800; /* Aseguramos que esté por debajo de los paneles */
 }
-.info.legend h4 { margin: 0 0 10px; font-size: 16px; text-align: center; }
-.info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 1; border: 1px solid #999; }
+
+.info.legend h4 { 
+    margin: 0 0 10px; 
+    font-size: 16px; 
+    text-align: center; 
+}
+
+.info.legend i { 
+    width: 18px; 
+    height: 18px; 
+    float: left; 
+    margin-right: 8px; 
+    opacity: 1; 
+    border: 1px solid #999; 
+}
+
+/* Controles de capas */
+.leaflet-control-layers {
+    z-index: 800 !important; /* Aseguramos que esté por debajo de los paneles */
+}
+
+/* Logo del mapa */
 .leaflet-logo-control {
     background-color: transparent !important;
     border: none !important;
     box-shadow: none !important;
     margin: 0 10px 10px 0 !important;
+    z-index: 800; /* Aseguramos que esté por debajo de los paneles */
 }
+
 .leaflet-logo-control img {
     height: 35px;
     width: auto;
 }
-.leaflet-top.leaflet-right { z-index: 1010 !important; }
+
+/* Ajuste de z-index para los controles superiores */
+.leaflet-top.leaflet-right { 
+    z-index: 800 !important; 
+    margin-top: 60px; /* Ajuste para que no se solape con el encabezado */
+}
+
+/* Ajuste para la barra de herramientas de dibujo */
+.leaflet-draw {
+    z-index: 801 !important; /* Un nivel por encima de los controles pero debajo de los paneles */
+}
+
+/* Ajuste para el panel de controles personalizados */
+.leaflet-custom-controls {
+    z-index: 1000; /* Aseguramos que esté por encima de los controles de Leaflet */
+}
+
+/* Ajuste para el panel de información */
+.info-panel {
+    z-index: 1001; /* Un nivel por encima del panel de controles */
+}
 
 /* --- 8. RESPONSIVIDAD --- */
 @media (max-width: 768px) {
