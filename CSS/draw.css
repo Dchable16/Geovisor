@@ -25,7 +25,7 @@
 .leaflet-retina .leaflet-draw-edit-edit,
 .leaflet-retina .leaflet-draw-edit-remove {
     background-image: url('./images/spritesheet-2x.svg');
-    background-size: 270px 30px;
+    background-size: 300px 30px;
 }
 .leaflet-draw-section {
     position: relative;
@@ -33,7 +33,9 @@
 .leaflet-draw-toolbar {
     border: 1px solid #999;
     border-bottom: 0;
-    display: inline-block;
+    display: block;
+    float: left;
+    margin-right: 10px;
 }
 .leaflet-draw-toolbar:last-of-type {
     border-bottom: 1px solid #999;
@@ -43,16 +45,14 @@
     border-bottom: 1px solid #999;
     color: #000;
     display: block;
-    float: left;
     height: 30px;
     width: 30px;
-    border-radius: 0;
+    position: relative;
     text-decoration: none;
     outline: 0;
-    box-sizing: border-box;
 }
 .leaflet-draw-toolbar a:last-child {
-    border-right: 0;
+    border-bottom: 0;
 }
 .leaflet-draw-toolbar a:hover,
 .leaflet-draw-toolbar a.leaflet-draw-toolbar-button-enabled {
@@ -88,21 +88,12 @@
     margin: 0;
     padding: 0;
     position: absolute;
-    top: 30px;
-    left: 0;
-    background-color: #999;
-    border-radius: 4px;
-    z-index: 1000;
-}
-.leaflet-draw-actions-top {
     top: 0;
     left: 30px;
+    background-color: #999;
     border-radius: 0 4px 4px 0;
     border-left: 1px solid #b3b3b3;
-}
-.leaflet-draw-actions-bottom {
-    border-radius: 4px 4px 0 0;
-    border-bottom: 1px solid #b3b3b3;
+    z-index: 1000;
 }
 .leaflet-draw-actions li {
     float: left;
