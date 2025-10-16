@@ -1,7 +1,7 @@
 /**
  * @file mapManager.js
- * @description Gestiona la creación y manipulación del mapa Leaflet.
- * Versión 6.0: Posiciona la barra de dibujo en la esquina superior derecha.
+ * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
+ * Versión 7.0: Implementación de Leaflet.Geoman para herramientas de dibujo avanzadas.
  */
 
 import { CONFIG } from './config.js';
@@ -13,19 +13,63 @@ export class MapManager {
             zoom: CONFIG.initialZoom,
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false,
-            preferCanvas: true
+            preferCanvas: true,
+            pmIgnore: false // Importante para Geoman
         });
+
+        // Grupo para almacenar las capas dibujadas
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
+        
+        // Habilitar Geoman en el mapa
+        this.map.pm.addControls({
+            position: 'topright',
+            drawMarker: true,
+            drawCircleMarker: false,
+            drawPolyline: true,
+            drawRectangle: true,
+            drawPolygon: true,
+            drawCircle: true,
+            editMode: true,
+            dragMode: true,
+            cutPolygon: false,
+            removalMode: true,
+        });
+
+        // Configuración global de Geoman
+        this.map.pm.setGlobalOptions({
+            snapDistance: 15,
+            allowSelfIntersection: false,
+            templineStyle: {
+                color: 'red',
+                dashArray: [5, 5]
+            },
+            hintlineStyle: {
+                color: 'red',
+                dashArray: [5, 5]
+            },
+            pathOptions: {
+                color: '#3388ff',
+                fillColor: '#3388ff',
+                fillOpacity: 0.2,
+                weight: 3
+            }
+        });
+
         this.addControls();
+        this.setupDrawingEvents();
     }
 
     addControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
-        L.control.layers(CONFIG.tileLayers, null, { collapsed: true, position: 'topright' }).addTo(this.map);
+        L.control.layers(CONFIG.tileLayers, null, { 
+            collapsed: true, 
+            position: 'topright',
+            sortLayers: true
+        }).addTo(this.map);
+        
         this.addLegend();
         this.addLogo();
-        this.addDrawControl();
         this.addCustomPrintControl();
     }
 
@@ -36,66 +80,117 @@ export class MapManager {
         }).addTo(this.map);
     }
 
-    addDrawControl() {
-        // SOLUCIÓN: Se cambia la posición a 'topright' para que aparezca
-        // debajo del control de capas.
-        const drawControl = new L.Control.Draw({
-            position: 'topright', 
-            edit: { 
-                featureGroup: this.drawnItems 
-            },
-            draw: {
-                polygon: { showArea: true, metric: true },
-                polyline: { allowIntersection: false, metric: true },
-                rectangle: { metric: true },
-                circle: { metric: true },
-                marker: true,
-                circlemarker: false,
-            }
-        });
-
-        this.map.addControl(drawControl);
-
-        this.map.on(L.Draw.Event.CREATED, (e) => {
+    setupDrawingEvents() {
+        // Evento cuando se crea una nueva capa
+        this.map.on('pm:create', (e) => {
             const layer = e.layer;
+            const type = e.layerType;
+            
+            // Añadir al grupo de elementos dibujados
             this.drawnItems.addLayer(layer);
-            let measurementText = 'Medición no disponible';
-
-            if (layer instanceof L.Polyline) {
-                const latlngs = layer.getLatLngs();
-                const geojsonLine = L.polyline(latlngs).toGeoJSON();
-                const length = turf.length(geojsonLine, { units: 'meters' });
-                measurementText = length >= 1000 ? (length / 1000).toFixed(2) + ' km' : Math.round(length) + ' m';
-
-            } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
-                const geojson = layer.toGeoJSON();
-                const areaSqM = turf.area(geojson);
-
-                if (areaSqM > 0) {
-                     if (areaSqM >= 1000000) {
-                        measurementText = (areaSqM / 1000000).toFixed(3) + ' km²';
-                    } else if (areaSqM >= 10000) {
-                        measurementText = (areaSqM / 10000).toFixed(2) + ' ha';
-                    } else {
-                        measurementText = areaSqM.toFixed(2) + ' m²';
-                    }
-                } else {
-                    measurementText = "Área no calculable. Verifique la geometría.";
-                }
-
-            } else if (layer instanceof L.Circle) {
-                const radius = layer.getRadius();
-                const areaSqM = Math.PI * radius * radius;
-                measurementText = areaSqM >= 1000000 ? (areaSqM / 1000000).toFixed(3) + ' km²' : areaSqM.toFixed(2) + ' m²';
-            }
-
-            const defaultName = `Dibujo de ${e.layerType.charAt(0).toUpperCase() + e.layerType.slice(1)}`;
-            const layerName = prompt(`Ingrese un nombre para su dibujo:\n(Medición: ${measurementText})`, defaultName);
-            const finalName = layerName || defaultName;
-
-            const popupContent = `<h4>${finalName}</h4><p><strong>Medición:</strong> ${measurementText}</p>`;
-            layer.bindPopup(popupContent).openPopup();
+            
+            // Calcular medidas según el tipo de capa
+            let measurement = this.calculateMeasurement(layer, type);
+            
+            // Pedir nombre al usuario
+            this.promptForLayerName(layer, type, measurement);
+            
+            // Configurar eventos de edición
+            this.setupLayerEvents(layer);
         });
+        
+        // Habilitar edición para capas existentes
+        this.map.on('layeradd', (e) => {
+            if (e.layer.pm && !e.layer.pm.dragging._enabled) {
+                e.layer.pm.enable();
+            }
+        });
+    }
+    
+    calculateMeasurement(layer, type) {
+        let measurement = '';
+        
+        try {
+            if (type === 'polygon' || type === 'rectangle') {
+                const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+                measurement = area >= 10000 ? 
+                    `Área: ${(area/10000).toFixed(2)} ha` : 
+                    `Área: ${area.toFixed(2)} m²`;
+            } 
+            else if (type === 'polyline') {
+                const distance = L.GeometryUtil.length(layer);
+                measurement = distance >= 1000 ? 
+                    `Distancia: ${(distance/1000).toFixed(2)} km` : 
+                    `Distancia: ${Math.round(distance)} m`;
+            } 
+            else if (type === 'circle') {
+                const radius = layer.getRadius();
+                const area = Math.PI * radius * radius;
+                measurement = `Radio: ${radius.toFixed(2)} m | Área: ${area >= 10000 ? 
+                    (area/10000).toFixed(2) + ' ha' : area.toFixed(2) + ' m²'}`;
+            }
+            else if (type === 'marker') {
+                const latlng = layer.getLatLng();
+                measurement = `Coordenadas: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+            }
+        } catch (e) {
+            console.error('Error calculando medida:', e);
+            measurement = 'Medición no disponible';
+        }
+        
+        return measurement;
+    }
+    
+    promptForLayerName(layer, type, measurement) {
+        const defaultName = `${type.charAt(0).toUpperCase() + type.slice(1)} ${new Date().toLocaleTimeString()}`;
+        const name = prompt(`Ingrese un nombre para este ${type}\n${measurement}`, defaultName) || defaultName;
+        
+        // Almacenar metadatos en la capa
+        layer.feature = layer.feature || {};
+        layer.feature.properties = layer.feature.properties || {};
+        layer.feature.properties.name = name;
+        layer.feature.properties.type = type;
+        layer.feature.properties.createdAt = new Date().toISOString();
+        layer.feature.properties.measurement = measurement;
+        
+        // Crear popup con la información
+        this.updateLayerPopup(layer);
+    }
+    
+    setupLayerEvents(layer) {
+        // Actualizar medidas al editar
+        layer.on('pm:edit', (e) => {
+            const type = e.layer.pm.getShape();
+            const measurement = this.calculateMeasurement(e.layer, type);
+            e.layer.feature.properties.measurement = measurement;
+            this.updateLayerPopup(e.layer);
+        });
+        
+        // Mostrar información al hacer clic
+        layer.on('click', (e) => {
+            if (!e.target.isPopupOpen()) {
+                e.target.openPopup();
+            }
+        });
+    }
+    
+    updateLayerPopup(layer) {
+        const props = layer.feature.properties;
+        const popupContent = `
+            <div class="feature-popup">
+                <h4>${props.name || 'Sin nombre'}</h4>
+                <p><strong>Tipo:</strong> ${props.type || 'No especificado'}</p>
+                <p><strong>${props.measurement || ''}</strong></p>
+                <small>Creado: ${new Date(props.createdAt).toLocaleString()}</small>
+            </div>
+        `;
+        
+        if (layer.getPopup()) {
+            layer.setPopupContent(popupContent);
+        } else {
+            layer.bindPopup(popupContent);
+        }
+    }
     }
 
     addCustomPrintControl() {
