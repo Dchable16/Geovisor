@@ -40,9 +40,9 @@ export class MapManager {
         // SOLUCIÓN: Se cambia la posición a 'topright' para que aparezca
         // debajo del control de capas.
         const drawControl = new L.Control.Draw({
-            position: 'topright',
-            edit: {
-                featureGroup: this.drawnItems
+            position: 'topright', 
+            edit: { 
+                featureGroup: this.drawnItems 
             },
             draw: {
                 polygon: { showArea: true, metric: true },
@@ -111,11 +111,11 @@ export class MapManager {
                 container.style.cursor = 'pointer';
                 container.title = 'Exportar mapa como imagen de alta calidad';
                 container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="padding: 4px;"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>`;
-
+                
                 L.DomEvent.on(container, 'click', async () => {
                     const mapNode = document.getElementById(CONFIG.mapId);
                     const loader = document.getElementById('app-loader');
-
+                    
                     if(loader) loader.style.display = 'flex';
 
                     try {
@@ -127,7 +127,7 @@ export class MapManager {
                                  return !exclusionClasses.some((classname) => node.classList?.contains(classname));
                             }
                         });
-
+                        
                         const link = document.createElement('a');
                         link.download = 'mapa-exportado.png';
                         link.href = dataUrl;
@@ -168,6 +168,28 @@ export class MapManager {
         };
         legend.addTo(this.map);
     }
-
+    
     addLogo() {
         const LogoControl = L.Control.extend({
+            onAdd: map => {
+                const c = L.DomUtil.create('div', 'leaflet-logo-control');
+                c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSIG.png" alt="Logo SSIG">`;
+                L.DomEvent.disableClickPropagation(c);
+                return c;
+            }
+        });
+        new LogoControl({ position: 'bottomright' }).addTo(this.map);
+    }
+
+    getColor(v) {
+        const value = String(v);
+        const entry = CONFIG.vulnerabilityMap[value];
+        return entry ? entry.color : CONFIG.vulnerabilityMap.default.color;
+    }
+
+    fitBounds(bounds) {
+        if (bounds) {
+            this.map.fitBounds(bounds.pad(0.1));
+        }
+    }
+}
