@@ -37,6 +37,8 @@ export class MapManager {
     }
 
     addDrawControl() {
+        // SOLUCIÓN: Se cambia la posición a 'topright' para que aparezca
+        // debajo del control de capas.
         const drawControl = new L.Control.Draw({
             position: 'topright', 
             edit: { 
