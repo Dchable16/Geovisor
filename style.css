@@ -1,7 +1,7 @@
 /**
  * @file style.css
  * @description Hoja de estilos mejorada para el Geovisor.
- * Versión 4.0: Solución definitiva para la barra de herramientas de dibujo (alineación y texto).
+ * Versión 4.1: Corregidos estilos de la barra de herramientas de dibujo.
 */
 
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
@@ -333,7 +333,65 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 .leaflet-top.leaflet-right { z-index: 1010 !important; }
 
-/* --- 8. RESPONSIVIDAD --- */
+/* --- 8. BARRA DE HERRAMIENTAS DE DIBUJO --- */
+.leaflet-draw-toolbar {
+    margin-top: 10px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    background: white !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.4) !important;
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+.leaflet-draw-toolbar a {
+    background-color: #fff !important;
+    border-bottom: 1px solid #ccc !important;
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    display: block !important;
+    text-align: center !important;
+    text-decoration: none !important;
+    color: #333 !important;
+    float: none !important;
+    text-indent: -9999px !important;
+    position: relative !important;
+}
+
+.leaflet-draw-toolbar a:last-child {
+    border-right: none !important;
+}
+
+.leaflet-draw-toolbar a:hover {
+    background-color: #f4f4f4 !important;
+    border-color: #999 !important;
+}
+
+/* Posiciones de los iconos en el sprite */
+.leaflet-draw-toolbar .leaflet-draw-draw-polyline {
+    background-position: -2px -2px !important;
+}
+.leaflet-draw-toolbar .leaflet-draw-draw-polygon {
+    background-position: -31px -2px !important;
+}
+.leaflet-draw-toolbar .leaflet-draw-draw-rectangle {
+    background-position: -62px -2px !important;
+}
+.leaflet-draw-toolbar .leaflet-draw-draw-circle {
+    background-position: -93px -2px !important;
+}
+.leaflet-draw-toolbar .leaflet-draw-draw-marker {
+    background-position: -125px -2px !important;
+}
+.leaflet-draw-toolbar .leaflet-draw-edit-edit {
+    background-position: -156px -2px !important;
+}
+.leaflet-draw-toolbar .leaflet-draw-edit-remove {
+    background-position: -187px -2px !important;
+}
+
+/* --- 9. RESPONSIVIDAD --- */
 @media (max-width: 768px) {
     :root {
         --header-height: 60px;
@@ -375,7 +433,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     .info.legend i { width: 14px; height: 14px; }
 }
 
-/* --- 9. MEJORAS DE UX ADICIONALES --- */
+/* --- 10. MEJORAS DE UX ADICIONALES --- */
 body.leaflet-control-easyPrint-exporting::before {
     content: '';
     position: fixed;
@@ -406,7 +464,7 @@ body.leaflet-control-easyPrint-exporting .spinner {
     z-index: 10001;
 }
 
-/* --- 10. ESTILOS DE IMPRESIÓN --- */
+/* --- 11. ESTILOS DE IMPRESIÓN --- */
 @media print {
     .main-header, .loader-overlay, .info-panel, .leaflet-custom-controls, .leaflet-open-button {
         display: none !important;
@@ -427,17 +485,4 @@ body.leaflet-control-easyPrint-exporting .spinner {
         margin: 0 !important;
         padding: 0 !important;
     }
-}
-
-/* --- 11. SOLUCIÓN DEFINITIVA PARA LA BARRA DE DIBUJO --- */
-.leaflet-draw-toolbar {
-    display: flex;
-    flex-direction: row;
-}
-
-.leaflet-draw-toolbar a {
-    float: none !important; 
-    text-indent: -9999px !important; /* Oculta el texto visualmente */
-    width: 30px !important;
-    height: 30px !important;
 }
