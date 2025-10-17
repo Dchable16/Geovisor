@@ -1,335 +1,751 @@
 /**
- * @file style.css
- * @description Hoja de estilos mejorada para el Geovisor.
- * Versión 6.0: Restaurado el botón del panel y limpieza final.
+
+* @file style.css
+
+* @description Hoja de estilos mejorada para el Geovisor.
+
+* Versión 4.0: Solución definitiva para la barra de herramientas de dibujo (alineación y texto).
+
 */
 
+
+
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
+
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
+
+
 :root {
-    --header-height: 70px;
-    --header-bg: #FFFFFF;
-    --panel-width: 340px;
-    --panel-bg: rgba(255, 255, 255, 0.9);
-    --shadow-color: rgba(0, 0, 0, 0.15);
-    --panel-shadow: 0 4px 12px var(--shadow-color);
-    --border-radius: 8px;
-    --accent-color: #007BFF;
-    --accent-hover: #0056b3;
-    --font-sans: 'Roboto', sans-serif;
-    --text-color: #333;
-    --text-light: #666;
-    --border-color: #DDE2E6;
-    --animation-speed: 0.3s;
-    --animation-easing: ease-in-out;
+
+--header-height: 70px;
+
+--header-bg: #FFFFFF;
+
+--panel-width: 340px;
+
+--panel-bg: rgba(255, 255, 255, 0.9);
+
+--shadow-color: rgba(0, 0, 0, 0.15);
+
+--panel-shadow: 0 4px 12px var(--shadow-color);
+
+--border-radius: 8px;
+
+--accent-color: #007BFF;
+
+--accent-hover: #0056b3;
+
+--font-sans: 'Roboto', sans-serif;
+
+--text-color: #333;
+
+--text-light: #666;
+
+--border-color: #DDE2E6;
+
+--animation-speed: 0.3s;
+
+--animation-easing: ease-in-out;
+
 }
+
+
 
 /* --- 2. RESET Y ESTILOS BASE --- */
+
 html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    font-family: var(--font-sans);
-    overflow: hidden;
-    background-color: #F8F9FA;
-    color: var(--text-color);
+
+height: 100%;
+
+margin: 0;
+
+padding: 0;
+
+font-family: var(--font-sans);
+
+overflow: hidden;
+
+background-color: #F8F9FA;
+
+color: var(--text-color);
+
 }
+
+
 
 * {
-    box-sizing: border-box;
+
+box-sizing: border-box;
+
 }
+
+
 
 /* --- 3. LAYOUT PRINCIPAL --- */
+
 body {
-    display: flex;
-    flex-direction: column;
+
+display: flex;
+
+flex-direction: column;
+
 }
+
+
 
 .main-header {
-    flex-shrink: 0;
-    height: var(--header-height);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 2.5%;
-    background-color: var(--header-bg);
-    border-bottom: 1px solid var(--border-color);
-    z-index: 2000;
+
+flex-shrink: 0;
+
+height: var(--header-height);
+
+display: flex;
+
+justify-content: space-between;
+
+align-items: center;
+
+padding: 0 2.5%;
+
+background-color: var(--header-bg);
+
+border-bottom: 1px solid var(--border-color);
+
+z-index: 2000;
+
 }
+
+
 
 .logo-container img {
-    height: 50px;
-    width: auto;
-    object-fit: contain;
+
+height: 50px;
+
+width: auto;
+
+object-fit: contain;
+
 }
+
+
 
 .map-container {
-    flex-grow: 1;
-    position: relative;
+
+flex-grow: 1;
+
+position: relative;
+
 }
+
+
 
 #map {
-    width: 100%;
-    height: 100%;
+
+width: 100%;
+
+height: 100%;
+
 }
+
+
 
 /* --- 4. PANEL DE CONTROLES --- */
+
 .leaflet-custom-controls {
-    background: var(--panel-bg);
-    backdrop-filter: blur(8px);
-    padding: 20px;
-    border-radius: 0 var(--border-radius) var(--border-radius) 0;
-    box-shadow: var(--panel-shadow);
-    width: var(--panel-width);
-    transition: transform var(--animation-speed) var(--animation-easing);
-    position: absolute;
-    left: 0;
-    z-index: 1000;
-    transform: translateX(0);
+
+background: var(--panel-bg);
+
+backdrop-filter: blur(8px);
+
+padding: 20px;
+
+border-radius: 0 var(--border-radius) var(--border-radius) 0;
+
+box-shadow: var(--panel-shadow);
+
+width: var(--panel-width);
+
+transition: transform var(--animation-speed) var(--animation-easing);
+
+position: absolute;
+
+left: 0;
+
+z-index: 1000;
+
+transform: translateX(0);
+
 }
+
+
 
 .leaflet-custom-controls.collapsed {
-    transform: translateX(calc(-100% - 15px));
+
+transform: translateX(calc(-100% - 15px));
+
 }
 
-/* SOLUCIÓN: Código del botón del panel restaurado */
+
+
 .leaflet-open-button {
-    background-color: white;
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
-    border-radius: 50%;
-    box-shadow: var(--panel-shadow);
-    transition: all var(--animation-speed) var(--animation-easing);
-    opacity: 0;
-    pointer-events: none;
-    transform: scale(0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
+
+background-color: white;
+
+width: 40px;
+
+height: 40px;
+
+font-size: 18px;
+
+border-radius: 50%;
+
+box-shadow: var(--panel-shadow);
+
+transition: all var(--animation-speed) var(--animation-easing);
+
+opacity: 0;
+
+pointer-events: none;
+
+transform: scale(0.8);
+
+display: flex;
+
+justify-content: center;
+
+align-items: center;
+
+cursor: pointer;
+
 }
+
+
 
 .leaflet-open-button.is-visible {
-    opacity: 1;
-    pointer-events: auto;
-    transform: scale(1);
-    transition-delay: 0.1s;
+
+opacity: 1;
+
+pointer-events: auto;
+
+transform: scale(1);
+
+transition-delay: 0.1s;
+
 }
+
+
 
 .leaflet-open-button:hover {
-    background-color: var(--accent-color);
-    color: white;
+
+background-color: var(--accent-color);
+
+color: white;
+
 }
 
+
+
 .panel-close-button {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 30px;
-    height: 30px;
-    background: transparent;
-    color: var(--text-light);
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 22px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 5px;
-    transition: color 0.2s ease-in-out;
+
+position: absolute;
+
+top: 15px;
+
+right: 15px;
+
+width: 30px;
+
+height: 30px;
+
+background: transparent;
+
+color: var(--text-light);
+
+border: none;
+
+border-radius: 50%;
+
+cursor: pointer;
+
+font-size: 22px;
+
+display: flex;
+
+justify-content: center;
+
+align-items: center;
+
+transition: all 0.2s ease;
+
 }
 
 .panel-close-button:hover {
-    color: var(--text-color);
+
+background-color: #E9ECEF;
+
+color: var(--text-color);
+
 }
 
+
+
 .info-panel {
-    background: var(--panel-bg);
-    backdrop-filter: blur(8px);
-    border-radius: var(--border-radius);
-    box-shadow: var(--panel-shadow);
-    width: 300px;
-    position: absolute;
-    top: 90px;
-    right: 20px;
-    z-index: 1000;
-    transform: translateX(calc(100% + 20px));
-    opacity: 0;
-    transition: transform var(--animation-speed) var(--animation-easing), opacity var(--animation-speed) var(--animation-easing);
+
+background: var(--panel-bg);
+
+backdrop-filter: blur(8px);
+
+border-radius: var(--border-radius);
+
+box-shadow: var(--panel-shadow);
+
+width: 300px;
+
+position: absolute;
+
+top: 90px;
+
+right: 20px;
+
+z-index: 1000;
+
+transform: translateX(calc(100% + 20px));
+
+opacity: 0;
+
+transition: transform var(--animation-speed) var(--animation-easing), opacity var(--animation-speed) var(--animation-easing);
+
+}
+
+
+
+.info-panel.is-visible {
+
+transform: translateX(0);
+
+opacity: 1;
+
+}
+
+
+
+.info-panel-header {
+
+display: flex;
+
+justify-content: space-between;
+
+align-items: center;
+
+padding: 15px 15px 10px 20px;
+
+border-bottom: 1px solid var(--border-color);
+
+}
+
+
+
+.info-panel h2 {
+
+margin: 0;
+
+font-size: 1.2em;
+
+color: var(--accent-color);
+
+}
+
+
+
+.info-panel-close {
+
+background: transparent;
+
+border: none;
+
+color: var(--text-light);
+
+font-size: 18px;
+
+cursor: pointer;
+
+padding: 5px;
+
+transition: color 0.2s;
+
+}
+
+.info-panel-close:hover {
+
+color: var(--text-color);
+
+}
+
+
+
+#info-panel-content {
+
+padding: 15px 20px;
+
+line-height: 1.6;
+
+max-height: 50vh;
+
+overflow-y: auto;
+
+}
+
+.info-panel-row {
+
+margin-bottom: 8px;
+
+}
+
+.info-panel-row strong {
+
+color: var(--text-color);
+
+display: block;
+
+font-size: 0.9em;
+
+}
+
+.info-panel-value {
+
+color: var(--text-light);
+
+font-size: 1em;
+
+}
+
+
+
+/* --- 5. ELEMENTOS DE UI DENTRO DEL PANEL --- */
+
+.control-section { margin-bottom: 24px; }
+
+.control-section:last-child { margin-bottom: 0; }
+
+.control-section > label {
+
+display: block;
+
+font-weight: bold;
+
+margin-bottom: 10px;
+
+font-size: 14px;
+
+color: #495057;
+
+}
+
+.control-section h1 {
+
+text-align: center;
+
+color: var(--text-color);
+
+margin: 0 0 24px 0;
+
+padding-right: 30px;
+
+font-size: 1.4em;
+
+line-height: 1.2;
+
+}
+
+#acuifero-select, #opacity-slider { width: 100%; }
+
+#acuifero-select {
+
+padding: 10px;
+
+border-radius: var(--border-radius);
+
+border: 1px solid var(--border-color);
+
+font-size: 14px;
+
+background-color: white;
+
+}
+
+#acuifero-select:focus {
+
+outline: none;
+
+border-color: var(--accent-color);
+
+box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+
+}
+
+
+
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.radio-group label {
+
+background-color: #F1F3F5;
+
+padding: 7px 14px;
+
+font-size: 13px;
+
+border: 1px solid transparent;
+
+border-radius: 20px;
+
+cursor: pointer;
+
+transition: all 0.2s ease;
+
+}
+
+.radio-group input[type="radio"] { display: none; }
+
+.radio-group input[type="radio"]:checked + label {
+
+background-color: var(--accent-color);
+
+color: white;
+
+font-weight: bold;
+
+}
+
+.radio-group label:hover { border-color: var(--accent-color); }
+
+
+
+.layer-toggle { display: flex; justify-content: space-between; align-items: center; }
+
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+
+position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+
+background-color: #ccc; transition: .4s; border-radius: 24px;
+
+}
+
+.slider:before {
+
+position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
+
+background-color: white; transition: .4s; border-radius: 50%;
+
+}
+
+input:checked + .slider { background-color: var(--accent-color); }
+
+input:checked + .slider:before { transform: translateX(20px); }
+
+
+
+/* --- 6. INDICADOR DE CARGA (SPINNER) --- */
+
+.loader-overlay {
+
+position: absolute;
+
+top: 0;
+
+left: 0;
+
+width: 100%;
+
+height: 100%;
+
+background: rgba(255, 255, 255, 0.8);
+
+display: flex;
+
+justify-content: center;
+
+align-items: center;
+
+flex-direction: column;
+
+gap: 15px;
+
+z-index: 9999;
+
+transition: opacity 0.3s ease;
+
+}
+
+.loader-text {
+
+font-size: 1.2em;
+
+font-weight: bold;
+
+color: var(--accent-color);
+
+margin: 0;
+
+}
+
+.spinner {
+
+border: 5px solid #f3f3f3;
+
+border-top: 5px solid var(--accent-color);
+
+border-radius: 50%;
+
+width: 50px;
+
+height: 50px;
+
+animation: spin 1s linear infinite;
+
+}
+
+@keyframes spin {
+
+0% { transform: rotate(0deg); }
+
+100% { transform: rotate(360deg); }
+
+}
+
+
+
+/* --- 7. OTROS CONTROLES DE LEAFLET --- */
+
+.info.legend {
+
+background: var(--panel-bg);
+
+backdrop-filter: blur(8px);
+
+padding: 10px 15px;
+
+border-radius: var(--border-radius);
+
+box-shadow: var(--panel-shadow);
+
+line-height: 1.8;
+
+color: #333;
+
+}
+
+.info.legend h4 { margin: 0 0 10px; font-size: 16px; text-align: center; }
+
+.info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 1; border: 1px solid #999; }
+
+.leaflet-logo-control {
+
+background-color: transparent !important;
+
+border: none !important;
+
+box-shadow: none !important;
+
+margin: 0 10px 10px 0 !important;
+
+}
+
+.leaflet-logo-control img {
+
+height: 35px;
+
+width: auto;
+
+}
+
+.leaflet-top.leaflet-right { z-index: 1010 !important; }
+
+
+
+/* --- 8. RESPONSIVIDAD --- */
+
+@media (max-width: 768px) {
+
+:root {
+
+--header-height: 60px;
+
+--panel-width: calc(100vw - 40px);
+
+}
+
+.logo-container img { height: 40px; }
+
+.control-section h1 { font-size: 1.2em; }
+
+
+
+.info-panel {
+
+width: 100%;
+
+max-height: 45vh;
+
+top: auto;
+
+bottom: 0;
+
+right: 0;
+
+left: 0;
+
+border-radius: var(--border-radius) var(--border-radius) 0 0;
+
+transform: translateY(100%);
+
 }
 
 .info-panel.is-visible {
-    transform: translateX(0);
-    opacity: 1;
-}
 
-.info-panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 15px 10px 20px;
-    border-bottom: 1px solid var(--border-color);
-}
+transform: translateY(0);
 
-.info-panel h2 {
-    margin: 0;
-    font-size: 1.2em;
-    color: var(--accent-color);
 }
 
 #info-panel-content {
-    padding: 15px 20px;
-    line-height: 1.6;
-    max-height: 50vh;
-    overflow-y: auto;
+
+max-height: 35vh;
+
 }
 
-/* --- 5. ELEMENTOS DE UI DENTRO DEL PANEL --- */
-.control-section {
-    margin-bottom: 24px;
-}
-.control-section:last-child {
-    margin-bottom: 0;
-}
-.control-section > label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 10px;
-    font-size: 14px;
-    color: #495057;
-}
-.control-section h1 {
-    text-align: center;
-    color: var(--text-color);
-    margin: 0 0 24px 0;
-    padding-right: 30px;
-    font-size: 1.4em;
-    line-height: 1.2;
-}
-#acuifero-select,
-#opacity-slider {
-    width: 100%;
-}
-#acuifero-select {
-    padding: 10px;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
-    font-size: 14px;
-    background-color: white;
-}
-#acuifero-select:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+
+
+.leaflet-bottom.leaflet-left {
+
+top: 10px;
+
+bottom: auto;
+
+left: auto;
+
+right: 10px;
+
+width: auto;
+
 }
 
-/* --- 6. INDICADOR DE CARGA (SPINNER) --- */
-.loader-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    gap: 15px;
-    z-index: 9999;
-    transition: opacity 0.3s ease;
-}
-.loader-text {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: var(--accent-color);
-    margin: 0;
-}
-.spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid var(--accent-color);
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* --- 7. OTROS CONTROLES DE LEAFLET --- */
 .info.legend {
-    background: var(--panel-bg);
-    backdrop-filter: blur(8px);
-    padding: 10px 15px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--panel-shadow);
-    line-height: 1.8;
-    color: #333;
-}
-.info.legend h4 {
-    margin: 0 0 10px;
-    font-size: 16px;
-    text-align: center;
-}
-.info.legend i {
-    width: 18px;
-    height: 18px;
-    float: left;
-    margin-right: 8px;
-    opacity: 1;
-    border: 1px solid #999;
-}
-.leaflet-logo-control {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    margin: 0 10px 10px 0 !important;
-}
-.leaflet-logo-control img {
-    height: 35px;
-    width: auto;
+
+font-size: 12px;
+
+line-height: 1.6;
+
+padding: 8px 12px;
+
 }
 
-/* --- 8. RESPONSIVIDAD --- */
-@media (max-width: 768px) {
-    :root {
-        --header-height: 60px;
-        --panel-width: calc(100vw - 40px);
-    }
-    .logo-container img {
-        height: 40px;
-    }
-    .info-panel {
-        width: 100%;
-        max-height: 45vh;
-        top: auto;
-        bottom: 0;
-        right: 0;
-        left: 0;
-        border-radius: var(--border-radius) var(--border-radius) 0 0;
-        transform: translateY(100%);
-    }
-    .info-panel.is-visible {
-        transform: translateY(0);
-    }
-    #info-panel-content {
-        max-height: 35vh;
-    }
-    .leaflet-bottom.leaflet-left {
-        top: 10px;
-        bottom: auto;
-        left: auto;
-        right: 10px;
-        width: auto;
-    }
-    .info.legend {
-        font-size: 12px;
-        line-height: 1.6;
-        padding: 8px 12px;
-    }
+.info.legend h4 { font-size: 14px; }
+
+.info.legend i { width: 14px; height: 14px; }
+
 }
