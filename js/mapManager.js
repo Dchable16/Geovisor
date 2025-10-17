@@ -1,8 +1,8 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * @version 8.0: Optimización de rendimiento eliminando el listener 'layeradd'.
- * La lógica de edición ahora se asigna directamente al crear la capa.
+ * @version 9.0: Solución definitiva al bloqueo de dibujo. Se elimina el `prompt()` bloqueante
+ * y se asignan nombres por defecto a las nuevas capas para un rendimiento y UX fluidos.
  */
 
 import { CONFIG } from './config.js';
@@ -14,14 +14,13 @@ export class MapManager {
             zoom: CONFIG.initialZoom,
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false,
-            preferCanvas: true // Esencial para buen rendimiento con muchos vectores
+            preferCanvas: true
         });
 
-        // Grupo de capas para almacenar y gestionar los dibujos del usuario
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
-        
-        // Configuración de los controles de Geoman
+        this.drawCounter = 0; // Contador para nombres de dibujos únicos
+
         this.map.pm.addControls({
             position: 'topright',
             drawMarker: true,
@@ -36,7 +35,6 @@ export class MapManager {
             removalMode: true,
         });
 
-        // Opciones globales para las herramientas de dibujo
         this.map.pm.setGlobalOptions({
             snapDistance: 15,
             allowSelfIntersection: false,
@@ -54,7 +52,6 @@ export class MapManager {
         this.setupDrawingEvents();
     }
 
-    // Añade controles básicos al mapa (zoom, capas, leyenda, etc.)
     addControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
         L.control.layers(CONFIG.tileLayers, null, { 
@@ -68,7 +65,6 @@ export class MapManager {
         this.addCustomPrintControl();
     }
 
-    // Añade una capa GeoJSON al mapa
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
         return L.geoJson(data, {
             style: styleFunction,
@@ -76,34 +72,44 @@ export class MapManager {
         }).addTo(this.map);
     }
 
-    // --- FUNCIÓN OPTIMIZADA ---
-    // Configura el evento principal para la creación de nuevas geometrías
+    // --- LÓGICA DE DIBUJO OPTIMIZADA ---
     setupDrawingEvents() {
-        // Este evento se dispara UNA SOLA VEZ cuando se termina de dibujar una figura.
+        // Se ejecuta una vez al finalizar un dibujo. Ahora es un proceso no bloqueante.
         this.map.on('pm:create', (e) => {
             const layer = e.layer;
             const type = e.layerType;
             
-            // 1. Añade la nueva capa al grupo de capas dibujadas
-            this.drawnItems.addLayer(layer);
+            this.drawCounter++; // Incrementa el contador para un nombre único
             
-            // 2. Habilita la edición en esta capa específica
+            // Asigna propiedades a la capa de forma inmediata
+            this.setLayerProperties(layer, type);
+
+            // Añade la capa al grupo y habilita su edición
+            this.drawnItems.addLayer(layer);
             layer.pm.enable({ allowSelfIntersection: false });
 
-            // 3. Calcula sus medidas
-            const measurement = this.calculateMeasurement(layer, type);
-
-            // 4. Pide un nombre y guarda las propiedades
-            this.promptForLayerName(layer, type, measurement);
-            
-            // 5. Asigna los eventos de edición y clic a esta capa
+            // Asigna los eventos para edición y popups
             this.setupLayerEvents(layer);
         });
+    }
+
+    // NUEVA FUNCIÓN: Asigna propiedades por defecto a una capa recién creada.
+    setLayerProperties(layer, type) {
+        const shapeName = type.charAt(0).toUpperCase() + type.slice(1);
+        const measurement = this.calculateMeasurement(layer, type);
+
+        layer.feature = layer.feature || {};
+        layer.feature.properties = {
+            name: `Dibujo ${this.drawCounter}`, // Nombre por defecto
+            type: shapeName,
+            createdAt: new Date().toISOString(),
+            measurement: measurement
+        };
         
-        // Se ha eliminado el listener this.map.on('layeradd', ...), que era la causa de la lentitud.
+        // Crea o actualiza el popup con esta nueva información.
+        this.updateLayerPopup(layer);
     }
     
-    // Calcula el área o longitud de una capa usando Turf.js
     calculateMeasurement(layer, type) {
         let measurement = '';
         try {
@@ -139,26 +145,8 @@ export class MapManager {
         return measurement;
     }
     
-    // Muestra un prompt para que el usuario nombre la nueva capa
-    promptForLayerName(layer, type, measurement) {
-        const shapeName = type.charAt(0).toUpperCase() + type.slice(1);
-        const defaultName = `${shapeName} ${new Date().toLocaleTimeString()}`;
-        const name = prompt(`Ingrese un nombre para este ${shapeName.toLowerCase()}:\n${measurement}`, defaultName) || defaultName;
-        
-        layer.feature = layer.feature || {};
-        layer.feature.properties = {
-            name: name,
-            type: shapeName,
-            createdAt: new Date().toISOString(),
-            measurement: measurement
-        };
-        
-        this.updateLayerPopup(layer);
-    }
-    
-    // Asigna eventos a una capa específica (editar, clic)
     setupLayerEvents(layer) {
-        // Evento para actualizar el popup cuando la capa se edita
+        // Actualiza las medidas en el popup al editar la forma.
         layer.on('pm:edit', (e) => {
             const editedLayer = e.layer;
             const shapeType = editedLayer.pm.getShape();
@@ -166,20 +154,18 @@ export class MapManager {
             
             if (editedLayer.feature && editedLayer.feature.properties) {
                 editedLayer.feature.properties.measurement = measurement;
+                this.updateLayerPopup(editedLayer); // Actualiza el popup con las nuevas medidas
             }
-            this.updateLayerPopup(editedLayer);
         });
         
-        // Evento para abrir el popup al hacer clic
         layer.on('click', (e) => {
-            L.DomEvent.stop(e); // Evita que el clic se propague al mapa
+            L.DomEvent.stop(e);
             if (!e.target.isPopupOpen()) {
                 e.target.openPopup();
             }
         });
     }
     
-    // Actualiza o crea el contenido del popup de una capa
     updateLayerPopup(layer) {
         if (!layer.feature || !layer.feature.properties) return;
         const props = layer.feature.properties;
@@ -199,7 +185,7 @@ export class MapManager {
         }
     }
     
-    // --- El resto de las funciones auxiliares se mantienen igual ---
+    // --- El resto de las funciones se mantienen igual ---
 
     addCustomPrintControl() {
         const PrintControl = L.Control.extend({
