@@ -38,14 +38,15 @@ export class MapManager {
         this.map.pm.setGlobalOptions({
             snapDistance: 15,
             allowSelfIntersection: false,
-            templineStyle: { color: 'red', dashArray: [5, 5] },
-            hintlineStyle: { color: 'red', dashArray: [5, 5] },
-            pathOptions: {
-                color: '#3388ff',
-                fillColor: '#3388ff',
-                fillOpacity: 0.2,
-                weight: 3
-            }
+            snapSegment: true,
+            snapMiddle: true,
+            snapDistance: 15,
+            snapFinish: true,
+            cursorMarker: true,
+            removeLayerBelowMinVertexCount: true,
+            preventMarkerRemoval: false,
+            hideMiddleMarkers: false,
+            // ... resto de opciones ...
         });
 
         this.addControls();
@@ -72,25 +73,45 @@ export class MapManager {
         }).addTo(this.map);
     }
 
-    // --- LÓGICA DE DIBUJO OPTIMIZADA ---
     setupDrawingEvents() {
-        // Se ejecuta una vez al finalizar un dibujo. Ahora es un proceso no bloqueante.
+        // Manejar la creación de capas
         this.map.on('pm:create', (e) => {
             const layer = e.layer;
             const type = e.layerType;
             
-            this.drawCounter++; // Incrementa el contador para un nombre único
-            
-            // Asigna propiedades a la capa de forma inmediata
+            this.drawCounter++;
             this.setLayerProperties(layer, type);
-
-            // Añade la capa al grupo y habilita su edición
             this.drawnItems.addLayer(layer);
-            layer.pm.enable({ allowSelfIntersection: false });
-
-            // Asigna los eventos para edición y popups
+            
+            // Habilitar edición con opciones optimizadas
+            layer.pm.enable({
+                allowSelfIntersection: false,
+                preventMarkerRemoval: false,
+                hideMiddleMarkers: false
+            });
+            
             this.setupLayerEvents(layer);
         });
+    
+        // Manejar el doble clic para finalizar edición
+        this.map.on('pm:globaleditmodetoggled', (e) => {
+            if (e.enabled) {
+                this.map.dragging.disable();
+                this.map.doubleClickZoom.disable();
+                this.map.on('dblclick', this.finalizarEdicion, this);
+            } else {
+                this.map.dragging.enable();
+                this.map.doubleClickZoom.enable();
+                this.map.off('dblclick', this.finalizarEdicion, this);
+            }
+        });
+    }
+    
+    // Nuevo método para manejar el doble clic
+    finalizarEdicion() {
+        if (this.map.pm.getGeomanLayers().some(layer => layer.pm && layer.pm.enabled())) {
+            this.map.pm.disableGlobalEditMode();
+        }
     }
 
     // NUEVA FUNCIÓN: Asigna propiedades por defecto a una capa recién creada.
@@ -146,18 +167,22 @@ export class MapManager {
     }
     
     setupLayerEvents(layer) {
-        // Actualiza las medidas en el popup al editar la forma.
-        layer.on('pm:edit', (e) => {
-            const editedLayer = e.layer;
-            const shapeType = editedLayer.pm.getShape();
-            const measurement = this.calculateMeasurement(editedLayer, shapeType);
+        // Limitar la frecuencia de actualización
+        const actualizacionOptimizada = _.throttle((e) => {
+            const capaEditada = e.layer || e.target;
+            const tipoForma = capaEditada.pm.getShape();
+            const medicion = this.calcularMedicion(capaEditada, tipoForma);
             
-            if (editedLayer.feature && editedLayer.feature.properties) {
-                editedLayer.feature.properties.measurement = measurement;
-                this.updateLayerPopup(editedLayer); // Actualiza el popup con las nuevas medidas
+            if (capaEditada.feature?.properties) {
+                capaEditada.feature.properties.medicion = medicion;
+                this.actualizarPopup(capaEditada);
             }
-        });
+        }, 100); // Máximo 10 actualizaciones por segundo
+    
+        // Usar 'pm:update' en lugar de 'pm:edit' para mejor rendimiento
+        layer.on('pm:update', actualizacionOptimizada);
         
+        // Manejar clic para mostrar popup
         layer.on('click', (e) => {
             L.DomEvent.stop(e);
             if (!e.target.isPopupOpen()) {
