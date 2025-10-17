@@ -1,8 +1,8 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * @version 10.0: Corregida la lentitud y el error al finalizar dibujos (doble clic).
- * La lógica de eventos se ha optimizado para un rendimiento fluido y predecible.
+ * @version 9.0: Solución definitiva al bloqueo de dibujo. Se elimina el `prompt()` bloqueante
+ * y se asignan nombres por defecto a las nuevas capas para un rendimiento y UX fluidos.
  */
 
 import { CONFIG } from './config.js';
@@ -19,15 +19,8 @@ export class MapManager {
 
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
-        this.drawCounter = 0;
+        this.drawCounter = 0; // Contador para nombres de dibujos únicos
 
-        this.initializeGeoman();
-        this.addControls();
-        this.setupDrawingEvents();
-    }
-
-    // Encapsula toda la configuración de Geoman
-    initializeGeoman() {
         this.map.pm.addControls({
             position: 'topright',
             drawMarker: true,
@@ -54,6 +47,9 @@ export class MapManager {
                 weight: 3
             }
         });
+
+        this.addControls();
+        this.setupDrawingEvents();
     }
 
     addControls() {
@@ -76,59 +72,41 @@ export class MapManager {
         }).addTo(this.map);
     }
 
-    // --- LÓGICA DE DIBUJO CORREGIDA Y OPTIMIZADA ---
+    // --- LÓGICA DE DIBUJO OPTIMIZADA ---
     setupDrawingEvents() {
-        // Se dispara cuando se inicia el modo de dibujo
-        this.map.on('pm:drawstart', (e) => {
-            // Deshabilitamos temporalmente los popups del mapa para evitar interferencias
-            this.map.eachLayer(layer => {
-                if (layer.getPopup()) {
-                    layer.unbindPopup();
-                }
-            });
-        });
-        
-        // Se dispara una vez que el dibujo se ha completado correctamente
+        // Se ejecuta una vez al finalizar un dibujo. Ahora es un proceso no bloqueante.
         this.map.on('pm:create', (e) => {
             const layer = e.layer;
             const type = e.layerType;
-
-            this.drawCounter++;
             
+            this.drawCounter++; // Incrementa el contador para un nombre único
+            
+            // Asigna propiedades a la capa de forma inmediata
             this.setLayerProperties(layer, type);
+
+            // Añade la capa al grupo y habilita su edición
             this.drawnItems.addLayer(layer);
-            
-            // Habilitar edición y asignar eventos a la nueva capa
             layer.pm.enable({ allowSelfIntersection: false });
+
+            // Asigna los eventos para edición y popups
             this.setupLayerEvents(layer);
-
-            // Reactivamos los popups en todas las capas
-            this.rebindAllPopups();
-        });
-
-        // Se dispara si se cancela el dibujo
-        this.map.on('pm:drawend', (e) => {
-            this.rebindAllPopups();
         });
     }
 
-    rebindAllPopups() {
-        this.drawnItems.eachLayer(layer => this.updateLayerPopup(layer));
-        // Si tienes otras capas con popups, también deberías reactivarlas aquí
-    }
-
+    // NUEVA FUNCIÓN: Asigna propiedades por defecto a una capa recién creada.
     setLayerProperties(layer, type) {
         const shapeName = type.charAt(0).toUpperCase() + type.slice(1);
         const measurement = this.calculateMeasurement(layer, type);
 
         layer.feature = layer.feature || {};
         layer.feature.properties = {
-            name: `Dibujo ${this.drawCounter}`,
+            name: `Dibujo ${this.drawCounter}`, // Nombre por defecto
             type: shapeName,
             createdAt: new Date().toISOString(),
             measurement: measurement
         };
         
+        // Crea o actualiza el popup con esta nueva información.
         this.updateLayerPopup(layer);
     }
     
@@ -140,16 +118,21 @@ export class MapManager {
 
             if (shapeType.includes('polygon') || shapeType.includes('rectangle')) {
                 const area = turf.area(geojson);
-                measurement = area >= 10000 ? `Área: ${(area / 10000).toFixed(2)} ha` : `Área: ${area.toFixed(2)} m²`;
+                measurement = area >= 10000 ? 
+                    `Área: ${(area / 10000).toFixed(2)} ha` : 
+                    `Área: ${area.toFixed(2)} m²`;
             } 
             else if (shapeType.includes('line') || shapeType.includes('polyline')) {
                 const distance = turf.length(geojson, {units: 'meters'});
-                measurement = distance >= 1000 ? `Distancia: ${(distance / 1000).toFixed(2)} km` : `Distancia: ${Math.round(distance)} m`;
+                measurement = distance >= 1000 ? 
+                    `Distancia: ${(distance / 1000).toFixed(2)} km` : 
+                    `Distancia: ${Math.round(distance)} m`;
             } 
             else if (shapeType.includes('circle')) {
                 const radius = layer.getRadius();
-                const area = Math.PI * Math.pow(radius, 2);
-                measurement = `Radio: ${radius.toFixed(2)} m | Área: ${(area >= 10000 ? (area / 10000).toFixed(2) + ' ha' : area.toFixed(2) + ' m²')}`;
+                const area = Math.PI * radius * radius;
+                measurement = `Radio: ${radius.toFixed(2)} m | Área: ${area >= 10000 ? 
+                    (area / 10000).toFixed(2) + ' ha' : area.toFixed(2) + ' m²'}`;
             }
             else if (shapeType.includes('marker')) {
                 const latlng = layer.getLatLng();
@@ -163,6 +146,7 @@ export class MapManager {
     }
     
     setupLayerEvents(layer) {
+        // Actualiza las medidas en el popup al editar la forma.
         layer.on('pm:edit', (e) => {
             const editedLayer = e.layer;
             const shapeType = editedLayer.pm.getShape();
@@ -170,7 +154,7 @@ export class MapManager {
             
             if (editedLayer.feature && editedLayer.feature.properties) {
                 editedLayer.feature.properties.measurement = measurement;
-                this.updateLayerPopup(editedLayer);
+                this.updateLayerPopup(editedLayer); // Actualiza el popup con las nuevas medidas
             }
         });
         
@@ -186,25 +170,30 @@ export class MapManager {
         if (!layer.feature || !layer.feature.properties) return;
         const props = layer.feature.properties;
         const popupContent = `
-            <div class="feature-popup">
-                <h4>${props.name || 'Sin nombre'}</h4>
-                <p><strong>Tipo:</strong> ${props.type || 'No especificado'}</p>
-                <p><strong>${props.measurement || ''}</strong></p>
+            <div class="feature-popup" style="max-width: 200px;">
+                <h4 style="margin: 0 0 5px 0;">${props.name || 'Sin nombre'}</h4>
+                <p style="margin: 0;"><strong>Tipo:</strong> ${props.type || 'No especificado'}</p>
+                <p style="margin: 5px 0;"><strong>${props.measurement || ''}</strong></p>
                 <small>Creado: ${new Date(props.createdAt).toLocaleString()}</small>
             </div>
         `;
         
-        // Unbind para evitar popups duplicados y luego bind de nuevo
-        layer.unbindPopup().bindPopup(popupContent, { offset: L.point(0, -10), closeButton: false });
+        if (layer.getPopup()) {
+            layer.setPopupContent(popupContent);
+        } else {
+            layer.bindPopup(popupContent, { offset: L.point(0, -10) });
+        }
     }
     
+    // --- El resto de las funciones se mantienen igual ---
+
     addCustomPrintControl() {
         const PrintControl = L.Control.extend({
             options: { position: 'bottomright' },
             onAdd: () => {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
                 container.title = 'Exportar mapa como imagen de alta calidad';
-                container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>`;
+                container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="padding: 4px;"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>`;
                 
                 L.DomEvent.on(container, 'click', async () => {
                     const mapNode = document.getElementById(CONFIG.mapId);
@@ -215,7 +204,10 @@ export class MapManager {
                         const dataUrl = await htmlToImage.toPng(mapNode, {
                             quality: 1.0,
                             pixelRatio: 2,
-                            filter: (node) => !['leaflet-control-zoom', 'leaflet-control-layers', 'leaflet-pm-toolbar', 'leaflet-control-custom'].some(c => node.classList?.contains(c))
+                            filter: (node) => {
+                                 const exclusionClasses = ['leaflet-control-zoom', 'leaflet-control-layers', 'leaflet-pm-toolbar', 'leaflet-control-custom'];
+                                 return !exclusionClasses.some((classname) => node.classList?.contains(classname));
+                            }
                         });
                         const link = document.createElement('a');
                         link.download = 'mapa-exportado.png';
@@ -223,7 +215,7 @@ export class MapManager {
                         link.click();
                     } catch (error) {
                         console.error('Error al exportar el mapa:', error);
-                        alert('No se pudo exportar el mapa.');
+                        alert('No se pudo exportar el mapa. Inténtelo de nuevo.');
                     } finally {
                         if(loader) loader.style.display = 'none';
                     }
@@ -236,17 +228,21 @@ export class MapManager {
 
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
+        const vulnerabilityMap = CONFIG.vulnerabilityMap;
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend');
-            const vulnerabilityMap = CONFIG.vulnerabilityMap;
             div.innerHTML = '<h4>Vulnerabilidad</h4>';
-            Object.keys(vulnerabilityMap).filter(k => k !== 'default').sort((a, b) => b - a).forEach(grade => {
-                const { color, label } = vulnerabilityMap[grade];
-                div.innerHTML += `<span><i style="background:${color}"></i> ${label} (Nivel ${grade})</span>`;
-            });
-            const { color, label } = vulnerabilityMap['default'];
-            div.innerHTML += `<span><i style="background:${color}; border: 1px solid #666;"></i> ${label}</span>`;
+            Object.keys(vulnerabilityMap)
+                .filter(key => key !== 'default')
+                .sort((a, b) => b - a)
+                .forEach(grade => {
+                    const { color, label } = vulnerabilityMap[grade];
+                    div.innerHTML += `<i style="background:${color}"></i> ${label} (Nivel ${grade})<br>`;
+                });
+            const defaultEntry = vulnerabilityMap['default'];
+            div.innerHTML += `<i style="background:${defaultEntry.color}; border: 1px solid #666;"></i> ${defaultEntry.label}`;
             L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
             return div;
         };
         legend.addTo(this.map);
@@ -257,6 +253,7 @@ export class MapManager {
             onAdd: () => {
                 const c = L.DomUtil.create('div', 'leaflet-logo-control');
                 c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSIG.png" alt="Logo SSIG">`;
+                L.DomEvent.disableClickPropagation(c);
                 return c;
             }
         });
@@ -269,6 +266,8 @@ export class MapManager {
     }
 
     fitBounds(bounds) {
-        if (bounds) this.map.fitBounds(bounds.pad(0.1));
+        if (bounds) {
+            this.map.fitBounds(bounds.pad(0.1));
+        }
     }
 }
