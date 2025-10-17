@@ -1,7 +1,8 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * Versión 7.2: Corrección del evento 'layeradd' para evitar errores con capas no editables.
+ * @version 8.0: Optimización de rendimiento eliminando el listener 'layeradd'.
+ * La lógica de edición ahora se asigna directamente al crear la capa.
  */
 
 import { CONFIG } from './config.js';
@@ -13,13 +14,14 @@ export class MapManager {
             zoom: CONFIG.initialZoom,
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false,
-            preferCanvas: true,
-            pmIgnore: false // Importante para Geoman
+            preferCanvas: true // Esencial para buen rendimiento con muchos vectores
         });
 
+        // Grupo de capas para almacenar y gestionar los dibujos del usuario
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
         
+        // Configuración de los controles de Geoman
         this.map.pm.addControls({
             position: 'topright',
             drawMarker: true,
@@ -34,6 +36,7 @@ export class MapManager {
             removalMode: true,
         });
 
+        // Opciones globales para las herramientas de dibujo
         this.map.pm.setGlobalOptions({
             snapDistance: 15,
             allowSelfIntersection: false,
@@ -51,6 +54,7 @@ export class MapManager {
         this.setupDrawingEvents();
     }
 
+    // Añade controles básicos al mapa (zoom, capas, leyenda, etc.)
     addControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
         L.control.layers(CONFIG.tileLayers, null, { 
@@ -64,6 +68,7 @@ export class MapManager {
         this.addCustomPrintControl();
     }
 
+    // Añade una capa GeoJSON al mapa
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
         return L.geoJson(data, {
             style: styleFunction,
@@ -71,32 +76,34 @@ export class MapManager {
         }).addTo(this.map);
     }
 
+    // --- FUNCIÓN OPTIMIZADA ---
+    // Configura el evento principal para la creación de nuevas geometrías
     setupDrawingEvents() {
+        // Este evento se dispara UNA SOLA VEZ cuando se termina de dibujar una figura.
         this.map.on('pm:create', (e) => {
             const layer = e.layer;
             const type = e.layerType;
             
+            // 1. Añade la nueva capa al grupo de capas dibujadas
             this.drawnItems.addLayer(layer);
             
+            // 2. Habilita la edición en esta capa específica
+            layer.pm.enable({ allowSelfIntersection: false });
+
+            // 3. Calcula sus medidas
             const measurement = this.calculateMeasurement(layer, type);
+
+            // 4. Pide un nombre y guarda las propiedades
             this.promptForLayerName(layer, type, measurement);
+            
+            // 5. Asigna los eventos de edición y clic a esta capa
             this.setupLayerEvents(layer);
         });
         
-        // --- CÓDIGO CORREGIDO ---
-        // Este evento ahora verifica de forma segura si una capa es editable
-        // y si está en nuestro grupo de capas dibujadas antes de actuar.
-        this.map.on('layeradd', (e) => {
-            if (e.layer.pm && this.drawnItems.hasLayer(e.layer)) {
-                // Habilita la edición solo si la capa tiene las herramientas de Geoman
-                // y está en el grupo de elementos que hemos dibujado.
-                e.layer.pm.enable({
-                    allowSelfIntersection: false,
-                });
-            }
-        });
+        // Se ha eliminado el listener this.map.on('layeradd', ...), que era la causa de la lentitud.
     }
     
+    // Calcula el área o longitud de una capa usando Turf.js
     calculateMeasurement(layer, type) {
         let measurement = '';
         try {
@@ -132,6 +139,7 @@ export class MapManager {
         return measurement;
     }
     
+    // Muestra un prompt para que el usuario nombre la nueva capa
     promptForLayerName(layer, type, measurement) {
         const shapeName = type.charAt(0).toUpperCase() + type.slice(1);
         const defaultName = `${shapeName} ${new Date().toLocaleTimeString()}`;
@@ -148,24 +156,30 @@ export class MapManager {
         this.updateLayerPopup(layer);
     }
     
+    // Asigna eventos a una capa específica (editar, clic)
     setupLayerEvents(layer) {
+        // Evento para actualizar el popup cuando la capa se edita
         layer.on('pm:edit', (e) => {
-            const type = e.layer.pm.getShape();
-            const measurement = this.calculateMeasurement(e.layer, type);
-            if (e.layer.feature && e.layer.feature.properties) {
-                e.layer.feature.properties.measurement = measurement;
+            const editedLayer = e.layer;
+            const shapeType = editedLayer.pm.getShape();
+            const measurement = this.calculateMeasurement(editedLayer, shapeType);
+            
+            if (editedLayer.feature && editedLayer.feature.properties) {
+                editedLayer.feature.properties.measurement = measurement;
             }
-            this.updateLayerPopup(e.layer);
+            this.updateLayerPopup(editedLayer);
         });
         
+        // Evento para abrir el popup al hacer clic
         layer.on('click', (e) => {
-            L.DomEvent.stop(e);
+            L.DomEvent.stop(e); // Evita que el clic se propague al mapa
             if (!e.target.isPopupOpen()) {
                 e.target.openPopup();
             }
         });
     }
     
+    // Actualiza o crea el contenido del popup de una capa
     updateLayerPopup(layer) {
         if (!layer.feature || !layer.feature.properties) return;
         const props = layer.feature.properties;
@@ -185,15 +199,13 @@ export class MapManager {
         }
     }
     
+    // --- El resto de las funciones auxiliares se mantienen igual ---
+
     addCustomPrintControl() {
         const PrintControl = L.Control.extend({
             options: { position: 'bottomright' },
             onAdd: () => {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-                container.style.backgroundColor = 'white';
-                container.style.width = '30px';
-                container.style.height = '30px';
-                container.style.cursor = 'pointer';
                 container.title = 'Exportar mapa como imagen de alta calidad';
                 container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="padding: 4px;"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>`;
                 
@@ -234,13 +246,13 @@ export class MapManager {
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend');
             div.innerHTML = '<h4>Vulnerabilidad</h4>';
-            const sortedGrades = Object.keys(vulnerabilityMap)
+            Object.keys(vulnerabilityMap)
                 .filter(key => key !== 'default')
-                .sort((a, b) => b - a);
-            sortedGrades.forEach(grade => {
-                const { color, label } = vulnerabilityMap[grade];
-                div.innerHTML += `<i style="background:${color}"></i> ${label} (Nivel ${grade})<br>`;
-            });
+                .sort((a, b) => b - a)
+                .forEach(grade => {
+                    const { color, label } = vulnerabilityMap[grade];
+                    div.innerHTML += `<i style="background:${color}"></i> ${label} (Nivel ${grade})<br>`;
+                });
             const defaultEntry = vulnerabilityMap['default'];
             div.innerHTML += `<i style="background:${defaultEntry.color}; border: 1px solid #666;"></i> ${defaultEntry.label}`;
             L.DomEvent.disableClickPropagation(div);
@@ -263,8 +275,7 @@ export class MapManager {
     }
 
     getColor(v) {
-        const value = String(v);
-        const entry = CONFIG.vulnerabilityMap[value];
+        const entry = CONFIG.vulnerabilityMap[String(v)];
         return entry ? entry.color : CONFIG.vulnerabilityMap.default.color;
     }
 
