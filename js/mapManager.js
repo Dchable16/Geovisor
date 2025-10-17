@@ -1,7 +1,7 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * Versión 7.0: Implementación de Leaflet.Geoman para herramientas de dibujo avanzadas.
+ * Versión 7.1: Corrección de cálculo de medidas usando Turf.js en lugar de L.GeometryUtil.
  */
 
 import { CONFIG } from './config.js';
@@ -101,40 +101,44 @@ export class MapManager {
         
         // Habilitar edición para capas existentes
         this.map.on('layeradd', (e) => {
-            if (e.layer.pm && !e.layer.pm.dragging._enabled) {
+            if (e.layer.pm && !e.layer.pm.dragging?._enabled) {
                 e.layer.pm.enable();
             }
         });
     }
     
+    // --- FUNCIÓN CORREGIDA ---
     calculateMeasurement(layer, type) {
         let measurement = '';
         
         try {
-            if (type === 'polygon' || type === 'rectangle') {
-                const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+            // Convierte la capa de Leaflet a un formato que Turf.js entiende
+            const geojson = layer.toGeoJSON();
+
+            if (type === 'Polygon' || type === 'Rectangle' || type === 'polygon' || type === 'rectangle') {
+                const area = turf.area(geojson); // Usamos turf.area()
                 measurement = area >= 10000 ? 
-                    `Área: ${(area/10000).toFixed(2)} ha` : 
+                    `Área: ${(area / 10000).toFixed(2)} ha` : 
                     `Área: ${area.toFixed(2)} m²`;
             } 
-            else if (type === 'polyline') {
-                const distance = L.GeometryUtil.length(layer);
+            else if (type === 'Line' || type === 'Polyline' || type === 'polyline') {
+                const distance = turf.length(geojson, {units: 'meters'}); // Usamos turf.length()
                 measurement = distance >= 1000 ? 
-                    `Distancia: ${(distance/1000).toFixed(2)} km` : 
+                    `Distancia: ${(distance / 1000).toFixed(2)} km` : 
                     `Distancia: ${Math.round(distance)} m`;
             } 
-            else if (type === 'circle') {
+            else if (type === 'Circle' || type === 'circle') {
                 const radius = layer.getRadius();
                 const area = Math.PI * radius * radius;
                 measurement = `Radio: ${radius.toFixed(2)} m | Área: ${area >= 10000 ? 
-                    (area/10000).toFixed(2) + ' ha' : area.toFixed(2) + ' m²'}`;
+                    (area / 10000).toFixed(2) + ' ha' : area.toFixed(2) + ' m²'}`;
             }
-            else if (type === 'marker') {
+            else if (type === 'Marker' || type === 'marker') {
                 const latlng = layer.getLatLng();
                 measurement = `Coordenadas: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
             }
         } catch (e) {
-            console.error('Error calculando medida:', e);
+            console.error('Error calculando medida con Turf.js:', e);
             measurement = 'Medición no disponible';
         }
         
@@ -142,14 +146,15 @@ export class MapManager {
     }
     
     promptForLayerName(layer, type, measurement) {
-        const defaultName = `${type.charAt(0).toUpperCase() + type.slice(1)} ${new Date().toLocaleTimeString()}`;
-        const name = prompt(`Ingrese un nombre para este ${type}\n${measurement}`, defaultName) || defaultName;
+        const shapeName = type.charAt(0).toUpperCase() + type.slice(1);
+        const defaultName = `${shapeName} ${new Date().toLocaleTimeString()}`;
+        const name = prompt(`Ingrese un nombre para este ${shapeName.toLowerCase()}:\n${measurement}`, defaultName) || defaultName;
         
         // Almacenar metadatos en la capa
         layer.feature = layer.feature || {};
         layer.feature.properties = layer.feature.properties || {};
         layer.feature.properties.name = name;
-        layer.feature.properties.type = type;
+        layer.feature.properties.type = shapeName;
         layer.feature.properties.createdAt = new Date().toISOString();
         layer.feature.properties.measurement = measurement;
         
@@ -162,12 +167,16 @@ export class MapManager {
         layer.on('pm:edit', (e) => {
             const type = e.layer.pm.getShape();
             const measurement = this.calculateMeasurement(e.layer, type);
-            e.layer.feature.properties.measurement = measurement;
+            if (e.layer.feature && e.layer.feature.properties) {
+                e.layer.feature.properties.measurement = measurement;
+            }
             this.updateLayerPopup(e.layer);
         });
         
         // Mostrar información al hacer clic
         layer.on('click', (e) => {
+            // Prevenir que el mapa se mueva al hacer clic en una figura
+            L.DomEvent.stop(e);
             if (!e.target.isPopupOpen()) {
                 e.target.openPopup();
             }
@@ -177,10 +186,10 @@ export class MapManager {
     updateLayerPopup(layer) {
         const props = layer.feature.properties;
         const popupContent = `
-            <div class="feature-popup">
-                <h4>${props.name || 'Sin nombre'}</h4>
-                <p><strong>Tipo:</strong> ${props.type || 'No especificado'}</p>
-                <p><strong>${props.measurement || ''}</strong></p>
+            <div class="feature-popup" style="max-width: 200px;">
+                <h4 style="margin: 0 0 5px 0;">${props.name || 'Sin nombre'}</h4>
+                <p style="margin: 0;"><strong>Tipo:</strong> ${props.type || 'No especificado'}</p>
+                <p style="margin: 5px 0;"><strong>${props.measurement || ''}</strong></p>
                 <small>Creado: ${new Date(props.createdAt).toLocaleString()}</small>
             </div>
         `;
@@ -188,7 +197,7 @@ export class MapManager {
         if (layer.getPopup()) {
             layer.setPopupContent(popupContent);
         } else {
-            layer.bindPopup(popupContent);
+            layer.bindPopup(popupContent, { offset: L.point(0, -10) });
         }
     }
     
@@ -217,7 +226,7 @@ export class MapManager {
                             quality: 1.0,
                             pixelRatio: 2,
                             filter: (node) => {
-                                 const exclusionClasses = ['leaflet-control-zoom', 'leaflet-control-layers', 'leaflet-draw', 'leaflet-control-custom'];
+                                 const exclusionClasses = ['leaflet-control-zoom', 'leaflet-control-layers', 'leaflet-pm-toolbar', 'leaflet-control-custom'];
                                  return !exclusionClasses.some((classname) => node.classList?.contains(classname));
                             }
                         });
