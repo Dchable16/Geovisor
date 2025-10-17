@@ -1,7 +1,7 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * Versión 7.1: Corrección de cálculo de medidas usando Turf.js en lugar de L.GeometryUtil.
+ * Versión 7.2: Corrección del evento 'layeradd' para evitar errores con capas no editables.
  */
 
 import { CONFIG } from './config.js';
@@ -17,11 +17,9 @@ export class MapManager {
             pmIgnore: false // Importante para Geoman
         });
 
-        // Grupo para almacenar las capas dibujadas
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
         
-        // Habilitar Geoman en el mapa
         this.map.pm.addControls({
             position: 'topright',
             drawMarker: true,
@@ -36,18 +34,11 @@ export class MapManager {
             removalMode: true,
         });
 
-        // Configuración global de Geoman
         this.map.pm.setGlobalOptions({
             snapDistance: 15,
             allowSelfIntersection: false,
-            templineStyle: {
-                color: 'red',
-                dashArray: [5, 5]
-            },
-            hintlineStyle: {
-                color: 'red',
-                dashArray: [5, 5]
-            },
+            templineStyle: { color: 'red', dashArray: [5, 5] },
+            hintlineStyle: { color: 'red', dashArray: [5, 5] },
             pathOptions: {
                 color: '#3388ff',
                 fillColor: '#3388ff',
@@ -81,59 +72,56 @@ export class MapManager {
     }
 
     setupDrawingEvents() {
-        // Evento cuando se crea una nueva capa
         this.map.on('pm:create', (e) => {
             const layer = e.layer;
             const type = e.layerType;
             
-            // Añadir al grupo de elementos dibujados
             this.drawnItems.addLayer(layer);
             
-            // Calcular medidas según el tipo de capa
-            let measurement = this.calculateMeasurement(layer, type);
-            
-            // Pedir nombre al usuario
+            const measurement = this.calculateMeasurement(layer, type);
             this.promptForLayerName(layer, type, measurement);
-            
-            // Configurar eventos de edición
             this.setupLayerEvents(layer);
         });
         
-        // Habilitar edición para capas existentes
+        // --- CÓDIGO CORREGIDO ---
+        // Este evento ahora verifica de forma segura si una capa es editable
+        // y si está en nuestro grupo de capas dibujadas antes de actuar.
         this.map.on('layeradd', (e) => {
-            if (e.layer.pm && !e.layer.pm.dragging?._enabled) {
-                e.layer.pm.enable();
+            if (e.layer.pm && this.drawnItems.hasLayer(e.layer)) {
+                // Habilita la edición solo si la capa tiene las herramientas de Geoman
+                // y está en el grupo de elementos que hemos dibujado.
+                e.layer.pm.enable({
+                    allowSelfIntersection: false,
+                });
             }
         });
     }
     
-    // --- FUNCIÓN CORREGIDA ---
     calculateMeasurement(layer, type) {
         let measurement = '';
-        
         try {
-            // Convierte la capa de Leaflet a un formato que Turf.js entiende
             const geojson = layer.toGeoJSON();
+            const shapeType = type.toLowerCase();
 
-            if (type === 'Polygon' || type === 'Rectangle' || type === 'polygon' || type === 'rectangle') {
-                const area = turf.area(geojson); // Usamos turf.area()
+            if (shapeType.includes('polygon') || shapeType.includes('rectangle')) {
+                const area = turf.area(geojson);
                 measurement = area >= 10000 ? 
                     `Área: ${(area / 10000).toFixed(2)} ha` : 
                     `Área: ${area.toFixed(2)} m²`;
             } 
-            else if (type === 'Line' || type === 'Polyline' || type === 'polyline') {
-                const distance = turf.length(geojson, {units: 'meters'}); // Usamos turf.length()
+            else if (shapeType.includes('line') || shapeType.includes('polyline')) {
+                const distance = turf.length(geojson, {units: 'meters'});
                 measurement = distance >= 1000 ? 
                     `Distancia: ${(distance / 1000).toFixed(2)} km` : 
                     `Distancia: ${Math.round(distance)} m`;
             } 
-            else if (type === 'Circle' || type === 'circle') {
+            else if (shapeType.includes('circle')) {
                 const radius = layer.getRadius();
                 const area = Math.PI * radius * radius;
                 measurement = `Radio: ${radius.toFixed(2)} m | Área: ${area >= 10000 ? 
                     (area / 10000).toFixed(2) + ' ha' : area.toFixed(2) + ' m²'}`;
             }
-            else if (type === 'Marker' || type === 'marker') {
+            else if (shapeType.includes('marker')) {
                 const latlng = layer.getLatLng();
                 measurement = `Coordenadas: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
             }
@@ -141,7 +129,6 @@ export class MapManager {
             console.error('Error calculando medida con Turf.js:', e);
             measurement = 'Medición no disponible';
         }
-        
         return measurement;
     }
     
@@ -150,20 +137,18 @@ export class MapManager {
         const defaultName = `${shapeName} ${new Date().toLocaleTimeString()}`;
         const name = prompt(`Ingrese un nombre para este ${shapeName.toLowerCase()}:\n${measurement}`, defaultName) || defaultName;
         
-        // Almacenar metadatos en la capa
         layer.feature = layer.feature || {};
-        layer.feature.properties = layer.feature.properties || {};
-        layer.feature.properties.name = name;
-        layer.feature.properties.type = shapeName;
-        layer.feature.properties.createdAt = new Date().toISOString();
-        layer.feature.properties.measurement = measurement;
+        layer.feature.properties = {
+            name: name,
+            type: shapeName,
+            createdAt: new Date().toISOString(),
+            measurement: measurement
+        };
         
-        // Crear popup con la información
         this.updateLayerPopup(layer);
     }
     
     setupLayerEvents(layer) {
-        // Actualizar medidas al editar
         layer.on('pm:edit', (e) => {
             const type = e.layer.pm.getShape();
             const measurement = this.calculateMeasurement(e.layer, type);
@@ -173,9 +158,7 @@ export class MapManager {
             this.updateLayerPopup(e.layer);
         });
         
-        // Mostrar información al hacer clic
         layer.on('click', (e) => {
-            // Prevenir que el mapa se mueva al hacer clic en una figura
             L.DomEvent.stop(e);
             if (!e.target.isPopupOpen()) {
                 e.target.openPopup();
@@ -184,6 +167,7 @@ export class MapManager {
     }
     
     updateLayerPopup(layer) {
+        if (!layer.feature || !layer.feature.properties) return;
         const props = layer.feature.properties;
         const popupContent = `
             <div class="feature-popup" style="max-width: 200px;">
@@ -203,10 +187,8 @@ export class MapManager {
     
     addCustomPrintControl() {
         const PrintControl = L.Control.extend({
-            options: {
-                position: 'bottomright'
-            },
-            onAdd: (map) => {
+            options: { position: 'bottomright' },
+            onAdd: () => {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
                 container.style.backgroundColor = 'white';
                 container.style.width = '30px';
@@ -220,7 +202,6 @@ export class MapManager {
                     const loader = document.getElementById('app-loader');
                     
                     if(loader) loader.style.display = 'flex';
-
                     try {
                         const dataUrl = await htmlToImage.toPng(mapNode, {
                             quality: 1.0,
@@ -230,12 +211,10 @@ export class MapManager {
                                  return !exclusionClasses.some((classname) => node.classList?.contains(classname));
                             }
                         });
-                        
                         const link = document.createElement('a');
                         link.download = 'mapa-exportado.png';
                         link.href = dataUrl;
                         link.click();
-
                     } catch (error) {
                         console.error('Error al exportar el mapa:', error);
                         alert('No se pudo exportar el mapa. Inténtelo de nuevo.');
@@ -243,7 +222,6 @@ export class MapManager {
                         if(loader) loader.style.display = 'none';
                     }
                 });
-
                 return container;
             }
         });
@@ -274,7 +252,7 @@ export class MapManager {
     
     addLogo() {
         const LogoControl = L.Control.extend({
-            onAdd: map => {
+            onAdd: () => {
                 const c = L.DomUtil.create('div', 'leaflet-logo-control');
                 c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSIG.png" alt="Logo SSIG">`;
                 L.DomEvent.disableClickPropagation(c);
