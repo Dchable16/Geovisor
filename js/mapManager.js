@@ -77,11 +77,14 @@ export class MapManager {
         // Manejar la creación de capas
         this.map.on('pm:create', (e) => {
             const layer = e.layer;
-            const type = e.layerType;
+            // Usar getShape() si layerType no está disponible
+            const type = e.layerType || (layer.pm && layer.pm.getShape());
             
             this.drawCounter++;
-            this.setLayerProperties(layer, type);
             this.drawnItems.addLayer(layer);
+            
+            // Pasar el tipo a setLayerProperties
+            this.setLayerProperties(layer, type);
             
             // Habilitar edición con opciones optimizadas
             layer.pm.enable({
@@ -116,27 +119,31 @@ export class MapManager {
 
     // NUEVA FUNCIÓN: Asigna propiedades por defecto a una capa recién creada.
     setLayerProperties(layer, type) {
-        const shapeName = type.charAt(0).toUpperCase() + type.slice(1);
-        const measurement = this.calculateMeasurement(layer, type);
-
+        // Si type es undefined, intentamos obtenerlo del PM del layer
+        const shapeType = type || (layer.pm && layer.pm.getShape()) || 'desconocido';
+        const shapeName = typeof shapeType === 'string' 
+            ? shapeType.charAt(0).toUpperCase() + shapeType.slice(1)
+            : 'Figura';
+        
+        const measurement = this.calculateMeasurement(layer, shapeType);
+    
         layer.feature = layer.feature || {};
         layer.feature.properties = {
-            name: `Dibujo ${this.drawCounter}`, // Nombre por defecto
+            name: `Dibujo ${this.drawCounter}`,
             type: shapeName,
             createdAt: new Date().toISOString(),
             measurement: measurement
         };
         
-        // Crea o actualiza el popup con esta nueva información.
         this.updateLayerPopup(layer);
     }
     
     calculateMeasurement(layer, type) {
         let measurement = '';
         try {
+            const shapeType = (type || '').toLowerCase();
             const geojson = layer.toGeoJSON();
-            const shapeType = type.toLowerCase();
-
+    
             if (shapeType.includes('polygon') || shapeType.includes('rectangle')) {
                 const area = turf.area(geojson);
                 measurement = area >= 10000 ? 
