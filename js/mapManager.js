@@ -1,38 +1,38 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * @version 12.0: Corrección crítica del error de sintaxis 'Invalid left-hand side in assignment'.
- * El código ha sido validado para garantizar una ejecución sin errores.
+ * @version 13.0: Versión estable y definitiva. Crea las capas de teselas dinámicamente
+ * a partir de la configuración para garantizar que 'L' esté siempre definido.
  */
 
 import { CONFIG } from './config.js';
 
 export class MapManager {
     constructor(mapId) {
-        // 1. Inicialización del Mapa
+        // Crea las instancias de las capas de teselas a partir de la configuración
+        this.tileLayers = {};
+        for (const key in CONFIG.tileLayers) {
+            const { url, options } = CONFIG.tileLayers[key];
+            this.tileLayers[key] = L.tileLayer(url, options);
+        }
+
         this.map = L.map(mapId, {
             center: CONFIG.initialCoords,
             zoom: CONFIG.initialZoom,
             zoomControl: false,
-            preferCanvas: true
+            preferCanvas: true,
+            layers: [this.tileLayers["Neutral (defecto)"]] // Añade la capa por defecto
         });
 
-        CONFIG.tileLayers["Neutral (defecto)"].addTo(this.map);
-
-        // 2. Contenedor para los dibujos
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
         this.drawCounter = 0;
 
-        // 3. Inicialización de Geoman y controles
         this.initializeGeoman();
         this.addMapControls();
         this.setupDrawingEvents();
     }
 
-    /**
-     * Configura y añade los controles de Geoman al mapa.
-     */
     initializeGeoman() {
         this.map.pm.addControls({
             position: 'topright',
@@ -62,12 +62,10 @@ export class MapManager {
         });
     }
 
-    /**
-     * Añade los controles estándar del mapa.
-     */
     addMapControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
-        L.control.layers(CONFIG.tileLayers, null, {
+        // Usa las instancias de capas ya creadas
+        L.control.layers(this.tileLayers, null, {
             collapsed: true,
             position: 'topright'
         }).addTo(this.map);
@@ -77,9 +75,6 @@ export class MapManager {
         this.addCustomPrintControl();
     }
 
-    /**
-     * Configura los listeners de eventos de Geoman de forma limpia.
-     */
     setupDrawingEvents() {
         this.map.on('pm:create', (e) => {
             const { layer, shape } = e;
@@ -93,23 +88,16 @@ export class MapManager {
         });
     }
 
-    /**
-     * Asigna eventos de edición y clic a una capa dibujada.
-     */
     addLayerEvents(layer) {
         layer.on('pm:edit', (e) => this.setLayerInfo(e.layer, e.shape));
-        
         layer.on('click', (e) => {
-            L.DomEvent.stop(e); 
+            L.DomEvent.stop(e);
             if (e.target.getPopup() && !e.target.isPopupOpen()) {
                 e.target.openPopup();
             }
         });
     }
 
-    /**
-     * Asigna propiedades y un popup a una capa.
-     */
     setLayerInfo(layer, shape) {
         const measurement = this.calculateMeasurement(layer, shape);
         
@@ -135,9 +123,6 @@ export class MapManager {
         layer.bindPopup(popupContent).openPopup();
     }
 
-    /**
-     * Calcula las medidas de una capa usando Turf.js.
-     */
     calculateMeasurement(layer, shape) {
         let measurement = 'Medida no disponible';
         try {
@@ -164,8 +149,6 @@ export class MapManager {
         }
         return measurement;
     }
-
-    // --- Funciones auxiliares ---
 
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
         return L.geoJson(data, {
@@ -205,28 +188,17 @@ export class MapManager {
         this.map.addControl(new PrintControl());
     }
 
-    // --- FUNCIÓN CORREGIDA ---
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend');
-            const vulnerabilityMap = CONFIG.vulnerabilityMap;
             div.innerHTML = '<h4>Vulnerabilidad</h4>';
-            
-            // Itera y crea el contenido de la leyenda
-            Object.keys(vulnerabilityMap)
-                .filter(key => key !== 'default')
-                .sort((a, b) => b - a)
-                .forEach(grade => {
-                    const { color, label } = vulnerabilityMap[grade];
-                    // Esta línea fue corregida para asegurar que el HTML es válido
-                    div.innerHTML += `<div><i style="background:${color}"></i> ${label} (Nivel ${grade})</div>`;
-                });
-
-            // Añade la entrada por defecto
-            const { color, label } = vulnerabilityMap['default'];
+            Object.keys(CONFIG.vulnerabilityMap).filter(k => k !== 'default').sort((a, b) => b - a).forEach(grade => {
+                const { color, label } = CONFIG.vulnerabilityMap[grade];
+                div.innerHTML += `<div><i style="background:${color}"></i> ${label} (Nivel ${grade})</div>`;
+            });
+            const { color, label } = CONFIG.vulnerabilityMap['default'];
             div.innerHTML += `<div><i style="background:${color}; border: 1px solid #666;"></i> ${label}</div>`;
-            
             L.DomEvent.disableClickPropagation(div);
             return div;
         };
