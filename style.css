@@ -80,9 +80,11 @@ body {
     padding: 20px;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: var(--panel-shadow);
+    width: var(--panel-width);
     position: absolute;
     transition: transform var(--animation-speed) var(--animation-easing);
     position: absolute;
+    left: 0;
     z-index: 1001;
     transform: translateX(0);
 }
