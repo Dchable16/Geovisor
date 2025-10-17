@@ -1,40 +1,32 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * @version 11.0: Reimplementación completa desde cero para garantizar rendimiento y estabilidad.
- * Esta versión utiliza las mejores prácticas para la integración de Leaflet.pm (Geoman).
+ * @version 10.0: Corregida la lentitud y el error al finalizar dibujos (doble clic).
+ * La lógica de eventos se ha optimizado para un rendimiento fluido y predecible.
  */
 
 import { CONFIG } from './config.js';
 
 export class MapManager {
     constructor(mapId) {
-        // 1. Inicialización del Mapa
         this.map = L.map(mapId, {
             center: CONFIG.initialCoords,
             zoom: CONFIG.initialZoom,
+            layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false,
-            preferCanvas: true // Clave para el rendimiento con muchos polígonos
+            preferCanvas: true
         });
 
-        // Capa base inicial
-        CONFIG.tileLayers["Neutral (defecto)"].addTo(this.map);
-
-        // 2. Contenedor para los dibujos
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
-        this.drawCounter = 0; // Para nombrar los dibujos
+        this.drawCounter = 0;
 
-        // 3. Inicialización de Geoman y controles del mapa
         this.initializeGeoman();
-        this.addMapControls();
+        this.addControls();
         this.setupDrawingEvents();
     }
 
-    /**
-     * Configura y añade los controles de Geoman al mapa.
-     * Esta es la implementación estándar y recomendada.
-     */
+    // Encapsula toda la configuración de Geoman
     initializeGeoman() {
         this.map.pm.addControls({
             position: 'topright',
@@ -50,7 +42,6 @@ export class MapManager {
             removalMode: true,
         });
 
-        // Opciones globales que aplican a todas las herramientas de dibujo
         this.map.pm.setGlobalOptions({
             snapDistance: 15,
             allowSelfIntersection: false,
@@ -65,14 +56,12 @@ export class MapManager {
         });
     }
 
-    /**
-     * Añade los controles estándar del mapa (zoom, escala, capas, etc.).
-     */
-    addMapControls() {
+    addControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
-        L.control.layers(CONFIG.tileLayers, null, {
-            collapsed: true,
-            position: 'topright'
+        L.control.layers(CONFIG.tileLayers, null, { 
+            collapsed: true, 
+            position: 'topright',
+            sortLayers: true
         }).addTo(this.map);
         
         this.addLegend();
@@ -80,126 +69,133 @@ export class MapManager {
         this.addCustomPrintControl();
     }
 
-    /**
-     * Configura los listeners de eventos de Geoman.
-     * Este es el núcleo de la interacción de dibujo, ahora limpio y eficiente.
-     */
-    setupDrawingEvents() {
-        // Se dispara UNA VEZ cuando se completa un dibujo.
-        this.map.on('pm:create', (e) => {
-            const { layer, shape } = e; // Usamos 'shape' que es más fiable que 'layerType'
-
-            this.drawCounter++;
-            
-            // 1. Añadimos la nueva capa al grupo de dibujos
-            this.drawnItems.addLayer(layer);
-
-            // 2. Asignamos propiedades (nombre, medidas) y un popup
-            this.setLayerInfo(layer, shape);
-
-            // 3. Habilitamos la edición y los eventos para esta capa específica
-            layer.pm.enable({ allowSelfIntersection: false });
-            this.addLayerEvents(layer);
-        });
-    }
-
-    /**
-     * Asigna eventos de edición y clic a una capa específica.
-     * @param {L.Layer} layer La capa a la que se le añadirán los eventos.
-     */
-    addLayerEvents(layer) {
-        // Evento para actualizar las medidas cuando se edita la geometría
-        layer.on('pm:edit', (e) => {
-            this.setLayerInfo(e.layer, e.shape);
-        });
-        
-        // Evento para abrir el popup al hacer clic
-        layer.on('click', (e) => {
-            // Detenemos la propagación para evitar que el clic afecte al mapa
-            L.DomEvent.stop(e); 
-            if (e.target.getPopup() && !e.target.isPopupOpen()) {
-                e.target.openPopup();
-            }
-        });
-    }
-
-    /**
-     * Calcula medidas, asigna propiedades y actualiza el popup de una capa.
-     * @param {L.Layer} layer La capa a procesar.
-     * @param {string} shape El tipo de forma (ej. 'Polygon').
-     */
-    setLayerInfo(layer, shape) {
-        const measurement = this.calculateMeasurement(layer, shape);
-        
-        layer.feature = layer.feature || {};
-        layer.feature.properties = layer.feature.properties || {};
-
-        // Asigna un nombre solo si no tiene uno
-        if (!layer.feature.properties.name) {
-             layer.feature.properties.name = `Dibujo ${this.drawCounter}`;
-        }
-        
-        // Actualiza el resto de propiedades
-        layer.feature.properties.type = shape;
-        layer.feature.properties.createdAt = layer.feature.properties.createdAt || new Date().toISOString();
-        layer.feature.properties.measurement = measurement;
-        
-        const popupContent = `
-            <div class="feature-popup">
-                <h4>${layer.feature.properties.name}</h4>
-                <p><strong>Tipo:</strong> ${shape}</p>
-                <p><strong>${measurement}</strong></p>
-                <small>Creado: ${new Date(layer.feature.properties.createdAt).toLocaleString()}</small>
-            </div>`;
-            
-        layer.bindPopup(popupContent).openPopup();
-    }
-
-    /**
-     * Calcula el área o longitud de una capa usando Turf.js.
-     * @param {L.Layer} layer La capa a medir.
-     * @param {string} shape El tipo de forma.
-     * @returns {string} El texto con la medida calculada.
-     */
-    calculateMeasurement(layer, shape) {
-        let measurement = 'Medida no disponible';
-        try {
-            const geojson = layer.toGeoJSON();
-            
-            switch (shape) {
-                case 'Polygon':
-                case 'Rectangle':
-                case 'Circle':
-                    const area = turf.area(geojson);
-                    measurement = area >= 10000 
-                        ? `Área: ${(area / 10000).toFixed(2)} ha` 
-                        : `Área: ${area.toFixed(2)} m²`;
-                    break;
-                case 'Line':
-                case 'Polyline':
-                    const distance = turf.length(geojson, { units: 'meters' });
-                    measurement = distance >= 1000 
-                        ? `Distancia: ${(distance / 1000).toFixed(2)} km` 
-                        : `Distancia: ${Math.round(distance)} m`;
-                    break;
-                case 'Marker':
-                    const latlng = layer.getLatLng();
-                    measurement = `Coords: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
-                    break;
-            }
-        } catch (e) {
-            console.error('Error calculando medida:', e);
-        }
-        return measurement;
-    }
-
-    // --- El resto de las funciones auxiliares se mantienen sin cambios ---
-
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
         return L.geoJson(data, {
             style: styleFunction,
             onEachFeature: onEachFeatureFunction
         }).addTo(this.map);
+    }
+
+    // --- LÓGICA DE DIBUJO CORREGIDA Y OPTIMIZADA ---
+    setupDrawingEvents() {
+        // Se dispara cuando se inicia el modo de dibujo
+        this.map.on('pm:drawstart', (e) => {
+            // Deshabilitamos temporalmente los popups del mapa para evitar interferencias
+            this.map.eachLayer(layer => {
+                if (layer.getPopup()) {
+                    layer.unbindPopup();
+                }
+            });
+        });
+        
+        // Se dispara una vez que el dibujo se ha completado correctamente
+        this.map.on('pm:create', (e) => {
+            const layer = e.layer;
+            const type = e.layerType;
+
+            this.drawCounter++;
+            
+            this.setLayerProperties(layer, type);
+            this.drawnItems.addLayer(layer);
+            
+            // Habilitar edición y asignar eventos a la nueva capa
+            layer.pm.enable({ allowSelfIntersection: false });
+            this.setupLayerEvents(layer);
+
+            // Reactivamos los popups en todas las capas
+            this.rebindAllPopups();
+        });
+
+        // Se dispara si se cancela el dibujo
+        this.map.on('pm:drawend', (e) => {
+            this.rebindAllPopups();
+        });
+    }
+
+    rebindAllPopups() {
+        this.drawnItems.eachLayer(layer => this.updateLayerPopup(layer));
+        // Si tienes otras capas con popups, también deberías reactivarlas aquí
+    }
+
+    setLayerProperties(layer, type) {
+        const shapeName = type.charAt(0).toUpperCase() + type.slice(1);
+        const measurement = this.calculateMeasurement(layer, type);
+
+        layer.feature = layer.feature || {};
+        layer.feature.properties = {
+            name: `Dibujo ${this.drawCounter}`,
+            type: shapeName,
+            createdAt: new Date().toISOString(),
+            measurement: measurement
+        };
+        
+        this.updateLayerPopup(layer);
+    }
+    
+    calculateMeasurement(layer, type) {
+        let measurement = '';
+        try {
+            const geojson = layer.toGeoJSON();
+            const shapeType = type.toLowerCase();
+
+            if (shapeType.includes('polygon') || shapeType.includes('rectangle')) {
+                const area = turf.area(geojson);
+                measurement = area >= 10000 ? `Área: ${(area / 10000).toFixed(2)} ha` : `Área: ${area.toFixed(2)} m²`;
+            } 
+            else if (shapeType.includes('line') || shapeType.includes('polyline')) {
+                const distance = turf.length(geojson, {units: 'meters'});
+                measurement = distance >= 1000 ? `Distancia: ${(distance / 1000).toFixed(2)} km` : `Distancia: ${Math.round(distance)} m`;
+            } 
+            else if (shapeType.includes('circle')) {
+                const radius = layer.getRadius();
+                const area = Math.PI * Math.pow(radius, 2);
+                measurement = `Radio: ${radius.toFixed(2)} m | Área: ${(area >= 10000 ? (area / 10000).toFixed(2) + ' ha' : area.toFixed(2) + ' m²')}`;
+            }
+            else if (shapeType.includes('marker')) {
+                const latlng = layer.getLatLng();
+                measurement = `Coordenadas: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+            }
+        } catch (e) {
+            console.error('Error calculando medida con Turf.js:', e);
+            measurement = 'Medición no disponible';
+        }
+        return measurement;
+    }
+    
+    setupLayerEvents(layer) {
+        layer.on('pm:edit', (e) => {
+            const editedLayer = e.layer;
+            const shapeType = editedLayer.pm.getShape();
+            const measurement = this.calculateMeasurement(editedLayer, shapeType);
+            
+            if (editedLayer.feature && editedLayer.feature.properties) {
+                editedLayer.feature.properties.measurement = measurement;
+                this.updateLayerPopup(editedLayer);
+            }
+        });
+        
+        layer.on('click', (e) => {
+            L.DomEvent.stop(e);
+            if (!e.target.isPopupOpen()) {
+                e.target.openPopup();
+            }
+        });
+    }
+    
+    updateLayerPopup(layer) {
+        if (!layer.feature || !layer.feature.properties) return;
+        const props = layer.feature.properties;
+        const popupContent = `
+            <div class="feature-popup">
+                <h4>${props.name || 'Sin nombre'}</h4>
+                <p><strong>Tipo:</strong> ${props.type || 'No especificado'}</p>
+                <p><strong>${props.measurement || ''}</strong></p>
+                <small>Creado: ${new Date(props.createdAt).toLocaleString()}</small>
+            </div>
+        `;
+        
+        // Unbind para evitar popups duplicados y luego bind de nuevo
+        layer.unbindPopup().bindPopup(popupContent, { offset: L.point(0, -10), closeButton: false });
     }
     
     addCustomPrintControl() {
@@ -209,11 +205,16 @@ export class MapManager {
                 const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
                 container.title = 'Exportar mapa como imagen de alta calidad';
                 container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>`;
+                
                 L.DomEvent.on(container, 'click', async () => {
-                    document.getElementById('app-loader')?.style.display = 'flex';
+                    const mapNode = document.getElementById(CONFIG.mapId);
+                    const loader = document.getElementById('app-loader');
+                    
+                    if(loader) loader.style.display = 'flex';
                     try {
-                        const dataUrl = await htmlToImage.toPng(document.getElementById(CONFIG.mapId), {
-                            quality: 1.0, pixelRatio: 2,
+                        const dataUrl = await htmlToImage.toPng(mapNode, {
+                            quality: 1.0,
+                            pixelRatio: 2,
                             filter: (node) => !['leaflet-control-zoom', 'leaflet-control-layers', 'leaflet-pm-toolbar', 'leaflet-control-custom'].some(c => node.classList?.contains(c))
                         });
                         const link = document.createElement('a');
@@ -224,7 +225,7 @@ export class MapManager {
                         console.error('Error al exportar el mapa:', error);
                         alert('No se pudo exportar el mapa.');
                     } finally {
-                        document.getElementById('app-loader')?.style.display = 'none';
+                        if(loader) loader.style.display = 'none';
                     }
                 });
                 return container;
@@ -263,7 +264,8 @@ export class MapManager {
     }
 
     getColor(v) {
-        return CONFIG.vulnerabilityMap[String(v)]?.color || CONFIG.vulnerabilityMap.default.color;
+        const entry = CONFIG.vulnerabilityMap[String(v)];
+        return entry ? entry.color : CONFIG.vulnerabilityMap.default.color;
     }
 
     fitBounds(bounds) {
