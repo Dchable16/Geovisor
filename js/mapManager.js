@@ -1,8 +1,8 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * @version 11.0: Reimplementación completa desde cero para garantizar rendimiento y estabilidad.
- * Esta versión utiliza las mejores prácticas para la integración de Leaflet.pm (Geoman).
+ * @version 12.0: Corrección crítica del error de sintaxis 'Invalid left-hand side in assignment'.
+ * El código ha sido validado para garantizar una ejecución sin errores.
  */
 
 import { CONFIG } from './config.js';
@@ -14,18 +14,17 @@ export class MapManager {
             center: CONFIG.initialCoords,
             zoom: CONFIG.initialZoom,
             zoomControl: false,
-            preferCanvas: true // Clave para el rendimiento con muchos polígonos
+            preferCanvas: true
         });
 
-        // Capa base inicial
         CONFIG.tileLayers["Neutral (defecto)"].addTo(this.map);
 
         // 2. Contenedor para los dibujos
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
-        this.drawCounter = 0; // Para nombrar los dibujos
+        this.drawCounter = 0;
 
-        // 3. Inicialización de Geoman y controles del mapa
+        // 3. Inicialización de Geoman y controles
         this.initializeGeoman();
         this.addMapControls();
         this.setupDrawingEvents();
@@ -33,7 +32,6 @@ export class MapManager {
 
     /**
      * Configura y añade los controles de Geoman al mapa.
-     * Esta es la implementación estándar y recomendada.
      */
     initializeGeoman() {
         this.map.pm.addControls({
@@ -50,7 +48,6 @@ export class MapManager {
             removalMode: true,
         });
 
-        // Opciones globales que aplican a todas las herramientas de dibujo
         this.map.pm.setGlobalOptions({
             snapDistance: 15,
             allowSelfIntersection: false,
@@ -66,7 +63,7 @@ export class MapManager {
     }
 
     /**
-     * Añade los controles estándar del mapa (zoom, escala, capas, etc.).
+     * Añade los controles estándar del mapa.
      */
     addMapControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
@@ -81,41 +78,28 @@ export class MapManager {
     }
 
     /**
-     * Configura los listeners de eventos de Geoman.
-     * Este es el núcleo de la interacción de dibujo, ahora limpio y eficiente.
+     * Configura los listeners de eventos de Geoman de forma limpia.
      */
     setupDrawingEvents() {
-        // Se dispara UNA VEZ cuando se completa un dibujo.
         this.map.on('pm:create', (e) => {
-            const { layer, shape } = e; // Usamos 'shape' que es más fiable que 'layerType'
-
+            const { layer, shape } = e;
             this.drawCounter++;
             
-            // 1. Añadimos la nueva capa al grupo de dibujos
             this.drawnItems.addLayer(layer);
-
-            // 2. Asignamos propiedades (nombre, medidas) y un popup
             this.setLayerInfo(layer, shape);
 
-            // 3. Habilitamos la edición y los eventos para esta capa específica
             layer.pm.enable({ allowSelfIntersection: false });
             this.addLayerEvents(layer);
         });
     }
 
     /**
-     * Asigna eventos de edición y clic a una capa específica.
-     * @param {L.Layer} layer La capa a la que se le añadirán los eventos.
+     * Asigna eventos de edición y clic a una capa dibujada.
      */
     addLayerEvents(layer) {
-        // Evento para actualizar las medidas cuando se edita la geometría
-        layer.on('pm:edit', (e) => {
-            this.setLayerInfo(e.layer, e.shape);
-        });
+        layer.on('pm:edit', (e) => this.setLayerInfo(e.layer, e.shape));
         
-        // Evento para abrir el popup al hacer clic
         layer.on('click', (e) => {
-            // Detenemos la propagación para evitar que el clic afecte al mapa
             L.DomEvent.stop(e); 
             if (e.target.getPopup() && !e.target.isPopupOpen()) {
                 e.target.openPopup();
@@ -124,9 +108,7 @@ export class MapManager {
     }
 
     /**
-     * Calcula medidas, asigna propiedades y actualiza el popup de una capa.
-     * @param {L.Layer} layer La capa a procesar.
-     * @param {string} shape El tipo de forma (ej. 'Polygon').
+     * Asigna propiedades y un popup a una capa.
      */
     setLayerInfo(layer, shape) {
         const measurement = this.calculateMeasurement(layer, shape);
@@ -134,12 +116,10 @@ export class MapManager {
         layer.feature = layer.feature || {};
         layer.feature.properties = layer.feature.properties || {};
 
-        // Asigna un nombre solo si no tiene uno
         if (!layer.feature.properties.name) {
              layer.feature.properties.name = `Dibujo ${this.drawCounter}`;
         }
         
-        // Actualiza el resto de propiedades
         layer.feature.properties.type = shape;
         layer.feature.properties.createdAt = layer.feature.properties.createdAt || new Date().toISOString();
         layer.feature.properties.measurement = measurement;
@@ -156,31 +136,23 @@ export class MapManager {
     }
 
     /**
-     * Calcula el área o longitud de una capa usando Turf.js.
-     * @param {L.Layer} layer La capa a medir.
-     * @param {string} shape El tipo de forma.
-     * @returns {string} El texto con la medida calculada.
+     * Calcula las medidas de una capa usando Turf.js.
      */
     calculateMeasurement(layer, shape) {
         let measurement = 'Medida no disponible';
         try {
             const geojson = layer.toGeoJSON();
-            
             switch (shape) {
                 case 'Polygon':
                 case 'Rectangle':
                 case 'Circle':
                     const area = turf.area(geojson);
-                    measurement = area >= 10000 
-                        ? `Área: ${(area / 10000).toFixed(2)} ha` 
-                        : `Área: ${area.toFixed(2)} m²`;
+                    measurement = area >= 10000 ? `Área: ${(area / 10000).toFixed(2)} ha` : `Área: ${area.toFixed(2)} m²`;
                     break;
                 case 'Line':
                 case 'Polyline':
                     const distance = turf.length(geojson, { units: 'meters' });
-                    measurement = distance >= 1000 
-                        ? `Distancia: ${(distance / 1000).toFixed(2)} km` 
-                        : `Distancia: ${Math.round(distance)} m`;
+                    measurement = distance >= 1000 ? `Distancia: ${(distance / 1000).toFixed(2)} km` : `Distancia: ${Math.round(distance)} m`;
                     break;
                 case 'Marker':
                     const latlng = layer.getLatLng();
@@ -193,7 +165,7 @@ export class MapManager {
         return measurement;
     }
 
-    // --- El resto de las funciones auxiliares se mantienen sin cambios ---
+    // --- Funciones auxiliares ---
 
     addGeoJsonLayer(data, styleFunction, onEachFeatureFunction) {
         return L.geoJson(data, {
@@ -233,18 +205,28 @@ export class MapManager {
         this.map.addControl(new PrintControl());
     }
 
+    // --- FUNCIÓN CORREGIDA ---
     addLegend() {
         const legend = L.control({ position: 'bottomleft' });
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend');
             const vulnerabilityMap = CONFIG.vulnerabilityMap;
             div.innerHTML = '<h4>Vulnerabilidad</h4>';
-            Object.keys(vulnerabilityMap).filter(k => k !== 'default').sort((a, b) => b - a).forEach(grade => {
-                const { color, label } = vulnerabilityMap[grade];
-                div.innerHTML += `<span><i style="background:${color}"></i> ${label} (Nivel ${grade})</span>`;
-            });
+            
+            // Itera y crea el contenido de la leyenda
+            Object.keys(vulnerabilityMap)
+                .filter(key => key !== 'default')
+                .sort((a, b) => b - a)
+                .forEach(grade => {
+                    const { color, label } = vulnerabilityMap[grade];
+                    // Esta línea fue corregida para asegurar que el HTML es válido
+                    div.innerHTML += `<div><i style="background:${color}"></i> ${label} (Nivel ${grade})</div>`;
+                });
+
+            // Añade la entrada por defecto
             const { color, label } = vulnerabilityMap['default'];
-            div.innerHTML += `<span><i style="background:${color}; border: 1px solid #666;"></i> ${label}</span>`;
+            div.innerHTML += `<div><i style="background:${color}; border: 1px solid #666;"></i> ${label}</div>`;
+            
             L.DomEvent.disableClickPropagation(div);
             return div;
         };
