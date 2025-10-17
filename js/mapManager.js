@@ -1,8 +1,8 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * @version 14.0: Corrección definitiva del error de sintaxis 'Invalid left-hand side in assignment'.
- * El HTML de la leyenda ahora se construye correctamente como una cadena de texto.
+ * @version 15.0: Corrección final y validada del error de sintaxis en la función addLegend.
+ * El código ha sido limpiado para garantizar una ejecución sin errores.
  */
 
 import { CONFIG } from './config.js';
@@ -192,24 +192,23 @@ export class MapManager {
         const legend = L.control({ position: 'bottomleft' });
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend');
-            div.innerHTML = '<h4>Vulnerabilidad</h4>';
+            let content = '<h4>Vulnerabilidad</h4>'; // Inicia el contenido con el título
             
-            // Construir el HTML de la leyenda como una cadena de texto
-            let legendHTML = '';
+            // Construye el HTML de la leyenda de forma segura
             Object.keys(CONFIG.vulnerabilityMap)
                 .filter(key => key !== 'default')
                 .sort((a, b) => b - a)
                 .forEach(grade => {
                     const { color, label } = CONFIG.vulnerabilityMap[grade];
-                    // Se usan tildes invertidas (`) para crear una cadena de texto correctamente
-                    legendHTML += `<div><i style="background:${color}"></i> ${label} (Nivel ${grade})</div>`;
+                    // Se usan tildes invertidas (template literals) para construir la cadena de texto
+                    content += `<div><i style="background:${color}"></i> ${label} (Nivel ${grade})</div>`;
                 });
 
             const { color, label } = CONFIG.vulnerabilityMap['default'];
-            legendHTML += `<div><i style="background:${color}; border: 1px solid #666;"></i> ${label}</div>`;
+            content += `<div><i style="background:${color}; border: 1px solid #666;"></i> ${label}</div>`;
             
-            // Asignar el HTML construido al elemento div
-            div.innerHTML += legendHTML;
+            // Asigna el contenido completo de una sola vez
+            div.innerHTML = content;
             
             L.DomEvent.disableClickPropagation(div);
             return div;
