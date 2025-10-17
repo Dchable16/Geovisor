@@ -459,3 +459,27 @@ input:checked + .slider:before { transform: translateX(20px); }
     padding: 8px 8px 0 0 !important;
     color: #777 !important;
 }
+.leaflet-pm-toolbar .leaflet-pm-icon {
+    background-size: 18px 18px;
+    width: 30px;
+    height: 30px;
+    margin: 2px;
+}
+
+/* Optimizar popups */
+.leaflet-popup-content {
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+/* Optimizar capas */
+.leaflet-layer {
+    will-change: transform;
+}
+
+/* Optimizar renderizado del mapa */
+.leaflet-container {
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform: translate3d(0, 0, 0);
+}
