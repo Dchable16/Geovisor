@@ -1,8 +1,6 @@
 /**
  * @file mapManager.js
- * @description Gestiona la creación y manipulación del mapa Leaflet con Geoman.
- * @version 9.0: Solución definitiva al bloqueo de dibujo. Se elimina el `prompt()` bloqueante
- * y se asignan nombres por defecto a las nuevas capas para un rendimiento y UX fluidos.
+ * @description Gestiona la creación y manipulación del mapa Leaflet.
  */
 
 import { CONFIG } from './config.js';
@@ -16,41 +14,10 @@ export class MapManager {
             zoomControl: false,
             preferCanvas: true
         });
-
+        
         this.drawnItems = new L.FeatureGroup();
         this.map.addLayer(this.drawnItems);
-        this.drawCounter = 0; // Contador para nombres de dibujos únicos
-
-        this.map.pm.addControls({
-            position: 'topright',
-            drawMarker: true,
-            drawCircleMarker: false,
-            drawPolyline: true,
-            drawRectangle: true,
-            drawPolygon: true,
-            drawCircle: true,
-            editMode: true,
-            dragMode: true,
-            cutPolygon: false,
-            removalMode: true,
-        });
-
-        this.map.pm.setGlobalOptions({
-            snapDistance: 15,
-            allowSelfIntersection: false,
-            snapSegment: true,
-            snapMiddle: true,
-            snapDistance: 15,
-            snapFinish: true,
-            cursorMarker: true,
-            removeLayerBelowMinVertexCount: true,
-            preventMarkerRemoval: false,
-            hideMiddleMarkers: false,
-            // ... resto de opciones ...
-        });
-
         this.addControls();
-        this.setupDrawingEvents();
     }
 
     addControls() {
@@ -73,106 +40,6 @@ export class MapManager {
         }).addTo(this.map);
     }
 
-    setupDrawingEvents() {
-        // Manejar la creación de capas
-        this.map.on('pm:create', (e) => {
-            const layer = e.layer;
-            // Usar getShape() si layerType no está disponible
-            const type = e.layerType || (layer.pm && layer.pm.getShape());
-            
-            this.drawCounter++;
-            this.drawnItems.addLayer(layer);
-            
-            // Pasar el tipo a setLayerProperties
-            this.setLayerProperties(layer, type);
-            
-            // Habilitar edición con opciones optimizadas
-            layer.pm.enable({
-                allowSelfIntersection: false,
-                preventMarkerRemoval: false,
-                hideMiddleMarkers: false
-            });
-            
-            this.setupLayerEvents(layer);
-        });
-    
-        // Manejar el doble clic para finalizar edición
-        this.map.on('pm:globaleditmodetoggled', (e) => {
-            if (e.enabled) {
-                this.map.dragging.disable();
-                this.map.doubleClickZoom.disable();
-                this.map.on('dblclick', this.finalizarEdicion, this);
-            } else {
-                this.map.dragging.enable();
-                this.map.doubleClickZoom.enable();
-                this.map.off('dblclick', this.finalizarEdicion, this);
-            }
-        });
-    }
-    
-    // Nuevo método para manejar el doble clic
-    finalizarEdicion() {
-        if (this.map.pm.getGeomanLayers().some(layer => layer.pm && layer.pm.enabled())) {
-            this.map.pm.disableGlobalEditMode();
-        }
-    }
-
-    // NUEVA FUNCIÓN: Asigna propiedades por defecto a una capa recién creada.
-    setLayerProperties(layer, type) {
-        // Si type es undefined, intentamos obtenerlo del PM del layer
-        const shapeType = type || (layer.pm && layer.pm.getShape()) || 'desconocido';
-        const shapeName = typeof shapeType === 'string' 
-            ? shapeType.charAt(0).toUpperCase() + shapeType.slice(1)
-            : 'Figura';
-        
-        const measurement = this.calculateMeasurement(layer, shapeType);
-    
-        layer.feature = layer.feature || {};
-        layer.feature.properties = {
-            name: `Dibujo ${this.drawCounter}`,
-            type: shapeName,
-            createdAt: new Date().toISOString(),
-            measurement: measurement
-        };
-        
-        this.updateLayerPopup(layer);
-    }
-    
-    calculateMeasurement(layer, type) {
-        let measurement = '';
-        try {
-            const shapeType = (type || '').toLowerCase();
-            const geojson = layer.toGeoJSON();
-    
-            if (shapeType.includes('polygon') || shapeType.includes('rectangle')) {
-                const area = turf.area(geojson);
-                measurement = area >= 10000 ? 
-                    `Área: ${(area / 10000).toFixed(2)} ha` : 
-                    `Área: ${area.toFixed(2)} m²`;
-            } 
-            else if (shapeType.includes('line') || shapeType.includes('polyline')) {
-                const distance = turf.length(geojson, {units: 'meters'});
-                measurement = distance >= 1000 ? 
-                    `Distancia: ${(distance / 1000).toFixed(2)} km` : 
-                    `Distancia: ${Math.round(distance)} m`;
-            } 
-            else if (shapeType.includes('circle')) {
-                const radius = layer.getRadius();
-                const area = Math.PI * radius * radius;
-                measurement = `Radio: ${radius.toFixed(2)} m | Área: ${area >= 10000 ? 
-                    (area / 10000).toFixed(2) + ' ha' : area.toFixed(2) + ' m²'}`;
-            }
-            else if (shapeType.includes('marker')) {
-                const latlng = layer.getLatLng();
-                measurement = `Coordenadas: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
-            }
-        } catch (e) {
-            console.error('Error calculando medida con Turf.js:', e);
-            measurement = 'Medición no disponible';
-        }
-        return measurement;
-    }
-    
     setupLayerEvents(layer) {
         // Limitar la frecuencia de actualización
         const actualizacionOptimizada = _.throttle((e) => {
@@ -197,27 +64,6 @@ export class MapManager {
             }
         });
     }
-    
-    updateLayerPopup(layer) {
-        if (!layer.feature || !layer.feature.properties) return;
-        const props = layer.feature.properties;
-        const popupContent = `
-            <div class="feature-popup" style="max-width: 200px;">
-                <h4 style="margin: 0 0 5px 0;">${props.name || 'Sin nombre'}</h4>
-                <p style="margin: 0;"><strong>Tipo:</strong> ${props.type || 'No especificado'}</p>
-                <p style="margin: 5px 0;"><strong>${props.measurement || ''}</strong></p>
-                <small>Creado: ${new Date(props.createdAt).toLocaleString()}</small>
-            </div>
-        `;
-        
-        if (layer.getPopup()) {
-            layer.setPopupContent(popupContent);
-        } else {
-            layer.bindPopup(popupContent, { offset: L.point(0, -10) });
-        }
-    }
-    
-    // --- El resto de las funciones se mantienen igual ---
 
     addCustomPrintControl() {
         const PrintControl = L.Control.extend({
