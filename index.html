@@ -7,7 +7,8 @@
     <title>Geovisor de Vulnerabilidad a la Intrusión Salina</title>
 
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-    <link rel="stylesheet" href="CSS/leaflet.css"/>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -29,6 +30,7 @@
             <p class="loader-text">Cargando datos geográficos</p> 
         </div>
     </main>
+
     <template id="panel-template">
         <div class="panel-close-button" title="Ocultar controles">«</div>
         <h1>Vulnerabilidad a la Intrusión Salina</h1>
@@ -44,7 +46,7 @@
             <label>Iluminar por vulnerabilidad:</label>
             <div class="radio-group" id="vulnerability-radio-group">
                 <input type="radio" id="vul-todos" name="vulnerability" value="all" checked><label for="vul-todos">Todos</label>
-                </div>
+            </div>
         </div>
         <div class="control-section">
             <label>Capas Adicionales:</label>
@@ -58,20 +60,19 @@
             </div>
         </div>
     </template>
+    
     <template id="info-panel-template">
         <div class="info-panel-header">
             <h2 id="info-panel-title">Detalles del Acuífero</h2>
             <button class="info-panel-close" title="Cerrar">✕</button>
         </div>
-        <div id="info-panel-content">
-            </div>
+        <div id="info-panel-content"></div>
     </template>
-
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
     <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"
-     integrity="sha512-7tWCgq9tTYS/QkGVyKrtLpqAoMV9XIUxoou+sPUypsaZx56cYR/qio84fPK9EvJJtKvJEwt7vkn6je5UVzGevw=="
-     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
     
     <script type="module" src="js/main.js"></script>
 
