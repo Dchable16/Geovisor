@@ -184,12 +184,14 @@ export class UIManager {
             radio.addEventListener('change', e => this.onStateChange({ filterValue: e.target.value }));
         });
         this.nodes.coastlineToggle.addEventListener('change', e => this.onStateChange({ isCoastlineVisible: e.target.checked }));
-        this.nodes.coastline1kmToggle.addEventListener('change', e => this.onStateChange({ isCoastline1kmVisible: e.target.checked }));
+        this.nodes.coastline1kmToggle.addEventListener('change', e => this.onStateChange({ isCoastline1kmVisible: e.target.checked }));       
+        // Listener para el input de búsqueda
         this.nodes.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
-        document.addEventListener('click', (e) => {);
+        document.addEventListener('click', (e) => {
             if (!this.nodes.uiControlContainer.contains(e.target)) {
                 this.nodes.searchResults.style.display = 'none';
             }
+        });
     }
 
     handleSearch(query) {
