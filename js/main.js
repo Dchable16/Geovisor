@@ -10,16 +10,17 @@ import { fetchGeoJSON, fetchAllGeoJSON } from './dataLoader.js';
 import { MapManager } from './mapManager.js';
 import { UIManager } from './uiManager.js';
 
+const INITIAL_STATE = {
+    opacity: 0.8,
+    filterValue: 'all',
+    selectedAquifer: null,
+    isCoastlineVisible: false,
+    isCoastline1kmVisible: false,
+};
+
 class GeovisorApp {
     constructor() {
-        // Estado centralizado de la aplicación
-        this.state = {
-            opacity: 0.8,
-            filterValue: 'all',
-            selectedAquifer: null,
-            isCoastlineVisible: false,
-            isCoastline1kmVisible: false,
-        };
+        this.state = { ...INITIAL_STATE };
 
         this.data = {
             aquifers: {}, // Almacenará las capas por nombre de acuífero
@@ -42,21 +43,28 @@ class GeovisorApp {
 
     // Método centralizado para actualizar el estado y volver a renderizar
     updateState(newState) {
+        
+        // 1. Comprobar si es una acción de reinicio
+        if (newState.reset === true) {
+            this.state = { ...INITIAL_STATE };
+            this.mapManager.resetView(); // Llama al nuevo método en mapManager
+            this.render(); // Vuelve a dibujar todo con el estado limpio
+            return; // Salir de la función
+        }
+
+        // 2. Si no es reinicio, continuar con la lógica normal
         this.state = { ...this.state, ...newState };
         console.log("Nuevo estado:", this.state);
 
-        // Lógica de zoom al seleccionar/deseleccionar acuífero
         if (newState.selectedAquifer !== undefined) {
              if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
-                 // Acuífero seleccionado: hacer zoom a sus límites
                  const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
                  this.mapManager.fitBounds(group.getBounds());
-             } else if (this.leafletLayers.vulnerability) {
-                 // Acuífero deseleccionado (valor null o ""): zoom a la extensión completa
+             } else if (this.leafletLayers.vulnerability && newState.selectedAquifer === null) { 
+                 // Solo hacer zoom out si se deselecciona activamente
                  this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
              }
         }
-
         this.render();
     }
 
