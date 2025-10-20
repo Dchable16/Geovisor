@@ -186,7 +186,7 @@ export class UIManager {
         this.nodes.coastlineToggle.addEventListener('change', e => this.onStateChange({ isCoastlineVisible: e.target.checked }));
         this.nodes.coastline1kmToggle.addEventListener('change', e => this.onStateChange({ isCoastline1kmVisible: e.target.checked }));
         this.nodes.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
-        cument.addEventListener('click', (e) => {
+        document.addEventListener('click', (e) => {);
             if (!this.nodes.uiControlContainer.contains(e.target)) {
                 this.nodes.searchResults.style.display = 'none';
             }
