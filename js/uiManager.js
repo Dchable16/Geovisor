@@ -159,6 +159,11 @@ export class UIManager {
         new OpenButtonControl({ position: 'topleft' }).addTo(this.map);
     }
     
+    setSearchData(names, keyToNameMap) {
+        this.searchNames = names.sort(); // Nombres de acuíferos
+        this.searchKeyToNameMap = keyToNameMap; // Mapa de Clave -> Nombre
+    }
+    
     cacheNodes(container) {
         this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
         this.nodes.opacitySlider = container.querySelector('#opacity-slider');
@@ -167,6 +172,8 @@ export class UIManager {
         this.nodes.closeButton = container.querySelector('.panel-close-button');
         this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
         this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
+        this.nodes.searchInput = container.querySelector('#search-input');
+        this.nodes.searchResults = container.querySelector('#search-results-container');
     }
 
     addListeners() {
@@ -178,6 +185,78 @@ export class UIManager {
         });
         this.nodes.coastlineToggle.addEventListener('change', e => this.onStateChange({ isCoastlineVisible: e.target.checked }));
         this.nodes.coastline1kmToggle.addEventListener('change', e => this.onStateChange({ isCoastline1kmVisible: e.target.checked }));
+        this.nodes.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+        cument.addEventListener('click', (e) => {
+            if (!this.nodes.uiControlContainer.contains(e.target)) {
+                this.nodes.searchResults.style.display = 'none';
+            }
+    }
+
+    handleSearch(query) {
+        if (query.length < 2) { // No buscar si es muy corto
+            this.nodes.searchResults.innerHTML = '';
+            this.nodes.searchResults.style.display = 'none';
+            return;
+        }
+
+        const queryLower = query.toLowerCase();
+        // Usamos un Set para evitar nombres duplicados
+        const matchedNames = new Set(); 
+
+        // 1. Buscar por Nombre
+        for (const name of this.searchNames) {
+            if (name.toLowerCase().includes(queryLower)) {
+                matchedNames.add(name);
+            }
+        }
+
+        // 2. Buscar por Clave
+        for (const key in this.searchKeyToNameMap) {
+            if (key.includes(queryLower)) {
+                // Añadir el nombre correspondiente a la clave
+                matchedNames.add(this.searchKeyToNameMap[key]); 
+            }
+        }
+
+        this.displaySearchResults(Array.from(matchedNames).sort(), queryLower);
+    }
+
+    displaySearchResults(results, query) {
+        this.nodes.searchResults.innerHTML = ''; // Limpiar resultados anteriores
+        
+        if (results.length === 0) {
+            this.nodes.searchResults.style.display = 'none';
+            return;
+        }
+
+        // Limitar a los primeros 20 resultados por rendimiento
+        const resultsToShow = results.slice(0, 20); 
+
+        resultsToShow.forEach(name => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            
+            const regex = new RegExp(`(${query})`, 'gi');
+            item.innerHTML = name.replace(regex, '<strong>$1</strong>');
+
+            item.addEventListener('click', () => this.selectSearchResult(name));
+            this.nodes.searchResults.appendChild(item);
+        });
+
+        this.nodes.searchResults.style.display = 'block';
+    }
+
+    selectSearchResult(name) {
+        // 1. Limpiar la búsqueda
+        this.nodes.searchInput.value = '';
+        this.nodes.searchResults.innerHTML = '';
+        this.nodes.searchResults.style.display = 'none';
+
+        // 2. Actualizar el <select> (para que la UI sea consistente)
+        this.nodes.aquiferSelect.value = name;
+
+        // 3. Informar a main.js del cambio de estado (esto disparará el zoom)
+        this.onStateChange({ selectedAquifer: name });
     }
 
     setPanelCollapsed(isCollapsed) {
@@ -194,5 +273,8 @@ export class UIManager {
         this.nodes.opacitySlider.value = state.opacity;
         this.nodes.coastlineToggle.checked = state.isCoastlineVisible;
         this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
+        if (this.nodes.aquiferSelect.value !== state.selectedAquifer) {
+             this.nodes.aquiferSelect.value = state.selectedAquifer;
+        }
     }
 }
