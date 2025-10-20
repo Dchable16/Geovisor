@@ -5,7 +5,8 @@
 'use strict';
 
 import { CONFIG } from './config.js';
-import { fetchGeoJSON } from './dataLoader.js';
+// CAMBIO: Importamos ambas funciones de dataLoader
+import { fetchGeoJSON, fetchAllGeoJSON } from './dataLoader.js';
 import { MapManager } from './mapManager.js';
 import { UIManager } from './uiManager.js';
 
@@ -43,7 +44,7 @@ class GeovisorApp {
         this.state = { ...this.state, ...newState };
         console.log("Nuevo estado:", this.state);
 
-        // CORRECCIÓN DE LÓGICA: Manejar el zoom al seleccionar o deseleccionar un acuífero
+        // Lógica de zoom al seleccionar/deseleccionar acuífero
         if (newState.selectedAquifer !== undefined) {
              if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
                  // Acuífero seleccionado: hacer zoom a sus límites
@@ -64,15 +65,15 @@ class GeovisorApp {
         this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
         this.uiManager.updateView(this.state);
         
-        // 3. Zoom inicial al extent completo tras la carga (Mejora UX)
+        // 3. Zoom inicial al extent completo tras la carga
         if (this.leafletLayers.vulnerability) {
             this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
         }
-        
     }
 
+    // --- SECCIÓN ACTUALIZADA ---
     async loadLayers() {
-        // Cargar capas auxiliares
+        // Cargar capas auxiliares (Líneas de costa)
         const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
         if (coastlineData) {
             this.leafletLayers.coastline = L.geoJson(coastlineData, { style: CONFIG.styles.coastline });
@@ -83,17 +84,59 @@ class GeovisorApp {
             this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { style: CONFIG.styles.coastline1km });
         }
 
-        // Cargar capa principal de vulnerabilidad
-        const mainData = await fetchGeoJSON(CONFIG.dataUrl);
-        if (mainData) {
-            // 1. Crear la capa Leaflet con estilos y onEachFeature (solo para eventos/pop-ups)
+        // --- INICIO DE LA LÓGICA DE CARGA MÚLTIPLE ---
+        
+        // 1. Cargar el archivo manifiesto
+        console.log("Cargando manifiesto desde:", CONFIG.dataManifestUrl);
+        const manifest = await fetchGeoJSON(CONFIG.dataManifestUrl);
+        
+        if (!manifest || !manifest.files || !manifest.basePath) {
+            this.uiManager.setLoading(false);
+            alert("Error: No se pudo cargar el manifiesto de datos (manifest.json). La capa principal no se mostrará.");
+            return;
+        }
+
+        // 2. Construir las URLs completas a partir del manifiesto
+        const dataUrls = manifest.files.map(file => manifest.basePath + file);
+        console.log(`Cargando ${dataUrls.length} archivos de datos...`);
+
+        // 3. Cargar todos los archivos GeoJSON en paralelo
+        const geojsonArray = await fetchAllGeoJSON(dataUrls);
+
+        if (geojsonArray.length === 0) {
+            this.uiManager.setLoading(false);
+            alert("No se pudieron cargar los datos de vulnerabilidad. La aplicación puede no funcionar correctamente.");
+            return;
+        }
+
+        // 4. Unir todos los "features" de todos los archivos en un solo array
+        const allFeatures = geojsonArray.reduce((acc, featureCollection) => {
+            if (featureCollection && featureCollection.features) {
+                return acc.concat(featureCollection.features);
+            }
+            return acc;
+        }, []);
+        
+        // 5. Creamos una única FeatureCollection para Leaflet
+        const mainData = {
+            type: "FeatureCollection",
+            features: allFeatures
+        };
+        
+        console.log(`Carga completa. Total de ${allFeatures.length} features procesados.`);
+        
+        // --- FIN DE LA LÓGICA DE CARGA MÚLTIPLE ---
+
+        // Esta lógica es la original, ahora se aplica a 'mainData'
+        if (mainData.features.length > 0) {
+            // 1. Crear la capa Leaflet con estilos y eventos
             this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
                 mainData,
                 (feature) => this.getFeatureStyle(feature),
-                (feature, layer) => this.onEachFeature(feature, layer) // Ahora onEachFeature es más simple
+                (feature, layer) => this.onEachFeature(feature, layer)
             );
 
-            // 2. PROCESAMIENTO DE DATOS: Agrupar referencias de acuíferos para el dropdown
+            // 2. PROCESAMIENTO DE DATOS: Agrupar referencias para el dropdown
             this.leafletLayers.vulnerability.eachLayer(layer => {
                 const { NOM_ACUIF } = layer.feature.properties;
                 if (!this.data.aquifers[NOM_ACUIF]) {
@@ -106,9 +149,10 @@ class GeovisorApp {
                  this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
             }
         } else {
-            alert("No se pudo cargar la capa principal de datos. La aplicación puede no funcionar correctamente.");
+            alert("No se cargaron features de vulnerabilidad. La aplicación puede no funcionar correctamente.");
         }
     }
+    // --- FIN DE LA SECCIÓN ACTUALIZADA ---
     
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
@@ -119,12 +163,12 @@ class GeovisorApp {
                 targetLayer.bringToFront();
             },
             mouseout: (e) => {
-                // REFACTORIZACIÓN: Recalcular el estilo basado en el estado actual
-                // Esto asegura que el estilo correcto (filtrado o seleccionado) sea restaurado.
+                // Recalcular el estilo basado en el estado actual
                 e.target.setStyle(this.getFeatureStyle(e.target.feature));
             },
                 
             click: () => {
+                // Mostrar panel de información al hacer clic
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
             }
         });
@@ -142,18 +186,15 @@ class GeovisorApp {
     
         // 2. Aplicar Filtro de Vulnerabilidad (Muting)
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
-            // Aplicar estilo 'muted' sobre el estilo base. Se asume que CONFIG.styles.muted
-            // ajusta fillOpacity a un valor bajo (ej. 0.1).
             style = { ...style, ...CONFIG.styles.muted };
         }
     
         // 3. Aplicar Estilo de Selección (Override)
         if (this.state.selectedAquifer === NOM_ACUIF) {
-            // El estilo de selección anula cualquier filtro o muting
             style = { 
                 ...style, 
                 ...CONFIG.styles.selection,
-                fillOpacity: 1.0 // Se asegura que el acuífero seleccionado siempre sea visible
+                fillOpacity: 1.0 // Asegura visibilidad de la selección
             }; 
         }
     
@@ -170,8 +211,7 @@ class GeovisorApp {
             });
         }
         
-        // Alternar visibilidad de capas adicionales (Lógica de toggleLayer integrada)
-        // Usamos un array de objetos para manejar el alternado de forma limpia.
+        // Alternar visibilidad de capas adicionales
         [
             { layer: this.leafletLayers.coastline, isVisible: this.state.isCoastlineVisible },
             { layer: this.leafletLayers.coastline1km, isVisible: this.state.isCoastline1kmVisible }
@@ -187,7 +227,7 @@ class GeovisorApp {
             }
         });
     
-        // Actualizar la vista de la UI
+        // Actualizar la vista de la UI (slider, etc.)
         this.uiManager.updateView(this.state);
     }
 }
