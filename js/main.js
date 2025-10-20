@@ -23,6 +23,7 @@ class GeovisorApp {
 
         this.data = {
             aquifers: {}, // Almacenará las capas por nombre de acuífero
+            keyToNameMap: {}
         };
 
         this.leafletLayers = {}; // Almacenará las capas de Leaflet
@@ -144,10 +145,26 @@ class GeovisorApp {
                 }
                 this.data.aquifers[NOM_ACUIF].push(layer);
             });
+            
+            if (CLAVE_ACUI && !this.data.keyToNameMap[CLAVE_ACUI]) {
+                    this.data.keyToNameMap[CLAVE_ACUI] = NOM_ACUIF;
+                }
+            });
 
             if (Object.keys(this.data.aquifers).length > 0) {
                  this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
             }
+        
+            this.uiManager.setSearchData(
+                    Object.keys(this.data.aquifers), // Solo la lista de nombres
+                    this.data.keyToNameMap           // El mapa de Clave->Nombre
+                );
+    
+            } else {
+                alert("No se cargaron features de vulnerabilidad...");
+            }
+        }
+        
         } else {
             alert("No se cargaron features de vulnerabilidad. La aplicación puede no funcionar correctamente.");
         }
