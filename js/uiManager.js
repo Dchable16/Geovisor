@@ -174,6 +174,7 @@ export class UIManager {
         this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
         this.nodes.searchInput = container.querySelector('#search-input');
         this.nodes.searchResults = container.querySelector('#search-results-container');
+        this.nodes.resetButton = container.querySelector('#reset-button');
     }
 
     addListeners() {
@@ -191,6 +192,12 @@ export class UIManager {
             if (!this.nodes.uiControlContainer.contains(e.target)) {
                 this.nodes.searchResults.style.display = 'none';
             }
+        });
+        this.nodes.resetButton.addEventListener('click', () => {
+            // Limpiar la búsqueda y luego notificar el reinicio
+            this.nodes.searchInput.value = '';
+            this.nodes.searchResults.style.display = 'none';
+            this.onStateChange({ reset: true });
         });
     }
 
@@ -276,7 +283,9 @@ export class UIManager {
         this.nodes.coastlineToggle.checked = state.isCoastlineVisible;
         this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
         if (this.nodes.aquiferSelect.value !== state.selectedAquifer) {
-             this.nodes.aquiferSelect.value = state.selectedAquifer;
+            this.nodes.aquiferSelect.value = state.selectedAquifer;
+            const radioToCheck = this.nodes.filterRadios.find(radio => radio.value === state.filterValue) || this.nodes.filterRadios[0];
+            radioToCheck.checked = true;
         }
     }
 }
