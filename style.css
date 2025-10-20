@@ -313,6 +313,27 @@ input:checked + .slider:before { transform: translateX(20px); }
 .search-result-item strong {
     color: var(--accent-color);
 }
+.reset-section {
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.action-button {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    background-color: var(--accent-color);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.action-button:hover {
+    background-color: var(--accent-hover);
+}
 
 /* --- 6. INDICADOR DE CARGA (SPINNER) --- */
 .loader-overlay {
