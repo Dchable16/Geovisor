@@ -26,6 +26,7 @@ export class MapManager {
             sortLayers: true
         }).addTo(this.map);
 
+        L.control.scale({ position: 'bottomleft', imperial: false }).addTo(this.map);
         this.addLegend();
         this.addLogo();
         this.addCustomPrintControl();
@@ -120,5 +121,8 @@ export class MapManager {
         if (bounds) {
             this.map.fitBounds(bounds.pad(0.1));
         }
+    }
+    resetView() {
+        this.map.setView(CONFIG.initialCoords, CONFIG.initialZoom);
     }
 }
