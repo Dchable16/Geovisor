@@ -3,65 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geovisor de Vulnerabilidad a la Intrusión Salina en México</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <meta name="description" content="Geovisor web interactivo de vulnerabilidad a la intrusión salina en acuíferos de México.">
+    <title>Geovisor de Vulnerabilidad a la Intrusión Salina</title>
+
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header class="main-header">
-        <div class="logo-container logo-left">
+        <div class="logo-container">
             <img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_Conagua.png" alt="Logo CONAGUA">
         </div>
-        <div class="logo-container logo-right">
+        <div class="logo-container">
             <img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_Mujer_Indigena.png" alt="Logo Mujer Indígena">
         </div>
     </header>
 
-    <div class="container">
-        <h1>Vulnerabilidad a la Intrusión Salina en Acuíferos de México</h1>
-        
-        <div class="selector-container">
-            <label for="acuifero-select">Selecciona un acuífero para hacer zoom:</label>
-            <select id="acuifero-select">
-                <option value="">-- Mostrar todos los acuíferos --</option>
-            </select>
+    <main class="map-container">
+        <div id="map"></div>
+        <div class="loader-overlay" id="app-loader" style="display: none;">
+            <div class="spinner"></div>
+            <p class="loader-text">Cargando Datos Geográficos...</p> 
         </div>
+    </main>
 
-        <div class="opacity-container">
-            <label for="opacity-slider">Opacidad general:</label>
-            <input id="opacity-slider" type="range" min="0" max="1" step="0.05" value="0.6">
-            <span id="opacity-value">60%</span>
+    <template id="panel-template">
+        <div class="panel-close-button" title="Ocultar controles">«</div>
+        <h1>Vulnerabilidad a la Intrusión Salina</h1>
+        <div class="control-section">
+            <label for="acuifero-select">Selecciona un acuífero:</label>
+            <select id="acuifero-select"><option value="">-- Mostrar todos --</option></select>
         </div>
-
-        <div class="filter-container">
+        <div class="control-section">
+            <label for="opacity-slider">Opacidad general: <span id="opacity-value"></span></label>
+            <input id="opacity-slider" type="range" min="0" max="1" step="0.05">
+        </div>
+        <div class="control-section">
             <label>Iluminar por vulnerabilidad:</label>
-            <div class="radio-group">
-                <input type="radio" id="vul-todos" name="vulnerability" value="all" checked>
-                <label for="vul-todos">Todos</label>
-                
-                <input type="radio" id="vul-1" name="vulnerability" value="1">
-                <label for="vul-1">1</label>
-
-                <input type="radio" id="vul-2" name="vulnerability" value="2">
-                <label for="vul-2">2</label>
-
-                <input type="radio" id="vul-3" name="vulnerability" value="3">
-                <label for="vul-3">3</label>
-
-                <input type="radio" id="vul-4" name="vulnerability" value="4">
-                <label for="vul-4">4</label>
-
-                <input type="radio" id="vul-5" name="vulnerability" value="5">
-                <label for="vul-5">5</label>
+            <div class="radio-group" id="vulnerability-radio-group">
+                <input type="radio" id="vul-todos" name="vulnerability" value="all" checked><label for="vul-todos">Todos</label>
             </div>
         </div>
-        
-        <div id="map"></div>
-    </div>
-
+        <div class="control-section">
+            <label>Capas Adicionales:</label>
+            <div class="layer-toggle">
+                <span>Línea de Costa (10km)</span>
+                <label class="switch"><input type="checkbox" id="coastline-toggle"><span class="slider"></span></label>
+            </div>
+            <div class="layer-toggle" style="margin-top: 10px;">
+                <span>Línea de Costa (1km)</span>
+                <label class="switch"><input type="checkbox" id="coastline-1km-toggle"><span class="slider"></span></label>
+            </div>
+        </div>
+    </template>
+    
+    <template id="info-panel-template">
+        <div class="info-panel-header">
+            <h2 id="info-panel-title">Detalles del Acuífero</h2>
+            <button class="info-panel-close" title="Cerrar">✕</button>
+        </div>
+        <div id="info-panel-content"></div>
+    </template>
+    
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+    <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>    
+    <script type="module" src="js/main.js"></script>
 
 </body>
 </html>

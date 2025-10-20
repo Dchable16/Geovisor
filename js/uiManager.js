@@ -1,0 +1,198 @@
+/**
+ * @file uiManager.js
+ * @description Gestiona el panel de controles y la interacción del usuario.
+ */
+
+import { CONFIG } from './config.js';
+
+export class UIManager {
+    constructor(map, onStateChange) {
+        this.map = map;
+        this.onStateChange = onStateChange; // Callback para notificar cambios de estado
+        this.nodes = {}; // Almacenará referencias a los elementos del DOM
+        this.nodes.loader = document.querySelector('#app-loader');
+        this.initInfoPanel();
+        this.initControlsPanel();
+        this.initOpenButton();
+    }
+    
+    initInfoPanel() {
+            const mapContainer = document.querySelector('.map-container');
+            const infoPanel = L.DomUtil.create('div', 'info-panel');
+            this.nodes.infoPanelContainer = infoPanel;
+            
+            const template = document.querySelector('#info-panel-template');
+            if (template) {
+                infoPanel.appendChild(template.content.cloneNode(true));
+            }
+            
+            // Insertar el panel directamente en el contenedor del mapa
+            mapContainer.appendChild(infoPanel); 
+            
+            // Cache y listeners específicos del panel
+            this.nodes.infoPanelContent = infoPanel.querySelector('#info-panel-content');
+            this.nodes.infoPanelTitle = infoPanel.querySelector('#info-panel-title');
+            this.nodes.infoPanelClose = infoPanel.querySelector('.info-panel-close');
+    
+            this.nodes.infoPanelClose.addEventListener('click', () => this.hideInfoPanel());
+            L.DomEvent.disableClickPropagation(infoPanel);
+        }
+
+    showInfoPanel(properties, vulnerabilityMap) {
+        // Formatear el contenido
+        let htmlContent = '';
+        
+        // 1. Mostrar título (Acuífero)
+        this.nodes.infoPanelTitle.textContent = properties.NOM_ACUIF || "Detalles del Acuífero";
+
+        // 2. Mapear y mostrar propiedades relevantes
+        const attributesToShow = [
+            { key: 'NOM_ACUIF', label: 'Nombre del Acuífero' },
+            { key: 'CLAVE_ACUI', label: 'Clave' },
+            { key: 'VULNERABIL', label: 'Nivel de Vulnerabilidad' },
+        ];
+
+        attributesToShow.forEach(attr => {
+            let value = properties[attr.key];
+            if (attr.key === 'VULNERABIL' && vulnerabilityMap) {
+                // Si es vulnerabilidad, añadir la etiqueta descriptiva
+                const levelData = vulnerabilityMap[String(value)];
+                value = value ? `${value} (${levelData.label})` : 'N/A';
+            }
+            
+            htmlContent += `
+                <div class="info-panel-row">
+                    <strong>${attr.label}:</strong>
+                    <span class="info-panel-value">${value}</span>
+                </div>
+            `;
+        });
+        
+        this.nodes.infoPanelContent.innerHTML = htmlContent;
+        this.nodes.infoPanelContainer.classList.add('is-visible');
+    }
+
+     hideInfoPanel() {
+        this.nodes.infoPanelContainer.classList.remove('is-visible');
+    }
+    
+    /**
+    * Muestra u oculta el overlay de carga.
+     * @param {boolean} isLoading - true para mostrar el loader, false para ocultarlo.
+     */
+    setLoading(isLoading) {
+        if (this.nodes.loader) {
+            // El 'display: none;' inicial se sobrescribe a 'flex' para mostrarlo
+            this.nodes.loader.style.display = isLoading ? 'flex' : 'none';
+        }
+    } 
+
+    initControlsPanel() {
+        const UiControl = L.Control.extend({
+            onAdd: () => {
+                const container = L.DomUtil.create('div', 'leaflet-custom-controls collapsed');
+                this.nodes.uiControlContainer = container;
+                
+                // CÓDIGO MODIFICADO: Carga el contenido desde la plantilla oculta
+                const template = document.querySelector('#panel-template');
+                if (template) {
+                     // Clonar el contenido de la plantilla e insertarlo en el control Leaflet
+                    container.appendChild(template.content.cloneNode(true));
+                } else {
+                    console.error("No se encontró la plantilla del panel de control.");
+                }
+
+                this.generateVulnerabilityRadios(container); 
+                
+                // Retraso para asegurar que el botón de abrir exista y podamos alinear el panel
+                setTimeout(() => {
+                    if (this.nodes.openButton) {
+                        container.style.top = `${this.nodes.openButton.offsetTop}px`;
+                    }
+                }, 0);
+
+                // La búsqueda de nodos ahora ocurre en el 'container' después de la inserción.
+                this.cacheNodes(container); 
+                this.addListeners();
+                L.DomEvent.disableClickPropagation(container);
+                return container;
+            }
+        });
+        new UiControl({ position: 'topleft' }).addTo(this.map);
+    }
+
+    generateVulnerabilityRadios(container) {
+        const radioGroup = container.querySelector('#vulnerability-radio-group');
+        if (!radioGroup) return;
+
+        let radioHTML = '';
+        // Obtenemos las claves (1, 2, 3, 4, 5) y las ordenamos
+        const grades = Object.keys(CONFIG.vulnerabilityMap)
+                             .filter(key => key !== 'default')
+                             .sort((a, b) => b - a); // Ordenar de 5 a 1 (Máximo a Mínimo)
+
+        grades.forEach(grade => {
+            // Se comenta o elimina la línea que obtiene la etiqueta, ya no es necesaria
+            // const label = CONFIG.vulnerabilityMap[grade].label; 
+            const id = `vul-${grade}`;
+            radioHTML += `
+                <input type="radio" id="${id}" name="vulnerability" value="${grade}">
+                <label for="${id}">${grade}</label> `;
+        });
+        
+        // Insertar después del radio "Todos"
+        radioGroup.insertAdjacentHTML('beforeend', radioHTML);
+    }
+
+    initOpenButton() {
+        const OpenButtonControl = L.Control.extend({
+            onAdd: () => {
+                const button = L.DomUtil.create('div', 'leaflet-open-button is-visible');
+                button.innerHTML = '☰';
+                button.title = "Mostrar controles";
+                this.nodes.openButton = button;
+                L.DomEvent.on(button, 'click', () => this.setPanelCollapsed(false));
+                L.DomEvent.disableClickPropagation(button);
+                return button;
+            }
+        });
+        new OpenButtonControl({ position: 'topleft' }).addTo(this.map);
+    }
+    
+    cacheNodes(container) {
+        this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
+        this.nodes.opacitySlider = container.querySelector('#opacity-slider');
+        this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
+        this.nodes.filterRadios = container.querySelectorAll('input[name="vulnerability"]');
+        this.nodes.closeButton = container.querySelector('.panel-close-button');
+        this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
+        this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
+    }
+
+    addListeners() {
+        this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
+        this.nodes.aquiferSelect.addEventListener('change', e => this.onStateChange({ selectedAquifer: e.target.value }));
+        this.nodes.opacitySlider.addEventListener('input', e => this.onStateChange({ opacity: parseFloat(e.target.value) }));
+        this.nodes.filterRadios.forEach(radio => {
+            radio.addEventListener('change', e => this.onStateChange({ filterValue: e.target.value }));
+        });
+        this.nodes.coastlineToggle.addEventListener('change', e => this.onStateChange({ isCoastlineVisible: e.target.checked }));
+        this.nodes.coastline1kmToggle.addEventListener('change', e => this.onStateChange({ isCoastline1kmVisible: e.target.checked }));
+    }
+
+    setPanelCollapsed(isCollapsed) {
+        this.nodes.uiControlContainer.classList.toggle('collapsed', isCollapsed);
+        this.nodes.openButton.classList.toggle('is-visible', isCollapsed);
+    }
+    
+    populateAquiferSelect(aquiferNames) {
+        this.nodes.aquiferSelect.innerHTML += aquiferNames.sort().map(name => `<option value="${name}">${name}</option>`).join('');
+    }
+
+    updateView(state) {
+        this.nodes.opacityValueSpan.textContent = `${Math.round(state.opacity * 100)}%`;
+        this.nodes.opacitySlider.value = state.opacity;
+        this.nodes.coastlineToggle.checked = state.isCoastlineVisible;
+        this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
+    }
+}

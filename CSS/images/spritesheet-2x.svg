@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600px" height="60px" viewBox="0 0 548 60" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>spritesheet-2x</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="spritesheet-2x">
+            <g id="polyline-2x">
+                <path d="M4,18 L4,24 L22,24 L22,42 L38,42 L38,30 L56,30 L56,18 L4,18 Z" id="Shape" fill="#000000"></path>
+            </g>
+            <g id="polygon-2x" transform="translate(60.000000, 0.000000)">
+                <path d="M4,18 L4,42 L26,42 L56,18 L4,18 Z" id="Shape" fill="#000000"></path>
+            </g>
+            <g id="rectangle-2x" transform="translate(120.000000, 0.000000)">
+                <path d="M4,18 L4,42 L56,42 L56,18 L4,18 Z" id="Shape" fill="#000000"></path>
+            </g>
+            <g id="circle-2x" transform="translate(180.000000, 0.000000)">
+                <path d="M30,18 C18.954,18 10,26.954 10,38 C10,49.046 18.954,58 30,58 C41.046,58 50,49.046 50,38 C50,26.954 41.046,18 30,18 Z M30,52 C22.268,52 16,45.732 16,38 C16,30.268 22.268,24 30,24 C37.732,24 44,30.268 44,38 C44,45.732 37.732,52 30,52 Z" id="Shape" fill="#000000" fill-rule="nonzero"></path>
+            </g>
+            <g id="marker-2x" transform="translate(240.000000, 0.000000)">
+                <path d="M30,6 C21.164,6 14,13.164 14,22 C14,33.5 30,54 30,54 C30,54 46,33.5 46,22 C46,13.164 38.836,6 30,6 Z M30,28 C26.686,28 24,25.314 24,22 C24,18.686 26.686,16 30,16 C33.314,16 36,18.686 36,22 C36,25.314 33.314,28 30,28 Z" id="Shape" fill="#000000"></path>
+            </g>
+            <g id="edit-2x" transform="translate(300.000000, 0.000000)">
+                <path d="M8,40 L8,52 L20,52 L46,26 L34,14 L8,40 Z M52,20 L48,24 L36,12 L40,8 C41,7 43,7 44,8 L52,16 C53,17 53,19 52,20 Z" id="Shape" fill="#000000"></path>
+            </g>
+            <g id="delete-2x" transform="translate(360.000000, 0.000000)">
+                <path d="M12,16 L12,52 L48,52 L48,16 L12,16 Z M20,24 L24,24 L24,44 L20,44 L20,24 Z M28,24 L32,24 L32,44 L28,44 L28,24 Z M36,24 L40,24 L40,44 L36,44 L36,24 Z M14,10 L46,10 L42,6 L18,6 L14,10 Z" id="Shape" fill="#000000"></path>
+            </g>
+            <g id="edit_disabled-2x" transform="translate(420.000000, 0.000000)" fill="#BEBEBE">
+                <path d="M8,40 L8,52 L20,52 L46,26 L34,14 L8,40 Z M52,20 L48,24 L36,12 L40,8 C41,7 43,7 44,8 L52,16 C53,17 53,19 52,20 Z" id="Shape"></path>
+            </g>
+            <g id="delete_disabled-2x" transform="translate(480.000000, 0.000000)" fill="#BEBEBE">
+                <path d="M12,16 L12,52 L48,52 L48,16 L12,16 Z M20,24 L24,24 L24,44 L20,44 L20,24 Z M28,24 L32,24 L32,44 L28,44 L28,24 Z M36,24 L40,24 L40,44 L36,44 L36,24 Z M14,10 L46,10 L42,6 L18,6 L14,10 Z" id="Shape"></path>
+            </g>
+        </g>
+    </g>
+</svg>
