@@ -23,7 +23,7 @@ class GeovisorApp {
 
         this.data = {
             aquifers: {}, // Almacenará las capas por nombre de acuífero
-            keyToNameMap: {}
+            keyToNameMap: {} // Mapa para buscar por Clave
         };
 
         this.leafletLayers = {}; // Almacenará las capas de Leaflet
@@ -72,7 +72,7 @@ class GeovisorApp {
         }
     }
 
-    // --- SECCIÓN ACTUALIZADA ---
+    // --- SECCIÓN ACTUALIZADA Y CORREGIDA ---
     async loadLayers() {
         // Cargar capas auxiliares (Líneas de costa)
         const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
@@ -137,34 +137,38 @@ class GeovisorApp {
                 (feature, layer) => this.onEachFeature(feature, layer)
             );
 
-            // 2. PROCESAMIENTO DE DATOS: Agrupar referencias para el dropdown
+            // 2. PROCESAMIENTO DE DATOS: (AQUÍ ESTÁ LA CORRECCIÓN)
             this.leafletLayers.vulnerability.eachLayer(layer => {
-                const { NOM_ACUIF } = layer.feature.properties;
-                if (!this.data.aquifers[NOM_ACUIF]) {
+                // Obtenemos AMBAS propiedades
+                const { NOM_ACUIF, CLAVE_ACUI } = layer.feature.properties;
+                
+                // Lógica para el dropdown
+                if (NOM_ACUIF && !this.data.aquifers[NOM_ACUIF]) {
                     this.data.aquifers[NOM_ACUIF] = [];
                 }
-                this.data.aquifers[NOM_ACUIF].push(layer);
-            });
-            
-            if (CLAVE_ACUI && !this.data.keyToNameMap[CLAVE_ACUI]) {
+                if (NOM_ACUIF) {
+                    this.data.aquifers[NOM_ACUIF].push(layer);
+                }
+
+                // Lógica para el mapa de búsqueda (movida aquí dentro)
+                if (CLAVE_ACUI && !this.data.keyToNameMap[CLAVE_ACUI]) {
                     this.data.keyToNameMap[CLAVE_ACUI] = NOM_ACUIF;
                 }
-            });
+            }); // <-- El bucle 'eachLayer' termina aquí.
 
+            // El '});' extra ha sido eliminado.
+
+            // 3. Poblar el dropdown
             if (Object.keys(this.data.aquifers).length > 0) {
                  this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
             }
         
+            // 4. Enviar datos al buscador
             this.uiManager.setSearchData(
-                    Object.keys(this.data.aquifers), // Solo la lista de nombres
-                    this.data.keyToNameMap           // El mapa de Clave->Nombre
-                );
+                Object.keys(this.data.aquifers), // Solo la lista de nombres
+                this.data.keyToNameMap           // El mapa de Clave->Nombre
+            );
     
-            } else {
-                alert("No se cargaron features de vulnerabilidad...");
-            }
-        }
-        
         } else {
             alert("No se cargaron features de vulnerabilidad. La aplicación puede no funcionar correctamente.");
         }
