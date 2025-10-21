@@ -213,29 +213,31 @@ class GeovisorApp {
 
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
-
-        // 1. Determinar el color de relleno base
         const fillColor = this.mapManager.getColor(VULNERABIL);
 
-        // 2. Empezar con el estilo base por defecto
+        // 1. Empezar con las propiedades del estilo base
         let styleOptions = {
-            ...CONFIG.styles.base, // Copia todas las propiedades base
-            fillColor: fillColor    // Aplica el color de vulnerabilidad
+            ...CONFIG.styles.base,
+            fillColor: fillColor
         };
 
+        // 2. APLICAR LA OPACIDAD GLOBAL DEL SLIDER *SOLO* AL ESTADO BASE
+        //    Las opacidades de 'muted' y 'selection' se mantendrán fijas.
+        styleOptions.fillOpacity = this.state.opacity;
+
         // 3. Aplicar Filtro de Vulnerabilidad (si aplica)
-        //    Esto sobrescribirá propiedades de 'base' si es necesario (ej. fillOpacity, weight, color)
+        //    Esto sobrescribirá la opacidad con el valor fijo de 'muted' (ej. 0.1)
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
             styleOptions = { ...styleOptions, ...CONFIG.styles.muted };
         }
 
         // 4. Aplicar Estilo de Selección (si aplica)
-        //    Esto sobrescribirá propiedades de 'base' o 'muted' (ej. weight, color, fillOpacity, dashArray)
+        //    Esto sobrescribirá la opacidad con el valor fijo de 'selection' (ej. 0.85)
         if (this.state.selectedAquifer === NOM_ACUIF) {
             styleOptions = { ...styleOptions, ...CONFIG.styles.selection };
         }
 
-        // 5. Devolver solo el objeto de estilo final
+        // 5. Devolver el objeto de estilo final
         return styleOptions;
     }
 
