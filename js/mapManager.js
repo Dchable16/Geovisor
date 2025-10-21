@@ -10,6 +10,7 @@ export class MapManager {
         this.map = L.map(mapId, {
             center: CONFIG.initialCoords,
             zoom: CONFIG.initialZoom,
+            minZoom: 4,
             layers: [CONFIG.tileLayers["Neutral (defecto)"]],
             zoomControl: false,
             preferCanvas: true
