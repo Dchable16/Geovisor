@@ -191,37 +191,34 @@ class GeovisorApp {
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
         layer.on({
-            // --- LISTENER MOUSEOVER CORREGIDO ---
+            // --- LISTENER MOUSEOVER MODIFICADO ---
             mouseover: (e) => {
                 const targetLayer = e.target;
-                const featureName = feature.properties.NOM_ACUIF;
-
-                // **LA CLAVE ESTÁ AQUÍ:**
-                // Solo aplica el estilo hover si esta capa NO es la seleccionada actualmente.
-                if (featureName !== this.state.selectedAquifer) {
-                    // Obtener el estilo actual (podría ser base o muted)
-                    const currentStyle = this.getFeatureStyle(feature);
-                    // Combinarlo con hover (esto está bien para capas no seleccionadas)
-                    const hoverStyle = {
-                        ...currentStyle,
-                        ...CONFIG.styles.hover
-                    };
-                    targetLayer.setStyle(hoverStyle);
-                }
-                // Si ES la capa seleccionada, NO hacemos nada en mouseover,
-                // dejamos que getFeatureStyle mantenga el estilo 'selection'.
-
-                // Traer al frente siempre es buena idea al pasar el ratón
+                
+                // 1. Obtener el estilo ACTUAL que debería tener (base, muted o selection)
+                const currentStyle = this.getFeatureStyle(feature);
+                
+                // 2. Combinar el estilo actual con las propiedades del estilo hover
+                //    Las propiedades de hover (weight, color, opacity) sobrescribirán
+                //    las del currentStyle, pero otras (como dashArray) se mantendrán.
+                const hoverStyle = {
+                    ...currentStyle,          // Mantiene dashArray si estaba en selection
+                    ...CONFIG.styles.hover // Aplica weight, color, opacity del hover
+                };
+                
+                // 3. Aplicar el estilo combinado
+                targetLayer.setStyle(hoverStyle);
+                
+                // 4. Traer al frente (sin cambios)
                 targetLayer.bringToFront();
             },
-            // --- FIN DE CORRECCIÓN ---
+            // --- FIN DE MODIFICACIÓN ---
 
             mouseout: (e) => {
-                // Restaurar estilo correcto (base, muted, o selection si es la seleccionada)
-                // Esta parte ya funciona bien.
+                // Esta parte ya era correcta: restaura el estilo adecuado
                 e.target.setStyle(this.getFeatureStyle(e.target.feature));
             },
-
+                
             click: () => {
                 // Sin cambios
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
