@@ -32,7 +32,7 @@ export const CONFIG = {
     styles: {
         base: { weight: 1.5, opacity: 1, color: 'white' },
         muted: { fillColor: '#A9A9A9', weight: 1, color: '#A9A9A9', fillOpacity: 0.2 },
-        selection: { color: '#00FFFF', weight: 4, opacity: 1 },
+        selection: { color: '#333333', weight: 5, opacity: 1, fillOpacity: 1.0 },
         hover: { weight: 3, color: '#000', dashArray: '', fillOpacity: 0.95 },
         coastline: { color: "#007BFF", weight: 2, opacity: 0.8, fillColor: 'transparent'  }, 
         coastline1km: { color: "#FF0000", weight: 2.5, opacity: 0.85, fillColor: 'transparent' } 
