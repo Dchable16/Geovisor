@@ -357,7 +357,19 @@ input:checked + .slider:before { transform: translateX(20px); }
     -webkit-appearance: none;
     margin: 0;
 }
-
+#coord-name {
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    margin-bottom: 8px; /* <-- Para separarlo de los campos de abajo */
+}
+#coord-name:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
 #coord-error-message {
     font-size: 13px;
     color: #D90404; /* Rojo (del config) */
