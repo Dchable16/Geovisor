@@ -123,21 +123,34 @@ export class MapManager {
         }
     }
     
-    flyToCoords(lat, lon) {
+    flyToCoords(lat, lon, name) {
         // 1. Limpiar marcador anterior si existe
         if (this.tempMarker) {
             this.map.removeLayer(this.tempMarker);
             this.tempMarker = null;
         }
 
-        // 2. Crear nuevas coordenadas y marcador
+        // 2. Crear nuevas coordenadas
         const latLng = L.latLng(lat, lon);
-        this.tempMarker = L.marker(latLng, {
-            // Opcional: usar un ícono diferente, pero el default funciona
-        }).addTo(this.map);
 
-        // 3. Volar a la ubicación con un zoom adecuado
-        this.map.flyTo(latLng, 13); // Zoom 13 es bueno para ver un punto
+        // 3. Crear el contenido del Popup
+        let popupContent;
+        if (name) {
+            // Si el usuario escribió un nombre
+            popupContent = `<b>${name}</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
+        } else {
+            // Si el campo de nombre estaba vacío
+            popupContent = `<b>Coordenadas</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
+        }
+
+        // 4. Crear marcador, añadir popup y abrirlo
+        this.tempMarker = L.marker(latLng)
+            .addTo(this.map)
+            .bindPopup(popupContent) // <-- Añade el popup
+            .openPopup();            // <-- Abre el popup automáticamente
+
+        // 5. Volar a la ubicación
+        this.map.flyTo(latLng, 13);
     }
     
     resetView() {
