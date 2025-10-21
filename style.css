@@ -58,8 +58,8 @@ body {
 }
 
 .logo-container img {
-    height: 25px;
-    width: 5;
+    height: 10px;
+    width: 15;
     object-fit: contain;
 }
 
