@@ -12,10 +12,10 @@ import { UIManager } from './uiManager.js';
 
 // --- ESTADO INICIAL ---
 const INITIAL_STATE = {
-    opacity: 0.8, // Opacidad inicial
-    filterValue: 'all', // Sin filtro inicial
-    selectedAquifer: null, // Ningún acuífero seleccionado
-    isCoastlineVisible: false, // Capas auxiliares ocultas
+    opacity: 0.8,
+    filterValue: 'all',
+    selectedAquifer: null,
+    isCoastlineVisible: false,
     isCoastline1kmVisible: false,
 };
 // --- FIN ---
@@ -27,277 +27,248 @@ class GeovisorApp {
         this.state = { ...INITIAL_STATE };
 
         this.data = {
-            aquifers: {}, // Almacenará { NOM_ACUIF: [layer1, layer2, ...] }
-            keyToNameMap: {} // Almacenará { CLAVE_ACUI: NOM_ACUIF }
+            aquifers: {}, // Almacenará las capas por nombre de acuífero
+            keyToNameMap: {} // Mapa para buscar por Clave
         };
 
-        this.leafletLayers = {}; // Almacenará { vulnerability: L.GeoJSON, coastline: L.GeoJSON, ... }
+        this.leafletLayers = {}; // Almacenará las capas de Leaflet
 
         // Inicializar los módulos
         this.mapManager = new MapManager(CONFIG.mapId);
         this.uiManager = new UIManager(this.mapManager.map, this.handleStateChange.bind(this));
-
-        this.init(); // Iniciar la carga de datos
+        
+        this.init();
     }
 
-    /**
-     * Callback que recibe las actualizaciones de estado desde UIManager.
-     * @param {object} newState - Objeto parcial con las propiedades de estado que cambiaron.
-     */
+    // Método para manejar los cambios de estado provenientes de la UI
     handleStateChange(newState) {
         this.updateState(newState);
     }
 
-    /**
-     * Método central para actualizar el estado, manejar acciones especiales y disparar el renderizado.
-     * @param {object} newState - Objeto parcial con cambios o acciones.
-     */
+    // Método centralizado para actualizar el estado y volver a renderizar
     updateState(newState) {
 
-        // 1. Acción: Restablecer
+        // 1. Comprobar si es una acción de reinicio
         if (newState.reset === true) {
-            this.state = { ...INITIAL_STATE }; // Volver al estado inicial
-            this.mapManager.resetView();     // Restablecer vista del mapa y limpiar marcador
-            this.render();                   // Renderizar con el estado limpio
-            return;                          // Salir
+            this.state = { ...INITIAL_STATE };
+            this.mapManager.resetView(); // Llama al método en mapManager
+            this.render(); // Vuelve a dibujar todo con el estado limpio
+            return; // Salir de la función
         }
 
-        // 2. Acción: Volar a Coordenadas
+        // 2. Comprobar si es una acción de "Volar a"
         if (newState.flyToCoords) {
-            const [lat, lon, name] = newState.flyToCoords; // Extraer datos
-            this.mapManager.flyToCoords(lat, lon, name); // Ejecutar acción en mapManager
-            // Esta acción no modifica el 'state' principal, solo interactúa con el mapa.
+            const [lat, lon, name] = newState.flyToCoords;
+            this.mapManager.flyToCoords(lat, lon, name);
         }
 
-        // 3. Actualización Normal del Estado
-        //    (Ignora las claves 'reset' y 'flyToCoords' si vinieran aquí)
-        const { reset, flyToCoords, ...stateUpdates } = newState;
-        this.state = { ...this.state, ...stateUpdates }; // Fusionar cambios
+        // 3. Si no es reinicio, continuar con la lógica normal de estado
+        this.state = { ...this.state, ...newState };
         console.log("Nuevo estado:", this.state);
 
-        // 4. Lógica de Zoom específica para selección de acuífero (CORREGIDA)
-        if (stateUpdates.selectedAquifer !== undefined) {
+        // Lógica de zoom al seleccionar/deseleccionar acuífero
+        if (newState.selectedAquifer !== undefined) {
              if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
-                 // Si se seleccionó un acuífero válido, hacer zoom
+                 // Acuífero seleccionado: hacer zoom a sus límites
                  const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
                  this.mapManager.fitBounds(group.getBounds());
-             } else if (
-                 this.leafletLayers.vulnerability &&
-                 // Comprobar si es null O una cadena vacía
-                 (stateUpdates.selectedAquifer === null || stateUpdates.selectedAquifer === "")
-                ) {
-                 // Si se deseleccionó (reset o "-- Mostrar todos --"), volver a la vista completa
+             } else if (this.leafletLayers.vulnerability && newState.selectedAquifer === null) { 
+                 // Solo hacer zoom out si se deselecciona activamente
                  this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
              }
         }
 
-        // 5. Disparar el renderizado para reflejar los cambios
         this.render();
     }
 
-    /**
-     * Inicializa la aplicación: muestra el loader, carga los datos y luego oculta el loader.
-     */
     async init() {
-        this.uiManager.setLoading(true);
-        try {
-            await this.loadLayers();
-        } catch (error) {
-            console.error("Error crítico durante la inicialización:", error);
-            alert("Ocurrió un error al cargar los datos iniciales. La aplicación puede no funcionar correctamente.");
-        } finally {
-            this.uiManager.setLoading(false);
-            this.uiManager.updateView(this.state); // Actualizar UI inicial
-            // Zoom inicial a la extensión completa
-            if (this.leafletLayers.vulnerability) {
-                this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
-            }
+        this.uiManager.setLoading(true); // 1. Mostrar loader al iniciar
+        await this.loadLayers();
+        this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
+        this.uiManager.updateView(this.state);
+        
+        // 3. Zoom inicial al extent completo tras la carga
+        if (this.leafletLayers.vulnerability) {
+            this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
         }
     }
 
-    /**
-     * Carga todas las capas GeoJSON (manifiesto, líneas de costa) y las procesa.
-     */
     async loadLayers() {
-        // Cargar capas auxiliares
-        const [coastlineData, coastline1kmData] = await Promise.all([
-            fetchGeoJSON(CONFIG.coastlineUrl),
-            fetchGeoJSON(CONFIG.coastline1kmUrl)
-        ]);
-
+        // Cargar capas auxiliares (Líneas de costa)
+        const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
         if (coastlineData) {
             this.leafletLayers.coastline = L.geoJson(coastlineData, { style: CONFIG.styles.coastline });
         }
+        
+        const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
         if (coastline1kmData) {
             this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { style: CONFIG.styles.coastline1km });
         }
 
-        // Cargar capa principal desde el manifiesto
+        // --- INICIO DE LA LÓGICA DE CARGA MÚLTIPLE ---
+        
+        // 1. Cargar el archivo manifiesto
         console.log("Cargando manifiesto desde:", CONFIG.dataManifestUrl);
         const manifest = await fetchGeoJSON(CONFIG.dataManifestUrl);
-
+        
         if (!manifest || !manifest.files || !manifest.basePath) {
-            throw new Error("El archivo manifiesto (manifest.json) es inválido o no se encontró.");
+            this.uiManager.setLoading(false);
+            alert("Error: No se pudo cargar el manifiesto de datos (manifest.json). La capa principal no se mostrará.");
+            return;
         }
 
+        // 2. Construir las URLs completas a partir del manifiesto
         const dataUrls = manifest.files.map(file => manifest.basePath + file);
         console.log(`Cargando ${dataUrls.length} archivos de datos...`);
+
+        // 3. Cargar todos los archivos GeoJSON en paralelo
         const geojsonArray = await fetchAllGeoJSON(dataUrls);
 
         if (geojsonArray.length === 0) {
-             console.warn("No se cargaron datos de vulnerabilidad.");
+            this.uiManager.setLoading(false);
+            alert("No se pudieron cargar los datos de vulnerabilidad. La aplicación puede no funcionar correctamente.");
+            return;
         }
 
-        const allFeatures = geojsonArray.reduce((acc, fc) => acc.concat(fc?.features || []), []);
-        const mainData = { type: "FeatureCollection", features: allFeatures };
+        // 4. Unir todos los "features" de todos los archivos en un solo array
+        const allFeatures = geojsonArray.reduce((acc, featureCollection) => {
+            if (featureCollection && featureCollection.features) {
+                return acc.concat(featureCollection.features);
+            }
+            return acc;
+        }, []);
+        
+        // 5. Creamos una única FeatureCollection para Leaflet
+        const mainData = {
+            type: "FeatureCollection",
+            features: allFeatures
+        };
+        
         console.log(`Carga completa. Total de ${allFeatures.length} features procesados.`);
+        
+        // --- FIN DE LA LÓGICA DE CARGA MÚLTIPLE ---
 
+        // Esta lógica es la original, ahora se aplica a 'mainData'
         if (mainData.features.length > 0) {
-            // Crear capa Leaflet principal
+            // 1. Crear la capa Leaflet con estilos y eventos
             this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
                 mainData,
                 (feature) => this.getFeatureStyle(feature),
                 (feature, layer) => this.onEachFeature(feature, layer)
             );
 
-            // Procesar datos para búsqueda y selección
+            // 2. PROCESAMIENTO DE DATOS: Agrupar referencias
             this.leafletLayers.vulnerability.eachLayer(layer => {
                 const { NOM_ACUIF, CLAVE_ACUI } = layer.feature.properties;
+                
+                // Lógica para el dropdown
+                if (NOM_ACUIF && !this.data.aquifers[NOM_ACUIF]) {
+                    this.data.aquifers[NOM_ACUIF] = [];
+                }
                 if (NOM_ACUIF) {
-                    if (!this.data.aquifers[NOM_ACUIF]) {
-                        this.data.aquifers[NOM_ACUIF] = [];
-                    }
                     this.data.aquifers[NOM_ACUIF].push(layer);
                 }
+
+                // Lógica para el mapa de búsqueda (Clave -> Nombre)
                 if (CLAVE_ACUI && !this.data.keyToNameMap[CLAVE_ACUI]) {
                     this.data.keyToNameMap[CLAVE_ACUI] = NOM_ACUIF;
                 }
             });
 
-            // Poblar UI
-            const aquiferNames = Object.keys(this.data.aquifers);
-            if (aquiferNames.length > 0) {
-                 this.uiManager.populateAquiferSelect(aquiferNames);
-                 this.uiManager.setSearchData(aquiferNames, this.data.keyToNameMap);
+            // 3. Poblar el dropdown
+            if (Object.keys(this.data.aquifers).length > 0) {
+                 this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
             }
+        
+            // 4. Enviar datos al buscador
+            this.uiManager.setSearchData(
+                Object.keys(this.data.aquifers), // Solo la lista de nombres
+                this.data.keyToNameMap           // El mapa de Clave->Nombre
+            );
+    
         } else {
-             console.warn("La capa principal de vulnerabilidad no contiene features.");
+            alert("No se cargaron features de vulnerabilidad. La aplicación puede no funcionar correctamente.");
         }
     }
-
-    /**
-     * Define los listeners de eventos para cada feature (polígono) de la capa principal.
-     * @param {object} feature - El feature GeoJSON.
-     * @param {L.Layer} layer - La capa Leaflet correspondiente.
-     */
-    // --- MÉTODO onEachFeature CORREGIDO (Hover/Selección) ---
+    
     onEachFeature(feature, layer) {
-        const { NOM_ACUIF } = feature.properties; // Solo necesitamos NOM_ACUIF aquí
+        const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
         layer.on({
             mouseover: (e) => {
                 const targetLayer = e.target;
-                // Solo aplica estilo hover si NO es la capa seleccionada
-                if (NOM_ACUIF !== this.state.selectedAquifer) {
-                    const currentStyle = this.getFeatureStyle(feature);
-                    // Aplica solo las propiedades definidas en hover, manteniendo el resto
-                    const hoverStyle = { ...currentStyle, ...CONFIG.styles.hover };
-                    targetLayer.setStyle(hoverStyle);
-                    // No llamamos a bringToFront aquí
-                }
+                targetLayer.setStyle(CONFIG.styles.hover);
+                targetLayer.bringToFront();
             },
             mouseout: (e) => {
-                // Restaura el estilo correcto (base, muted o selection)
-                // Esta función se encarga de aplicar el estilo correcto según el estado
-                e.target.setStyle(this.getFeatureStyle(feature));
+                // Recalcular el estilo basado en el estado actual
+                e.target.setStyle(this.getFeatureStyle(e.target.feature));
             },
-            click: (e) => {
-                // Prevenir que el click se propague al mapa si ya está seleccionado
-                if (NOM_ACUIF === this.state.selectedAquifer) {
-                     L.DomEvent.stop(e); // Detiene el evento si ya está seleccionado
-                } else {
-                     // Si no está seleccionado, actualiza el estado
-                    this.updateState({ selectedAquifer: NOM_ACUIF });
-                }
-                 // Siempre muestra el panel de info al hacer click
+                
+            click: () => {
+                // Mostrar panel de información al hacer clic
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
             }
         });
     }
-    // --- FIN DE CORRECCIÓN ---
 
-    /**
-     * Calcula el estilo de un feature basado en el estado actual de la aplicación.
-     * @param {object} feature - El feature GeoJSON.
-     * @returns {object} - Objeto de estilo compatible con Leaflet Path options.
-     */
-    // --- MÉTODO getFeatureStyle CORREGIDO (Opacidad) ---
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
-        const fillColor = this.mapManager.getColor(VULNERABIL);
-
-        // 1. Empezar con las propiedades del estilo base
-        let styleOptions = {
+        
+        // 1. Determinar el color base y la opacidad global
+        let style = {
             ...CONFIG.styles.base,
-            fillColor: fillColor
+            fillColor: this.mapManager.getColor(VULNERABIL),
+            fillOpacity: this.state.opacity // Opacidad global aplicada
         };
-
-        // 2. APLICAR LA OPACIDAD GLOBAL DEL SLIDER *SOLO* AL ESTADO BASE
-        styleOptions.fillOpacity = this.state.opacity;
-
-        // 3. Sobrescribir si está atenuado por el filtro
+    
+        // 2. Aplicar Filtro de Vulnerabilidad (Muting)
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
-            styleOptions = { ...styleOptions, ...CONFIG.styles.muted };
+            style = { ...style, ...CONFIG.styles.muted };
         }
-
-        // 4. Sobrescribir si está seleccionado
+    
+        // 3. Aplicar Estilo de Selección (Override)
         if (this.state.selectedAquifer === NOM_ACUIF) {
-            styleOptions = { ...styleOptions, ...CONFIG.styles.selection };
+            style = { 
+                ...style, 
+                ...CONFIG.styles.selection,
+                fillOpacity: 1.0 // Asegura visibilidad de la selección
+            }; 
         }
-
-        return styleOptions;
+    
+        return style;
     }
-    // --- FIN DE CORRECCIÓN ---
 
-    /**
-     * Aplica los estilos a todas las capas, gestiona visibilidad y actualiza la UI.
-     */
     render() {
         const map = this.mapManager.map;
-
-        // 1. Aplicar estilos a capa principal
+        
+        // Actualizar estilos de la capa de vulnerabilidad
         if (this.leafletLayers.vulnerability) {
             this.leafletLayers.vulnerability.eachLayer(layer => {
                 layer.setStyle(this.getFeatureStyle(layer.feature));
             });
         }
-
-        // 2. Traer al frente la(s) capa(s) seleccionada(s)
-        if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
-            this.data.aquifers[this.state.selectedAquifer].forEach(layer => {
-                if (map.hasLayer(layer)) {
-                    layer.bringToFront();
-                }
-            });
-        }
-
-        // 3. Gestionar visibilidad de capas auxiliares
+        
+        // Alternar visibilidad de capas adicionales
         [
             { layer: this.leafletLayers.coastline, isVisible: this.state.isCoastlineVisible },
             { layer: this.leafletLayers.coastline1km, isVisible: this.state.isCoastline1kmVisible }
         ].forEach(({ layer, isVisible }) => {
             if (!layer) return;
+            
             const isCurrentlyVisible = map.hasLayer(layer);
-            if (isVisible && !isCurrentlyVisible) layer.addTo(map);
-            else if (!isVisible && isCurrentlyVisible) map.removeLayer(layer);
+            
+            if (isVisible && !isCurrentlyVisible) {
+                layer.addTo(map);
+            } else if (!isVisible && isCurrentlyVisible) {
+                map.removeLayer(layer); 
+            }
         });
-
-        // 4. Actualizar la UI
+    
+        // Actualizar la vista de la UI (slider, etc.)
         this.uiManager.updateView(this.state);
     }
-
-} // Fin de la clase GeovisorApp
-
-// Iniciar la aplicación
+}
+// Iniciar la aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     new GeovisorApp();
 });
