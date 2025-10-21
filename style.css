@@ -393,7 +393,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     margin: 0 10px 10px 0 !important;
 }
 .leaflet-logo-control img {
-    height: 25px;
+    height: 20px;
     width: auto;
 }
 .leaflet-top.leaflet-right { z-index: 1010 !important; }
