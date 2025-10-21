@@ -57,8 +57,15 @@ export class MapManager {
                             quality: 1.0,
                             pixelRatio: 2,
                             filter: (node) => {
-                                 const exclusionClasses = ['leaflet-control-zoom', 'leaflet-control-layers', 'leaflet-pm-toolbar', 'leaflet-control-custom'];
-                                 return !exclusionClasses.some((classname) => node.classList?.contains(classname));
+                                 const exclusionClasses = [
+                                    'leaflet-control-zoom',       // Botones de Zoom
+                                    'leaflet-control-layers',     // Selector de capas
+                                    'leaflet-pm-toolbar',         // (No se usa, pero por si acaso)
+                                    'leaflet-control-custom',     // El mismo botón de imprimir
+                                    'leaflet-custom-controls',    // <-- AÑADIDO: El panel deslizable
+                                    'leaflet-open-button'         // <-- AÑADIDO: El botón (☰) para abrir el panel
+                                ];
+                                return !exclusionClasses.some((classname) => node.classList?.contains(classname));
                             }
                         });
                         const link = document.createElement('a');
