@@ -45,7 +45,6 @@ class GeovisorApp {
         this.updateState(newState);
     }
 
-    // --- SECCIÓN MODIFICADA ---
     // Método centralizado para actualizar el estado y volver a renderizar
     updateState(newState) {
 
@@ -59,10 +58,11 @@ class GeovisorApp {
 
         // 2. Comprobar si es una acción de "Volar a"
         if (newState.flyToCoords) {
+            const [lat, lon, name] = newState.flyToCoords;
+            this.mapManager.flyToCoords(lat, lon, name);
             this.mapManager.flyToCoords(newState.flyToCoords[0], newState.flyToCoords[1]);
             // No almacenamos esto en el estado, es una acción de una sola vez
         }
-        // --- FIN DE MODIFICACIÓN ---
 
         // 3. Si no es reinicio, continuar con la lógica normal de estado
         this.state = { ...this.state, ...newState };
