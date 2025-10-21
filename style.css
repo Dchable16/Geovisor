@@ -394,7 +394,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 .leaflet-logo-control img {
     height: 15px;
-    width: 15;
+    width: auto;
 }
 .leaflet-top.leaflet-right { z-index: 1010 !important; }
 .leaflet-control-custom {
