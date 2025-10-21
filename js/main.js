@@ -75,14 +75,18 @@ class GeovisorApp {
         this.state = { ...this.state, ...stateUpdates }; // Fusionar cambios
         console.log("Nuevo estado:", this.state);
 
-        // 4. Lógica de Zoom específica para selección de acuífero
+        // 4. Lógica de Zoom específica para selección de acuífero (CORREGIDA)
         if (stateUpdates.selectedAquifer !== undefined) {
              if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
-                 // Si se seleccionó un acuífero válido, hacer zoom a sus límites
+                 // Si se seleccionó un acuífero válido, hacer zoom
                  const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
                  this.mapManager.fitBounds(group.getBounds());
-             } else if (this.leafletLayers.vulnerability && stateUpdates.selectedAquifer === null) {
-                 // Si se deseleccionó (valor explícito null), volver a la vista completa
+             } else if (
+                 this.leafletLayers.vulnerability &&
+                 // Comprobar si es null O una cadena vacía
+                 (stateUpdates.selectedAquifer === null || stateUpdates.selectedAquifer === "")
+                ) {
+                 // Si se deseleccionó (reset o "-- Mostrar todos --"), volver a la vista completa
                  this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
              }
         }
@@ -142,7 +146,6 @@ class GeovisorApp {
 
         if (geojsonArray.length === 0) {
              console.warn("No se cargaron datos de vulnerabilidad.");
-             // Considerar mostrar un mensaje al usuario aquí en lugar de alert
         }
 
         const allFeatures = geojsonArray.reduce((acc, fc) => acc.concat(fc?.features || []), []);
@@ -179,7 +182,6 @@ class GeovisorApp {
             }
         } else {
              console.warn("La capa principal de vulnerabilidad no contiene features.");
-             // Considerar mostrar un mensaje al usuario
         }
     }
 
@@ -188,6 +190,7 @@ class GeovisorApp {
      * @param {object} feature - El feature GeoJSON.
      * @param {L.Layer} layer - La capa Leaflet correspondiente.
      */
+    // --- MÉTODO onEachFeature CORREGIDO (Hover/Selección) ---
     onEachFeature(feature, layer) {
         const { NOM_ACUIF } = feature.properties; // Solo necesitamos NOM_ACUIF aquí
         layer.on({
@@ -196,53 +199,64 @@ class GeovisorApp {
                 // Solo aplica estilo hover si NO es la capa seleccionada
                 if (NOM_ACUIF !== this.state.selectedAquifer) {
                     const currentStyle = this.getFeatureStyle(feature);
+                    // Aplica solo las propiedades definidas en hover, manteniendo el resto
                     const hoverStyle = { ...currentStyle, ...CONFIG.styles.hover };
                     targetLayer.setStyle(hoverStyle);
+                    // No llamamos a bringToFront aquí
                 }
-                // No llamamos a bringToFront aquí para evitar tapar el borde seleccionado
             },
             mouseout: (e) => {
                 // Restaura el estilo correcto (base, muted o selection)
+                // Esta función se encarga de aplicar el estilo correcto según el estado
                 e.target.setStyle(this.getFeatureStyle(feature));
             },
-            click: () => {
-                // Mostrar panel de info y actualizar estado (si no es el ya seleccionado)
-                if (NOM_ACUIF !== this.state.selectedAquifer) {
+            click: (e) => {
+                // Prevenir que el click se propague al mapa si ya está seleccionado
+                if (NOM_ACUIF === this.state.selectedAquifer) {
+                     L.DomEvent.stop(e); // Detiene el evento si ya está seleccionado
+                } else {
+                     // Si no está seleccionado, actualiza el estado
                     this.updateState({ selectedAquifer: NOM_ACUIF });
                 }
+                 // Siempre muestra el panel de info al hacer click
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
             }
         });
     }
+    // --- FIN DE CORRECCIÓN ---
 
     /**
      * Calcula el estilo de un feature basado en el estado actual de la aplicación.
      * @param {object} feature - El feature GeoJSON.
      * @returns {object} - Objeto de estilo compatible con Leaflet Path options.
      */
+    // --- MÉTODO getFeatureStyle CORREGIDO (Opacidad) ---
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
         const fillColor = this.mapManager.getColor(VULNERABIL);
 
-        // 1. Estilo base + color + opacidad global
+        // 1. Empezar con las propiedades del estilo base
         let styleOptions = {
             ...CONFIG.styles.base,
-            fillColor: fillColor,
-            fillOpacity: this.state.opacity // Opacidad del slider aplicada aquí
+            fillColor: fillColor
         };
 
-        // 2. Sobrescribir si está atenuado por el filtro
+        // 2. APLICAR LA OPACIDAD GLOBAL DEL SLIDER *SOLO* AL ESTADO BASE
+        styleOptions.fillOpacity = this.state.opacity;
+
+        // 3. Sobrescribir si está atenuado por el filtro
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
             styleOptions = { ...styleOptions, ...CONFIG.styles.muted };
         }
 
-        // 3. Sobrescribir si está seleccionado
+        // 4. Sobrescribir si está seleccionado
         if (this.state.selectedAquifer === NOM_ACUIF) {
             styleOptions = { ...styleOptions, ...CONFIG.styles.selection };
         }
 
         return styleOptions;
     }
+    // --- FIN DE CORRECCIÓN ---
 
     /**
      * Aplica los estilos a todas las capas, gestiona visibilidad y actualiza la UI.
