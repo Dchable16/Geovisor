@@ -191,40 +191,25 @@ class GeovisorApp {
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
         layer.on({
-            // --- LISTENER MOUSEOVER CORREGIDO ---
             mouseover: (e) => {
                 const targetLayer = e.target;
                 const featureName = feature.properties.NOM_ACUIF;
-
-                // **LA CLAVE ESTÁ AQUÍ:**
-                // Solo aplica el estilo hover si esta capa NO es la seleccionada actualmente.
                 if (featureName !== this.state.selectedAquifer) {
-                    // Obtener el estilo actual (podría ser base o muted)
                     const currentStyle = this.getFeatureStyle(feature);
-                    // Combinarlo con hover (esto está bien para capas no seleccionadas)
                     const hoverStyle = {
                         ...currentStyle,
-                        ...CONFIG.styles.hover
+                        ...CONFIG.styles.hover // Aplica weight, color, opacity del hover
                     };
                     targetLayer.setStyle(hoverStyle);
                 }
-                // Si ES la capa seleccionada, NO hacemos nada en mouseover,
-                // dejamos que getFeatureStyle mantenga el estilo 'selection'.
-
-                // Traer al frente siempre es buena idea al pasar el ratón
-                targetLayer.bringToFront();
             },
-            // --- FIN DE CORRECCIÓN ---
-
             mouseout: (e) => {
-                // Restaurar estilo correcto (base, muted, o selection si es la seleccionada)
-                // Esta parte ya funciona bien.
+                // Restaurar estilo correcto (base, muted, o selection)
                 e.target.setStyle(this.getFeatureStyle(e.target.feature));
             },
-
             click: () => {
                 // Sin cambios
-                this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
+                this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabili tyMap);
             }
         });
     }
