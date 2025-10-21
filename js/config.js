@@ -30,43 +30,42 @@ export const CONFIG = {
     },
     
     styles: {
-        // Estilo base: Limpio y definido
+        // Estilo base: Limpio, borde sutil, opacidad moderada
         base: {
-            weight: 1,          // Borde fino
-            opacity: 1,         // Borde visible
-            color: '#ffffff',   // Borde blanco (contrasta bien con colores y mapas base oscuros/claros)
-            fillOpacity: 0.75   // Relleno semi-transparente por defecto
+            weight: 1,          // Borde fino para definición
+            opacity: 0.8,       // Borde ligeramente suave
+            color: '#555555',   // Borde gris oscuro (funciona en mapas claros/oscuros)
+            fillOpacity: 0.65   // Opacidad base moderada para ver mapa debajo
         },
 
-        // Estilo atenuado: Muy desvanecido
+        // Estilo atenuado: Muy desvanecido (sin cambios, ya era efectivo)
         muted: {
-            fillColor: '#cccccc', // Gris neutro
-            weight: 0.5,        // Borde casi invisible
+            fillColor: '#cccccc',
+            weight: 0.5,
             color: '#dddddd',
-            fillOpacity: 0.1    // Muy transparente
+            fillOpacity: 0.1
         },
 
-        // Estilo al pasar el ratón (Hover): Sutil pero claro
+        // Estilo Hover: Cambio sutil en borde, SIN cambio de opacidad
         hover: {
-            fillOpacity: 0.9,   // Un poco más opaco
-            weight: 2.5,          // Borde más grueso
-            color: '#333333'    // Borde oscuro para indicar interacción
-            // dashArray: '',   // Eliminado para evitar confusión con selección
+            // fillOpacity: NO SE CAMBIA (para evitar confusión con selección)
+            weight: 2.5,          // Borde más notable
+            color: '#007BFF',   // Usar el color de acento de tu UI (azul)
+            opacity: 1          // Borde completamente opaco al pasar el ratón
         },
 
-        // Estilo de Selección: Impactante y claro
+        // Estilo de Selección: Claro, profesional, bueno para impresión
         selection: {
-            weight: 5,          // Borde exterior muy grueso
-            color: '#000000',   // Borde exterior negro (máximo contraste)
+            weight: 3,          // Borde notable pero no exagerado
+            color: '#FFFFFF',   // Borde BLANCO (alto contraste sobre colores)
             opacity: 1,
-            fillOpacity: 0.95,  // Casi opaco para destacar el color de vulnerabilidad
-            // Simulación de borde interior brillante: Leaflet no lo soporta directamente,
-            // pero el borde negro grueso sobre el relleno casi opaco da un efecto similar.
-            // Considerar añadir un dashArray aquí si se quiere diferenciar más.
-            // dashArray: '5, 5' // Ejemplo: línea discontinua
+            fillOpacity: 0.85,   // MÁS opaco que el base, pero NO totalmente opaco
+                                // Permite ver detalles del mapa base debajo si es necesario.
+            dashArray: '5, 5'  // <-- LÍNEA DISCONTINUA para diferenciar CLARAMENTE
+                                // la selección del hover y del estado base.
         },
 
-        // Estilos de líneas de costa (sin cambios, parecen adecuados)
+        // Estilos de líneas de costa (sin cambios)
         coastline: { color: "#007BFF", weight: 2, opacity: 0.8, fillColor: 'transparent'  },
         coastline1km: { color: "#FF0000", weight: 2.5, opacity: 0.85, fillColor: 'transparent' }
     }
