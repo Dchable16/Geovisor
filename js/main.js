@@ -194,6 +194,8 @@ class GeovisorApp {
             mouseover: (e) => {
                 const targetLayer = e.target;
                 const featureName = feature.properties.NOM_ACUIF;
+
+                // Solo aplica el estilo hover si esta capa NO es la seleccionada.
                 if (featureName !== this.state.selectedAquifer) {
                     const currentStyle = this.getFeatureStyle(feature);
                     const hoverStyle = {
@@ -202,11 +204,18 @@ class GeovisorApp {
                     };
                     targetLayer.setStyle(hoverStyle);
                 }
+                // Si ES la capa seleccionada, NO hacemos nada en mouseover.
+
+                // --- LÍNEA ELIMINADA ---
+                // targetLayer.bringToFront(); // <-- ELIMINA O COMENTA ESTA LÍNEA
+                // --- FIN DE ELIMINACIÓN ---
             },
+
             mouseout: (e) => {
                 // Restaurar estilo correcto (base, muted, o selection)
                 e.target.setStyle(this.getFeatureStyle(e.target.feature));
             },
+
             click: () => {
                 // Sin cambios
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabili tyMap);
