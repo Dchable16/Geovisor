@@ -179,6 +179,7 @@ export class UIManager {
         this.nodes.coordLon = container.querySelector('#coord-lon');
         this.nodes.gotoCoordsButton = container.querySelector('#goto-coords-button');
         this.nodes.coordError = container.querySelector('#coord-error-message');
+        this.nodes.coordName = container.querySelector('#coord-name');
     }
 
     addListeners() {
@@ -216,6 +217,7 @@ export class UIManager {
             // --- AÑADIDO: Limpiar campos de coords al reiniciar ---
             this.nodes.coordLat.value = '';
             this.nodes.coordLon.value = '';
+            this.nodes.coordName.value = '';
             this.setCoordError('');
         });
     }
@@ -223,6 +225,7 @@ export class UIManager {
     handleGoToCoords() {
         const lat = parseFloat(this.nodes.coordLat.value);
         const lon = parseFloat(this.nodes.coordLon.value);
+        const name = this.nodes.coordName.value.trim(); // .trim() elimina espacios en blanco
 
         // Validación
         if (isNaN(lat) || isNaN(lon)) {
@@ -240,7 +243,7 @@ export class UIManager {
 
         // Si todo está bien, limpiar error y enviar acción a main.js
         this.setCoordError('');
-        this.onStateChange({ flyToCoords: [lat, lon] });
+        this.onStateChange({ flyToCoords: [lat, lon, name] });
 
         // Opcional: colapsar el panel en pantallas pequeñas después de buscar
         if (window.innerWidth <= 768) {
