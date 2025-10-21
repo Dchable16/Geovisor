@@ -449,9 +449,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 .leaflet-control-custom:hover {
     background-color: #f4f4f4;
 }
-.leaflet-control-attribution {
-    margin-bottom: 10px !important;
-}
 
 /* --- 8. RESPONSIVIDAD --- */
 @media (max-width: 768px) {
@@ -487,3 +484,11 @@ input:checked + .slider:before { transform: translateX(20px); }
     .info.legend i { width: 14px; height: 14px; }
 }
 
+body.map-is-printing .leaflet-bottom-left,
+body.map-is-printing .leaflet-bottom-right {
+    /* Forzamos a AMBOS contenedores (izquierda y derecha)
+      a alinearse a 10px desde el borde inferior,
+      ignorando sus márgenes internos.
+    */
+    bottom: 10px !important; 
+}
