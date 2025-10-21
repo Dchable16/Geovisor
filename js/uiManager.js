@@ -129,7 +129,7 @@ export class UIManager {
         // Obtenemos las claves (1, 2, 3, 4, 5) y las ordenamos
         const grades = Object.keys(CONFIG.vulnerabilityMap)
                              .filter(key => key !== 'default')
-                             .sort((a, b) => b - a); // Ordenar de 5 a 1 (Máximo a Mínimo)
+                             .sort((a, b) => a - b); // Ordenar de 5 a 1 (Máximo a Mínimo)
 
         grades.forEach(grade => {
             // Se comenta o elimina la línea que obtiene la etiqueta, ya no es necesaria
