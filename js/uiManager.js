@@ -284,7 +284,9 @@ export class UIManager {
         this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
         if (this.nodes.aquiferSelect.value !== state.selectedAquifer) {
             this.nodes.aquiferSelect.value = state.selectedAquifer;
-            const radioToCheck = this.nodes.filterRadios.find(radio => radio.value === state.filterValue) || this.nodes.filterRadios[0];
+        }
+        const radioToCheck = this.nodes.filterRadios.find(radio => radio.value === String(state.filterValue)) || this.nodes.filterRadios[0];
+        if (radioToCheck) {
             radioToCheck.checked = true;
         }
     }
