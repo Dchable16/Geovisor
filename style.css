@@ -449,6 +449,10 @@ input:checked + .slider:before { transform: translateX(20px); }
 .leaflet-control-custom:hover {
     background-color: #f4f4f4;
 }
+.leaflet-bottom-left,
+.leaflet-bottom-right {
+    bottom: 10px; /* Asegura que ambos estén a 10px del fondo */
+}
 
 /* --- 8. RESPONSIVIDAD --- */
 @media (max-width: 768px) {
