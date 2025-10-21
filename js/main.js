@@ -189,7 +189,6 @@ class GeovisorApp {
     }
     
     onEachFeature(feature, layer) {
-        // Obtenemos NOM_ACUIF una sola vez para usarlo en los listeners
         const { NOM_ACUIF } = feature.properties;
 
         layer.on({
@@ -201,7 +200,6 @@ class GeovisorApp {
                     // Aplica solo las propiedades definidas en hover, manteniendo el resto
                     const hoverStyle = { ...currentStyle, ...CONFIG.styles.hover };
                     targetLayer.setStyle(hoverStyle);
-                    // No llamamos a bringToFront aquí para evitar tapar el borde seleccionado
                 }
             },
 
@@ -213,20 +211,14 @@ class GeovisorApp {
 
             click: (e) => { // <-- Necesitamos el evento 'e'
                 const targetLayer = e.target; // La capa específica clickeada
-
-                // --- LÓGICA DE RESALTADO TEMPORAL ---
-                // Variable para controlar si el resaltado está activo
                 let isHighlightActive = true;
                 targetLayer.setStyle(CONFIG.styles.clickHighlight); // Aplica estilo de clic temporal
                 targetLayer.bringToFront(); // Trae al frente el polígono clickeado
-
                 setTimeout(() => {
                     isHighlightActive = false; // El resaltado termina
                     // Comprobación: Solo revertir si la capa aún existe
                     if (this.mapManager.map.hasLayer(targetLayer)) {
-                        // Revertir al estilo que debería tener según el estado ACTUAL
                         targetLayer.setStyle(this.getFeatureStyle(feature));
-                        // Opcional: Reordenar capas seleccionadas
                         if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
                             this.data.aquifers[this.state.selectedAquifer].forEach(l => {
                                 if (this.mapManager.map.hasLayer(l)) l.bringToFront();
@@ -234,19 +226,7 @@ class GeovisorApp {
                         }
                     }
                 }, 1500); // 1.5 segundos de resaltado (ajusta si lo necesitas)
-                // --- FIN DE RESALTADO ---
-
-
-                // --- LÓGICA DE ACTUALIZACIÓN DE ESTADO Y UI ---
-                // Actualiza el estado del *acuífero* seleccionado solo si es diferente
-                if (NOM_ACUIF !== this.state.selectedAquifer) {
-                    this.updateState({ selectedAquifer: NOM_ACUIF });
-                }
-
-                // Muestra siempre el panel de información
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
-
-                // Detener la propagación del evento
                 L.DomEvent.stop(e);
             }
         });
