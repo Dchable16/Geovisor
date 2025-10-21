@@ -390,7 +390,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     background-color: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    margin: 0 10px 10px 0 !important;
+    margin: 10PX 0 10px 0 !important;
 }
 .leaflet-logo-control img {
     height: 15px;
