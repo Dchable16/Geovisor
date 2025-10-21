@@ -175,6 +175,10 @@ export class UIManager {
         this.nodes.searchInput = container.querySelector('#search-input');
         this.nodes.searchResults = container.querySelector('#search-results-container');
         this.nodes.resetButton = container.querySelector('#reset-button');
+        this.nodes.coordLat = container.querySelector('#coord-lat');
+        this.nodes.coordLon = container.querySelector('#coord-lon');
+        this.nodes.gotoCoordsButton = container.querySelector('#goto-coords-button');
+        this.nodes.coordError = container.querySelector('#coord-error-message');
     }
 
     addListeners() {
@@ -199,6 +203,58 @@ export class UIManager {
             this.nodes.searchResults.style.display = 'none';
             this.onStateChange({ reset: true });
         });
+        this.nodes.gotoCoordsButton.addEventListener('click', () => this.handleGoToCoords());
+        
+        // Opcional: limpiar error al escribir
+        this.nodes.coordLat.addEventListener('input', () => this.setCoordError(''));
+        this.nodes.coordLon.addEventListener('input', () => this.setCoordError(''));
+        
+        this.nodes.resetButton.addEventListener('click', () => {
+            // ... (limpiar búsqueda)
+            this.onStateChange({ reset: true });
+            
+            // --- AÑADIDO: Limpiar campos de coords al reiniciar ---
+            this.nodes.coordLat.value = '';
+            this.nodes.coordLon.value = '';
+            this.setCoordError('');
+        });
+    }
+
+    handleGoToCoords() {
+        const lat = parseFloat(this.nodes.coordLat.value);
+        const lon = parseFloat(this.nodes.coordLon.value);
+
+        // Validación
+        if (isNaN(lat) || isNaN(lon)) {
+            this.setCoordError('Ambos campos son requeridos.');
+            return;
+        }
+        if (lat < -90 || lat > 90) {
+            this.setCoordError('Latitud inválida (debe estar entre -90 y 90).');
+            return;
+        }
+        if (lon < -180 || lon > 180) {
+            this.setCoordError('Longitud inválida (debe estar entre -180 y 180).');
+            return;
+        }
+
+        // Si todo está bien, limpiar error y enviar acción a main.js
+        this.setCoordError('');
+        this.onStateChange({ flyToCoords: [lat, lon] });
+
+        // Opcional: colapsar el panel en pantallas pequeñas después de buscar
+        if (window.innerWidth <= 768) {
+            this.setPanelCollapsed(true);
+        }
+    }
+
+    setCoordError(message) {
+        if (message) {
+            this.nodes.coordError.textContent = message;
+            this.nodes.coordError.style.display = 'block';
+        } else {
+            this.nodes.coordError.style.display = 'none';
+        }
     }
 
     handleSearch(query) {
