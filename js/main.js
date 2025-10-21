@@ -145,9 +145,6 @@ class GeovisorApp {
         };
         
         console.log(`Carga completa. Total de ${allFeatures.length} features procesados.`);
-        
-        // --- FIN DE LA LÓGICA DE CARGA MÚLTIPLE ---
-
         // Esta lógica es la original, ahora se aplica a 'mainData'
         if (mainData.features.length > 0) {
             // 1. Crear la capa Leaflet con estilos y eventos
@@ -192,39 +189,56 @@ class GeovisorApp {
     }
     
     onEachFeature(feature, layer) {
-        const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
+        const { NOM_ACUIF } = feature.properties; // Necesitamos el nombre para la lógica
         layer.on({
-            // --- LISTENER MOUSEOVER MODIFICADO ---
             mouseover: (e) => {
                 const targetLayer = e.target;
-                
-                // 1. Obtener el estilo ACTUAL que debería tener (base, muted o selection)
-                const currentStyle = this.getFeatureStyle(feature);
-                
-                // 2. Combinar el estilo actual con las propiedades del estilo hover
-                //    Las propiedades de hover (weight, color, opacity) sobrescribirán
-                //    las del currentStyle, pero otras (como dashArray) se mantendrán.
-                const hoverStyle = {
-                    ...currentStyle,          // Mantiene dashArray si estaba en selection
-                    ...CONFIG.styles.hover // Aplica weight, color, opacity del hover
-                };
-                
-                // 3. Aplicar el estilo combinado
-                targetLayer.setStyle(hoverStyle);
-                
-                // 4. Traer al frente (sin cambios)
-                targetLayer.bringToFront();
+                // Solo aplica estilo hover si NO es la capa seleccionada
+                if (NOM_ACUIF !== this.state.selectedAquifer) {
+                    const currentStyle = this.getFeatureStyle(feature);
+                    const hoverStyle = { ...currentStyle, ...CONFIG.styles.hover };
+                    targetLayer.setStyle(hoverStyle);
+                    // No llamamos a bringToFront aquí
+                }
             },
-            // --- FIN DE MODIFICACIÓN ---
-
             mouseout: (e) => {
-                // Esta parte ya era correcta: restaura el estilo adecuado
-                e.target.setStyle(this.getFeatureStyle(e.target.feature));
+                // Restaura el estilo correcto (base, muted o selection)
+                e.target.setStyle(this.getFeatureStyle(feature));
             },
-                
-            click: () => {
-                // Sin cambios
+            click: (e) => { // <-- Pasamos el evento 'e'
+                const targetLayer = e.target; // La capa específica clickeada
+
+                // Aplicar estilo de highlight temporal definido en config.js
+                targetLayer.setStyle(CONFIG.styles.clickHighlight);
+                targetLayer.bringToFront(); // Asegurar que el highlight se vea
+
+                // Volver al estilo correcto después de un tiempo (ej. 1.5 segundos)
+                setTimeout(() => {
+                    // Comprobación: Solo revertir si la capa todavía existe
+                    if (this.mapManager.map.hasLayer(targetLayer)) {
+                         // Re-calcula el estilo correcto en este momento (podría ser 'selection' o 'base'/'muted')
+                         targetLayer.setStyle(this.getFeatureStyle(feature));
+
+                         // Opcional pero recomendado: Asegurarse de que el acuífero SELECCIONADO
+                         // (si existe y es diferente al clickeado) quede al frente.
+                         if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
+                             // Si el acuífero seleccionado todavía existe en los datos
+                             this.data.aquifers[this.state.selectedAquifer].forEach(l => {
+                                 // Volver a traer al frente todas las capas del acuífero seleccionado
+                                 if (this.mapManager.map.hasLayer(l)) {
+                                     l.bringToFront();
+                                 }
+                             });
+                         }
+                    }
+                }, 1500); // 1500 ms = 1.5 segundos (ajusta si lo deseas)
+                if (NOM_ACUIF !== this.state.selectedAquifer) {
+                    this.updateState({ selectedAquifer: NOM_ACUIF });
+                }
+                // Mostrar siempre el panel de información del polígono clickeado
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
+                // Detener la propagación del evento para evitar clics accidentales en el mapa
+                L.DomEvent.stop(e);
             }
         });
     }
