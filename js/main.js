@@ -5,11 +5,12 @@
 'use strict';
 
 import { CONFIG } from './config.js';
-// CAMBIO: Importamos ambas funciones de dataLoader
+// Importamos ambas funciones de dataLoader
 import { fetchGeoJSON, fetchAllGeoJSON } from './dataLoader.js';
 import { MapManager } from './mapManager.js';
 import { UIManager } from './uiManager.js';
 
+// --- ESTADO INICIAL ---
 const INITIAL_STATE = {
     opacity: 0.8,
     filterValue: 'all',
@@ -17,9 +18,12 @@ const INITIAL_STATE = {
     isCoastlineVisible: false,
     isCoastline1kmVisible: false,
 };
+// --- FIN ---
+
 
 class GeovisorApp {
     constructor() {
+        // Usamos el estado inicial
         this.state = { ...INITIAL_STATE };
 
         this.data = {
@@ -41,23 +45,33 @@ class GeovisorApp {
         this.updateState(newState);
     }
 
+    // --- SECCIÓN MODIFICADA ---
     // Método centralizado para actualizar el estado y volver a renderizar
     updateState(newState) {
-        
+
         // 1. Comprobar si es una acción de reinicio
         if (newState.reset === true) {
             this.state = { ...INITIAL_STATE };
-            this.mapManager.resetView(); // Llama al nuevo método en mapManager
+            this.mapManager.resetView(); // Llama al método en mapManager
             this.render(); // Vuelve a dibujar todo con el estado limpio
             return; // Salir de la función
         }
 
-        // 2. Si no es reinicio, continuar con la lógica normal
+        // 2. Comprobar si es una acción de "Volar a"
+        if (newState.flyToCoords) {
+            this.mapManager.flyToCoords(newState.flyToCoords[0], newState.flyToCoords[1]);
+            // No almacenamos esto en el estado, es una acción de una sola vez
+        }
+        // --- FIN DE MODIFICACIÓN ---
+
+        // 3. Si no es reinicio, continuar con la lógica normal de estado
         this.state = { ...this.state, ...newState };
         console.log("Nuevo estado:", this.state);
 
+        // Lógica de zoom al seleccionar/deseleccionar acuífero
         if (newState.selectedAquifer !== undefined) {
              if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
+                 // Acuífero seleccionado: hacer zoom a sus límites
                  const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
                  this.mapManager.fitBounds(group.getBounds());
              } else if (this.leafletLayers.vulnerability && newState.selectedAquifer === null) { 
@@ -65,6 +79,7 @@ class GeovisorApp {
                  this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
              }
         }
+
         this.render();
     }
 
@@ -80,7 +95,6 @@ class GeovisorApp {
         }
     }
 
-    // --- SECCIÓN ACTUALIZADA Y CORREGIDA ---
     async loadLayers() {
         // Cargar capas auxiliares (Líneas de costa)
         const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
@@ -145,9 +159,8 @@ class GeovisorApp {
                 (feature, layer) => this.onEachFeature(feature, layer)
             );
 
-            // 2. PROCESAMIENTO DE DATOS: (AQUÍ ESTÁ LA CORRECCIÓN)
+            // 2. PROCESAMIENTO DE DATOS: Agrupar referencias
             this.leafletLayers.vulnerability.eachLayer(layer => {
-                // Obtenemos AMBAS propiedades
                 const { NOM_ACUIF, CLAVE_ACUI } = layer.feature.properties;
                 
                 // Lógica para el dropdown
@@ -158,13 +171,11 @@ class GeovisorApp {
                     this.data.aquifers[NOM_ACUIF].push(layer);
                 }
 
-                // Lógica para el mapa de búsqueda (movida aquí dentro)
+                // Lógica para el mapa de búsqueda (Clave -> Nombre)
                 if (CLAVE_ACUI && !this.data.keyToNameMap[CLAVE_ACUI]) {
                     this.data.keyToNameMap[CLAVE_ACUI] = NOM_ACUIF;
                 }
-            }); // <-- El bucle 'eachLayer' termina aquí.
-
-            // El '});' extra ha sido eliminado.
+            });
 
             // 3. Poblar el dropdown
             if (Object.keys(this.data.aquifers).length > 0) {
@@ -181,7 +192,6 @@ class GeovisorApp {
             alert("No se cargaron features de vulnerabilidad. La aplicación puede no funcionar correctamente.");
         }
     }
-    // --- FIN DE LA SECCIÓN ACTUALIZADA ---
     
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
