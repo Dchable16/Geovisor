@@ -433,14 +433,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     #info-panel-content {
          max-height: 35vh;
     }
-
-    .leaflet-bottom.leaflet-left {
-        top: 10px;
-        bottom: auto;
-        left: auto;
-        right: 10px;
-        width: auto;
-    }
      .info.legend {
         font-size: 12px;
         line-height: 1.6;
