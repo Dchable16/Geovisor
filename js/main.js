@@ -60,8 +60,6 @@ class GeovisorApp {
         if (newState.flyToCoords) {
             const [lat, lon, name] = newState.flyToCoords;
             this.mapManager.flyToCoords(lat, lon, name);
-            this.mapManager.flyToCoords(newState.flyToCoords[0], newState.flyToCoords[1]);
-            // No almacenamos esto en el estado, es una acción de una sola vez
         }
 
         // 3. Si no es reinicio, continuar con la lógica normal de estado
