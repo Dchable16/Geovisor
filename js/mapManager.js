@@ -26,10 +26,9 @@ export class MapManager {
             position: 'topright',
             sortLayers: true
         }).addTo(this.map);
-
-        L.control.scale({ position: 'bottomleft', imperial: false }).addTo(this.map);
         this.addLegend();
         this.addLogo();
+        L.control.scale({ position: 'bottomright', imperial: false }).addTo(this.map); // La escala se añade después (queda encima del logo)
         this.addCustomPrintControl();
     }
 
