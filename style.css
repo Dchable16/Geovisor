@@ -85,8 +85,12 @@ body {
     transition: transform var(--animation-speed) var(--animation-easing);
     position: absolute;
     left: 0;
-    z-index: 1011;
+    z-index: 1001;
     transform: translateX(0);
+}
+
+.leaflet-top.leaflet-left {
+    z-index: 1001; /* El default de Leaflet es 1000 */
 }
 
 .leaflet-custom-controls.collapsed {
