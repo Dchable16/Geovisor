@@ -15,7 +15,7 @@ export class MapManager {
             zoomControl: false,
             preferCanvas: true
         });
-
+        this.tempMarker = null;
         this.addControls();
     }
 
@@ -122,7 +122,29 @@ export class MapManager {
             this.map.fitBounds(bounds.pad(0.1));
         }
     }
+    
+    flyToCoords(lat, lon) {
+        // 1. Limpiar marcador anterior si existe
+        if (this.tempMarker) {
+            this.map.removeLayer(this.tempMarker);
+            this.tempMarker = null;
+        }
+
+        // 2. Crear nuevas coordenadas y marcador
+        const latLng = L.latLng(lat, lon);
+        this.tempMarker = L.marker(latLng, {
+            // Opcional: usar un ícono diferente, pero el default funciona
+        }).addTo(this.map);
+
+        // 3. Volar a la ubicación con un zoom adecuado
+        this.map.flyTo(latLng, 13); // Zoom 13 es bueno para ver un punto
+    }
+    
     resetView() {
         this.map.setView(CONFIG.initialCoords, CONFIG.initialZoom);
+        if (this.tempMarker) {
+            this.map.removeLayer(this.tempMarker);
+            this.tempMarker = null;
+        }
     }
 }
