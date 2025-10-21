@@ -191,18 +191,35 @@ class GeovisorApp {
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
         layer.on({
+
             mouseover: (e) => {
                 const targetLayer = e.target;
-                targetLayer.setStyle(CONFIG.styles.hover);
+                
+                // 1. Obtener el estilo ACTUAL que debería tener (base, muted o selection)
+                const currentStyle = this.getFeatureStyle(feature);
+                
+                // 2. Combinar el estilo actual con las propiedades del estilo hover
+                //    Las propiedades de hover (weight, color, opacity) sobrescribirán
+                //    las del currentStyle, pero otras (como dashArray) se mantendrán.
+                const hoverStyle = {
+                    ...currentStyle,          // Mantiene dashArray si estaba en selection
+                    ...CONFIG.styles.hover // Aplica weight, color, opacity del hover
+                };
+                
+                // 3. Aplicar el estilo combinado
+                targetLayer.setStyle(hoverStyle);
+                
+     
                 targetLayer.bringToFront();
             },
+
             mouseout: (e) => {
-                // Recalcular el estilo basado en el estado actual
+                // Esta parte ya era correcta: restaura el estilo adecuado
                 e.target.setStyle(this.getFeatureStyle(e.target.feature));
             },
                 
             click: () => {
-                // Mostrar panel de información al hacer clic
+
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
             }
         });
