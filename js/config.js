@@ -30,11 +30,44 @@ export const CONFIG = {
     },
     
     styles: {
-        base: { weight: 1.5, opacity: 1, color: 'white' },
-        muted: { fillColor: '#A9A9A9', weight: 1, color: '#A9A9A9', fillOpacity: 0.2 },
-        selection: { color: '#333333', weight: 5, opacity: 1, fillOpacity: 1.0 },
-        hover: { weight: 3, color: '#000', dashArray: '', fillOpacity: 0.95 },
-        coastline: { color: "#007BFF", weight: 2, opacity: 0.8, fillColor: 'transparent'  }, 
-        coastline1km: { color: "#FF0000", weight: 2.5, opacity: 0.85, fillColor: 'transparent' } 
+        // Estilo base: Limpio y definido
+        base: {
+            weight: 1,          // Borde fino
+            opacity: 1,         // Borde visible
+            color: '#ffffff',   // Borde blanco (contrasta bien con colores y mapas base oscuros/claros)
+            fillOpacity: 0.75   // Relleno semi-transparente por defecto
+        },
+
+        // Estilo atenuado: Muy desvanecido
+        muted: {
+            fillColor: '#cccccc', // Gris neutro
+            weight: 0.5,        // Borde casi invisible
+            color: '#dddddd',
+            fillOpacity: 0.1    // Muy transparente
+        },
+
+        // Estilo al pasar el ratón (Hover): Sutil pero claro
+        hover: {
+            fillOpacity: 0.9,   // Un poco más opaco
+            weight: 2.5,          // Borde más grueso
+            color: '#333333'    // Borde oscuro para indicar interacción
+            // dashArray: '',   // Eliminado para evitar confusión con selección
+        },
+
+        // Estilo de Selección: Impactante y claro
+        selection: {
+            weight: 5,          // Borde exterior muy grueso
+            color: '#000000',   // Borde exterior negro (máximo contraste)
+            opacity: 1,
+            fillOpacity: 0.95,  // Casi opaco para destacar el color de vulnerabilidad
+            // Simulación de borde interior brillante: Leaflet no lo soporta directamente,
+            // pero el borde negro grueso sobre el relleno casi opaco da un efecto similar.
+            // Considerar añadir un dashArray aquí si se quiere diferenciar más.
+            // dashArray: '5, 5' // Ejemplo: línea discontinua
+        },
+
+        // Estilos de líneas de costa (sin cambios, parecen adecuados)
+        coastline: { color: "#007BFF", weight: 2, opacity: 0.8, fillColor: 'transparent'  },
+        coastline1km: { color: "#FF0000", weight: 2.5, opacity: 0.85, fillColor: 'transparent' }
     }
 };
