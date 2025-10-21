@@ -85,7 +85,7 @@ body {
     transition: transform var(--animation-speed) var(--animation-easing);
     position: absolute;
     left: 0;
-    z-index: 1001;
+    z-index: 1011;
     transform: translateX(0);
 }
 
