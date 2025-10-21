@@ -168,7 +168,7 @@ export class UIManager {
         this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
         this.nodes.opacitySlider = container.querySelector('#opacity-slider');
         this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
-        this.nodes.filterRadios = container.querySelectorAll('input[name="vulnerability"]');
+        this.nodes.filterRadios = Array.from(container.querySelectorAll('input[name="vulnerability"]'));
         this.nodes.closeButton = container.querySelector('.panel-close-button');
         this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
         this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
