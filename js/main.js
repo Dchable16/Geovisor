@@ -213,12 +213,15 @@ class GeovisorApp {
 
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
-        let layer = this.data.aquifers[NOM_ACUIF]?.[0];
+        
+        // 1. Determinar el color base y la opacidad global
         let style = {
             ...CONFIG.styles.base,
             fillColor: this.mapManager.getColor(VULNERABIL),
             fillOpacity: this.state.opacity // Opacidad global aplicada
         };
+    
+        // 2. Aplicar Filtro de Vulnerabilidad (Muting)
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
             style = { ...style, ...CONFIG.styles.muted };
         }
@@ -228,11 +231,8 @@ class GeovisorApp {
             style = { 
                 ...style, 
                 ...CONFIG.styles.selection,
-            };
-        if (layer && this.mapManager.map.hasLayer(layer)) {
-                 // Usamos un array de capas asociadas a este acuifero
-                 this.data.aquifers[NOM_ACUIF].forEach(l => l.bringToFront());
-            }
+                fillOpacity: 1.0 // Asegura visibilidad de la selección
+            }; 
         }
     
         return style;
