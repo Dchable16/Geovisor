@@ -35,6 +35,7 @@ export const CONFIG = {
         selection: { weight: 1.5, color: '#FFFFFF', opacity: 1, fillOpacity: 0.85, dashArray: '5, 5' },
         hover: { weight: 2.5, color: '#007BFF', fillOpacity: 1 },
         coastline: { color: "#007BFF", weight: 2, opacity: 0.8, fillColor: 'transparent'  }, 
-        coastline1km: { color: "#FF0000", weight: 2.5, opacity: 0.85, fillColor: 'transparent' } 
+        coastline1km: { color: "#FF0000", weight: 2.5, opacity: 0.85, fillColor: 'transparent' },
+        clickHighlight: { color: "#FFFF00", weight: 4, opacity: 1, fillOpacity: 0.85, dashArray: '' }
     }
 };
