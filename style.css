@@ -338,6 +338,32 @@ input:checked + .slider:before { transform: translateX(20px); }
 .action-button:hover {
     background-color: var(--accent-hover);
 }
+.coord-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.coord-input-group input {
+    width: 50%;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+    /* Evita que aparezcan las flechas de 'number' */
+    -moz-appearance: textfield;
+}
+.coord-input-group input::-webkit-outer-spin-button,
+.coord-input-group input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+#coord-error-message {
+    font-size: 13px;
+    color: #D90404; /* Rojo (del config) */
+    margin-top: 8px;
+    display: none; /* Oculto por defecto */
+}
 
 /* --- 6. INDICADOR DE CARGA (SPINNER) --- */
 .loader-overlay {
