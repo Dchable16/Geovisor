@@ -189,40 +189,68 @@ class GeovisorApp {
     }
     
     onEachFeature(feature, layer) {
-        const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
+        // Obtenemos NOM_ACUIF una sola vez para usarlo en los listeners
+        const { NOM_ACUIF } = feature.properties;
+    
         layer.on({
-            // --- LISTENER MOUSEOVER MODIFICADO ---
             mouseover: (e) => {
                 const targetLayer = e.target;
-                
-                // 1. Obtener el estilo ACTUAL que debería tener (base, muted o selection)
-                const currentStyle = this.getFeatureStyle(feature);
-                
-                // 2. Combinar el estilo actual con las propiedades del estilo hover
-                //    Las propiedades de hover (weight, color, opacity) sobrescribirán
-                //    las del currentStyle, pero otras (como dashArray) se mantendrán.
-                const hoverStyle = {
-                    ...currentStyle,          // Mantiene dashArray si estaba en selection
-                    ...CONFIG.styles.hover // Aplica weight, color, opacity del hover
-                };
-                
-                // 3. Aplicar el estilo combinado
-                targetLayer.setStyle(hoverStyle);
-                
-                // 4. Traer al frente (sin cambios)
-                targetLayer.bringToFront();
+                // Solo aplica estilo hover si NO es la capa seleccionada
+                if (NOM_ACUIF !== this.state.selectedAquifer) {
+                    const currentStyle = this.getFeatureStyle(feature);
+                    const hoverStyle = { ...currentStyle, ...CONFIG.styles.hover };
+                    targetLayer.setStyle(hoverStyle);
+                    // No llamamos a bringToFront aquí
+                }
             },
-            // --- FIN DE MODIFICACIÓN ---
-
+    
             mouseout: (e) => {
-                // Esta parte ya era correcta: restaura el estilo adecuado
-                e.target.setStyle(this.getFeatureStyle(e.target.feature));
+                // Restaura el estilo correcto (base, muted o selection)
+                e.target.setStyle(this.getFeatureStyle(feature));
             },
-                
-            click: () => {
-                // Sin cambios
+    
+            // --- LISTENER CLICK MODIFICADO ---
+            click: (e) => { // <-- Necesitamos el evento 'e'
+                const targetLayer = e.target; // La capa específica clickeada
+    
+                // 1. Aplicar estilo de highlight temporalmente
+                targetLayer.setStyle(CONFIG.styles.clickHighlight);
+                targetLayer.bringToFront(); // Traer al frente el polígono clickeado
+    
+                // 2. Volver al estilo correcto después de un tiempo
+                setTimeout(() => {
+                    // Comprobación: Asegurarse de que la capa todavía existe en el mapa
+                    if (this.mapManager.map.hasLayer(targetLayer)) {
+                        // Re-calcula el estilo correcto en este momento
+                        // (podría ser 'base', 'muted' o 'selection')
+                        targetLayer.setStyle(this.getFeatureStyle(feature));
+    
+                        // Opcional pero recomendado: Volver a traer al frente
+                        // todas las capas del acuífero SELECCIONADO (si existe)
+                        // para asegurar el orden visual correcto después del highlight.
+                        if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
+                            this.data.aquifers[this.state.selectedAquifer].forEach(l => {
+                                if (this.mapManager.map.hasLayer(l)) {
+                                    l.bringToFront();
+                                }
+                            });
+                        }
+                    }
+                }, 1500); // 1500 ms = 1.5 segundos (ajusta si lo prefieres más corto o largo)
+    
+                // 3. Lógica existente: actualizar estado del acuífero seleccionado
+                //    (Solo si se hizo clic en un acuífero diferente al ya seleccionado)
+                if (NOM_ACUIF !== this.state.selectedAquifer) {
+                    this.updateState({ selectedAquifer: NOM_ACUIF });
+                }
+    
+                // 4. Lógica existente: mostrar el panel de información
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
+    
+                // 5. Detener la propagación del evento para evitar clicks accidentales en el mapa
+                L.DomEvent.stop(e);
             }
+            // --- FIN DE MODIFICACIÓN ---
         });
     }
 
