@@ -194,18 +194,39 @@ class GeovisorApp {
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
         layer.on({
+            // --- LISTENER MOUSEOVER CORREGIDO ---
             mouseover: (e) => {
                 const targetLayer = e.target;
-                targetLayer.setStyle(CONFIG.styles.hover);
+                const featureName = feature.properties.NOM_ACUIF;
+
+                // **LA CLAVE ESTÁ AQUÍ:**
+                // Solo aplica el estilo hover si esta capa NO es la seleccionada actualmente.
+                if (featureName !== this.state.selectedAquifer) {
+                    // Obtener el estilo actual (podría ser base o muted)
+                    const currentStyle = this.getFeatureStyle(feature);
+                    // Combinarlo con hover (esto está bien para capas no seleccionadas)
+                    const hoverStyle = {
+                        ...currentStyle,
+                        ...CONFIG.styles.hover
+                    };
+                    targetLayer.setStyle(hoverStyle);
+                }
+                // Si ES la capa seleccionada, NO hacemos nada en mouseover,
+                // dejamos que getFeatureStyle mantenga el estilo 'selection'.
+
+                // Traer al frente siempre es buena idea al pasar el ratón
                 targetLayer.bringToFront();
             },
+            // --- FIN DE CORRECCIÓN ---
+
             mouseout: (e) => {
-                // Recalcular el estilo basado en el estado actual
+                // Restaurar estilo correcto (base, muted, o selection si es la seleccionada)
+                // Esta parte ya funciona bien.
                 e.target.setStyle(this.getFeatureStyle(e.target.feature));
             },
-                
+
             click: () => {
-                // Mostrar panel de información al hacer clic
+                // Sin cambios
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
             }
         });
@@ -213,62 +234,75 @@ class GeovisorApp {
 
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
-        
-        // 1. Determinar el color base y la opacidad global
-        let style = {
+        const fillColor = this.mapManager.getColor(VULNERABIL);
+
+        // 1. Empezar con las propiedades del estilo base
+        let styleOptions = {
             ...CONFIG.styles.base,
-            fillColor: this.mapManager.getColor(VULNERABIL),
-            fillOpacity: this.state.opacity // Opacidad global aplicada
+            fillColor: fillColor
         };
-    
-        // 2. Aplicar Filtro de Vulnerabilidad (Muting)
+
+        // 2. APLICAR LA OPACIDAD GLOBAL DEL SLIDER *SOLO* AL ESTADO BASE
+        //    Las opacidades de 'muted' y 'selection' se mantendrán fijas.
+        styleOptions.fillOpacity = this.state.opacity;
+
+        // 3. Aplicar Filtro de Vulnerabilidad (si aplica)
+        //    Esto sobrescribirá la opacidad con el valor fijo de 'muted' (ej. 0.1)
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
-            style = { ...style, ...CONFIG.styles.muted };
+            styleOptions = { ...styleOptions, ...CONFIG.styles.muted };
         }
-    
-        // 3. Aplicar Estilo de Selección (Override)
+
+        // 4. Aplicar Estilo de Selección (si aplica)
+        //    Esto sobrescribirá la opacidad con el valor fijo de 'selection' (ej. 0.85)
         if (this.state.selectedAquifer === NOM_ACUIF) {
-            style = { 
-                ...style, 
-                ...CONFIG.styles.selection,
-                fillOpacity: 1.0 // Asegura visibilidad de la selección
-            }; 
+            styleOptions = { ...styleOptions, ...CONFIG.styles.selection };
         }
-    
-        return style;
+
+        // 5. Devolver el objeto de estilo final
+        return styleOptions;
     }
 
     render() {
         const map = this.mapManager.map;
-        
-        // Actualizar estilos de la capa de vulnerabilidad
+
+        // 1. Actualizar estilos de la capa de vulnerabilidad
         if (this.leafletLayers.vulnerability) {
             this.leafletLayers.vulnerability.eachLayer(layer => {
                 layer.setStyle(this.getFeatureStyle(layer.feature));
             });
         }
-        
-        // Alternar visibilidad de capas adicionales
+
+        // 2. Después de aplicar estilos, traer al frente las capas seleccionadas
+        if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
+            this.data.aquifers[this.state.selectedAquifer].forEach(layer => {
+                if (map.hasLayer(layer)) {
+                    layer.bringToFront();
+                }
+            });
+        }
+
+        // 3. Alternar visibilidad de capas adicionales
         [
             { layer: this.leafletLayers.coastline, isVisible: this.state.isCoastlineVisible },
             { layer: this.leafletLayers.coastline1km, isVisible: this.state.isCoastline1kmVisible }
         ].forEach(({ layer, isVisible }) => {
             if (!layer) return;
-            
             const isCurrentlyVisible = map.hasLayer(layer);
-            
             if (isVisible && !isCurrentlyVisible) {
                 layer.addTo(map);
             } else if (!isVisible && isCurrentlyVisible) {
-                map.removeLayer(layer); 
+                map.removeLayer(layer);
             }
         });
-    
-        // Actualizar la vista de la UI (slider, etc.)
+
+        // 4. Actualizar la vista de la UI (SOLO UNA VEZ, AL FINAL)
         this.uiManager.updateView(this.state);
-    }
-}
-// Iniciar la aplicación cuando el DOM esté listo
+
+    } // <-- Cierre del método render
+
+} // <-- Cierre de la CLASE GeovisorApp
+
+// Iniciar la aplicación cuando el DOM esté listo (FUERA de la clase)
 document.addEventListener('DOMContentLoaded', () => {
     new GeovisorApp();
 });
