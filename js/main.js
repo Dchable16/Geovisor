@@ -191,7 +191,7 @@ class GeovisorApp {
     onEachFeature(feature, layer) {
         const { NOM_ACUIF, CLAVE_ACUI, VULNERABIL } = feature.properties;
         layer.on({
-
+            // --- LISTENER MOUSEOVER MODIFICADO ---
             mouseover: (e) => {
                 const targetLayer = e.target;
                 
@@ -209,9 +209,10 @@ class GeovisorApp {
                 // 3. Aplicar el estilo combinado
                 targetLayer.setStyle(hoverStyle);
                 
-     
+                // 4. Traer al frente (sin cambios)
                 targetLayer.bringToFront();
             },
+            // --- FIN DE MODIFICACIÓN ---
 
             mouseout: (e) => {
                 // Esta parte ya era correcta: restaura el estilo adecuado
@@ -219,7 +220,7 @@ class GeovisorApp {
             },
                 
             click: () => {
-
+                // Sin cambios
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
             }
         });
