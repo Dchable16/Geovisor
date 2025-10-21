@@ -10,7 +10,6 @@ import { fetchGeoJSON, fetchAllGeoJSON } from './dataLoader.js';
 import { MapManager } from './mapManager.js';
 import { UIManager } from './uiManager.js';
 
-// --- ESTADO INICIAL ---
 const INITIAL_STATE = {
     opacity: 0.8,
     filterValue: 'all',
@@ -18,8 +17,6 @@ const INITIAL_STATE = {
     isCoastlineVisible: false,
     isCoastline1kmVisible: false,
 };
-// --- FIN ---
-
 
 class GeovisorApp {
     constructor() {
