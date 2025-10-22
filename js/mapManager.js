@@ -55,7 +55,7 @@ export class MapManager {
                     try {
                         const dataUrl = await htmlToImage.toPng(mapNode, {
                             quality: 1.0,
-                            pixelRatio: 2,
+                            pixelRatio: 3,
                             filter: (node) => {
                                  const exclusionClasses = [
                                     'leaflet-control-zoom',       // Botones de Zoom
