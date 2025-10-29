@@ -1,6 +1,7 @@
 {
   "basePath": "data/",
   "files": [
+    "0201.geojson",
     "0206.geojson",
     "0210.geojson",
     "0211.geojson",
