@@ -12,7 +12,7 @@ import { UIManager } from './uiManager.js';
 
 // --- ESTADO INICIAL ---
 const INITIAL_STATE = {
-    opacity: 0.6,
+    opacity: 0.5,
     filterValue: 'all',
     selectedAquifer: null,
     isCoastlineVisible: false,
