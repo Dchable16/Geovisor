@@ -6,8 +6,12 @@
     <meta name="description" content="Geovisor web interactivo de vulnerabilidad a la intrusión salina en acuíferos de México.">
     <title>Geovisor de Vulnerabilidad a la Intrusión Salina</title>
 
-    <link rel="icon" href="data:;base64,iVBORw0KGgo=">    
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    
     <link rel="stylesheet" href="CSS/leaflet.css" />
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-simple-graticule@1.0.1/dist/Leaflet.Graticule.css"/>
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -54,11 +58,12 @@
             <button id="goto-coords-button" class="action-button" style="margin-top: 10px;">Ubicar en Mapa</button>
             <div id="coord-error-message"></div>
         </div>
-        <div class="control-section">
+        
         <div class="control-section">
             <label for="opacity-slider">Opacidad general: <span id="opacity-value"></span></label>
             <input id="opacity-slider" type="range" min="0" max="1" step="0.05">
         </div>
+        
         <div class="control-section">
             <label>Iluminar por vulnerabilidad:</label>
             <div class="radio-group" id="vulnerability-radio-group">
@@ -88,7 +93,10 @@
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    
+    <script src="https://unpkg.com/leaflet-simple-graticule@1.0.1/dist/Leaflet.Graticule.js"></script>
+    
     <script type="module" src="js/main.js"></script>
 
 </body>
