@@ -286,7 +286,8 @@ class GeovisorApp {
         // 3. Alternar visibilidad de capas adicionales
         [
             { layer: this.leafletLayers.coastline, isVisible: this.state.isCoastlineVisible },
-            { layer: this.leafletLayers.coastline1km, isVisible: this.state.isCoastline1kmVisible }
+            { layer: this.leafletLayers.coastline1km, isVisible: this.state.isCoastline1kmVisible },
+            { layer: this.leafletLayers.graticule, isVisible: this.state.isGraticuleVisible } // <-- *** NUEVA LÍNEA ***
         ].forEach(({ layer, isVisible }) => {
             if (!layer) return;
             const isCurrentlyVisible = map.hasLayer(layer);
