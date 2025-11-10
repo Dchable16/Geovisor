@@ -172,6 +172,7 @@ export class UIManager {
         this.nodes.closeButton = container.querySelector('.panel-close-button');
         this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
         this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
+        this.nodes.graticuleToggle = container.querySelector('#graticule-toggle');
         this.nodes.searchInput = container.querySelector('#search-input');
         this.nodes.searchResults = container.querySelector('#search-results-container');
         this.nodes.resetButton = container.querySelector('#reset-button');
@@ -190,8 +191,8 @@ export class UIManager {
             radio.addEventListener('change', e => this.onStateChange({ filterValue: e.target.value }));
         });
         this.nodes.coastlineToggle.addEventListener('change', e => this.onStateChange({ isCoastlineVisible: e.target.checked }));
-        this.nodes.coastline1kmToggle.addEventListener('change', e => this.onStateChange({ isCoastline1kmVisible: e.target.checked }));       
-        // Listener para el input de búsqueda
+        this.nodes.coastline1kmToggle.addEventListener('change', e => this.onStateChange({ isCoastline1kmVisible: e.target.checked }));
+        this.nodes.graticuleToggle.addEventListener('change', e => this.onStateChange({ isGraticuleVisible: e.target.checked }));
         this.nodes.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
         document.addEventListener('click', (e) => {
             if (!this.nodes.uiControlContainer.contains(e.target)) {
@@ -341,6 +342,7 @@ export class UIManager {
         this.nodes.opacitySlider.value = state.opacity;
         this.nodes.coastlineToggle.checked = state.isCoastlineVisible;
         this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
+        this.nodes.graticuleToggle.checked = state.isGraticuleVisible;
         if (this.nodes.aquiferSelect.value !== state.selectedAquifer) {
             this.nodes.aquiferSelect.value = state.selectedAquifer;
         }
