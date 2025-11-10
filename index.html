@@ -6,21 +6,9 @@
     <meta name="description" content="Geovisor web interactivo de vulnerabilidad a la intrusión salina en acuíferos de México.">
     <title>Geovisor de Vulnerabilidad a la Intrusión Salina</title>
 
-    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-    
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">    
     <link rel="stylesheet" href="CSS/leaflet.css" />
-    <link rel="stylesheet" href="CSS/Leaflet.Graticule.css"/>
     <link rel="stylesheet" href="style.css">
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-    
-    <script src='https://unpkg.com/@turf/turf@6/turf.min.js' defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js" defer></script>
-    
-    <script src="js/Leaflet.Graticule.js" defer></script>
-    
-    <script type="module" src="js/main.js"></script>
-
 </head>
 <body>
 
@@ -42,7 +30,7 @@
     </main>
 
     <template id="panel-template">
-       <div class="panel-close-button" title="Ocultar controles">«</div>
+        <div class="panel-close-button" title="Ocultar controles">«</div>
         <h1>Vulnerabilidad a la Intrusión Salina</h1>
         <div class="control-section">
             <label for="search-input">Buscar acuífero (por Nombre o Clave):</label>
@@ -66,6 +54,7 @@
             <button id="goto-coords-button" class="action-button" style="margin-top: 10px;">Ubicar en Mapa</button>
             <div id="coord-error-message"></div>
         </div>
+        <div class="control-section">
         <div class="control-section">
             <label for="opacity-slider">Opacidad general: <span id="opacity-value"></span></label>
             <input id="opacity-slider" type="range" min="0" max="1" step="0.05">
@@ -97,5 +86,10 @@
         <div id="info-panel-content"></div>
     </template>
     
-    </body>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>    
+    <script type="module" src="js/main.js"></script>
+
+</body>
 </html>
