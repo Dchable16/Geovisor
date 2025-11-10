@@ -75,6 +75,10 @@
                 <span>Línea de Costa (1km)</span>
                 <label class="switch"><input type="checkbox" id="coastline-1km-toggle"><span class="slider"></span></label>
             </div>
+            <div class="layer-toggle" style="margin-top: 10px;">
+                <span>Mallado (Lat/Lon)</span>
+                <label class="switch"><input type="checkbox" id="graticule-toggle"><span class="slider"></span></label>
+            </div>
         </div>
     </template>
     
@@ -88,6 +92,7 @@
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
+    <script src="https://unpkg.com/leaflet-simple-graticule@1.3.0/dist/L.SimpleGraticule.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>    
     <script type="module" src="js/main.js"></script>
 
