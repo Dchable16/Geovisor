@@ -17,6 +17,7 @@ const INITIAL_STATE = {
     selectedAquifer: null,
     isCoastlineVisible: false,
     isCoastline1kmVisible: false,
+    isGraticuleVisible: false,
 };
 // --- FIN ---
 
@@ -84,6 +85,7 @@ class GeovisorApp {
     async init() {
         this.uiManager.setLoading(true); // 1. Mostrar loader al iniciar
         await this.loadLayers();
+        this.leafletLayers.graticule = L.simpleGraticule({ showLabel: true, style: { color: '#333', weight: 0.8, opacity: 0.6 },
         this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
         this.uiManager.updateView(this.state);
         
