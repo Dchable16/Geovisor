@@ -1,6 +1,6 @@
 /**
  * @file style.css
- * @description Hoja de estilos para el Geovisor.
+ * @description Hoja de estilos para el Geovisor con scrollbar robusta y márgenes de seguridad.
 */
 
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
@@ -10,7 +10,7 @@
     --header-height: 70px;
     --header-bg: #FFFFFF;
     --panel-width: 340px;
-    --panel-bg: rgba(255, 255, 255, 0.9);
+    --panel-bg: rgba(255, 255, 255, 0.95); /* Un poco más opaco para legibilidad */
     --shadow-color: rgba(0, 0, 0, 0.15);
     --panel-shadow: 0 4px 12px var(--shadow-color);
     --border-radius: 8px;
@@ -82,31 +82,44 @@ body {
     width: var(--panel-width);
     position: absolute;
     transition: transform var(--animation-speed) var(--animation-easing);
-    position: absolute;
     left: 0;
     z-index: 1001;
     transform: translateX(0);
-    max-height: calc(100vh - var(--header-height) - 20px);
-    overflow-y: auto; /* Aparece solo si es necesario */
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent-color) transparent;
+
+    /* --- CORRECCIÓN: SCROLLBAR Y ALTURA --- */
+    /* Aumentamos el margen inferior a 80px para asegurar que la barra de tareas
+       de Windows/Mac no tape el final del panel.
+    */
+    max-height: calc(100vh - var(--header-height) - 80px);
+    overflow-y: auto; /* Habilita el scroll vertical */
+    
+    /* Propiedades para asegurar interacción */
+    pointer-events: auto;
+    
+    /* Estilizado de Scrollbar para Firefox */
+    scrollbar-width: auto; /* 'auto' en lugar de 'thin' para mejor usabilidad */
+    scrollbar-color: #bbb transparent;
 }
+
+/* Estilizado de Scrollbar para Chrome/Edge/Safari (Webkit) */
 .leaflet-custom-controls::-webkit-scrollbar {
-    width: 6px;
+    width: 12px; /* Más ancha para facilitar el clic */
 }
 .leaflet-custom-controls::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.05); /* Fondo sutil para el track */
 }
 .leaflet-custom-controls::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
+    background-color: #bbb; /* Color gris visible por defecto */
+    border-radius: 6px;
+    border: 3px solid transparent; /* Truco para dar margen al thumb */
+    background-clip: content-box;
 }
 .leaflet-custom-controls::-webkit-scrollbar-thumb:hover {
-    background-color: var(--accent-color);
+    background-color: var(--accent-color); /* Azul al pasar el mouse */
 }
 
 .leaflet-top.leaflet-left {
-    z-index: 1001; /* El default de Leaflet es 1000 */
+    z-index: 1001;
 }
 
 .leaflet-custom-controls.collapsed {
@@ -314,7 +327,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     border: 1px solid var(--border-color);
     border-top: none;
     border-radius: 0 0 var(--border-radius) var(--border-radius);
-    /* Oculto por defecto, se mostrará cuando haya resultados */
     display: none; 
 }
 
@@ -365,7 +377,6 @@ input:checked + .slider:before { transform: translateX(20px); }
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     font-size: 13px;
-    /* Evita que aparezcan las flechas de 'number' */
     -moz-appearance: textfield;
 }
 .coord-input-group input::-webkit-outer-spin-button,
@@ -379,7 +390,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     font-size: 14px;
-    margin-bottom: 8px; /* <-- Para separarlo de los campos de abajo */
+    margin-bottom: 8px; 
 }
 #coord-name:focus {
     outline: none;
@@ -388,9 +399,9 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 #coord-error-message {
     font-size: 13px;
-    color: #D90404; /* Rojo (del config) */
+    color: #D90404;
     margin-top: 8px;
-    display: none; /* Oculto por defecto */
+    display: none; 
 }
 
 /* --- 6. INDICADOR DE CARGA (SPINNER) --- */
@@ -471,29 +482,26 @@ input:checked + .slider:before { transform: translateX(20px); }
 /* 8.1 PANTALLAS GRANDES (TVs, Monitores 4K, Proyectores > 1920px) */
 @media (min-width: 1921px) {
     :root {
-        --panel-width: 420px; /* Paneles más anchos para aprovechar el espacio */
-        --header-height: 90px; /* Cabecera más alta */
+        --panel-width: 420px; 
+        --header-height: 90px;
     }
     
-    /* Escalar textos para lectura a distancia */
     body { font-size: 18px; }
     .control-section h1 { font-size: 1.8em; }
     .control-section > label, .search-result-item { font-size: 16px; }
     
-    /* Aumentar áreas de clic */
     .action-button { padding: 18px; font-size: 16px; }
     .switch { width: 60px; height: 34px; }
     .slider:before { height: 26px; width: 26px; left: 4px; bottom: 4px; }
     input:checked + .slider:before { transform: translateX(26px); }
     
-    /* Panel de información más grande */
     .info-panel { width: 400px; top: 120px; right: 40px; }
 }
 
 /* 8.2 TABLETS PAISAJE Y LAPTOPS PEQUEÑAS (1024px - 1366px) */
 @media (max-width: 1366px) {
     :root {
-        --panel-width: 300px; /* Reducir un poco para no tapar tanto mapa */
+        --panel-width: 300px; 
     }
     .info-panel { width: 280px; }
 }
@@ -502,56 +510,50 @@ input:checked + .slider:before { transform: translateX(20px); }
 @media (max-width: 768px) {
     :root {
         --header-height: 60px;
-        --panel-width: calc(100vw - 40px); /* Mantiene margen lateral */
+        --panel-width: calc(100vw - 40px); 
     }
     
-    /* Ajuste de logos */
     .logo-container img { height: 35px; }
     .control-section h1 { font-size: 1.2em; }
 
-    /* Panel de Control: Altura dinámica para permitir scroll */
     .leaflet-custom-controls {
-        /* Reafirmar height para móviles */
-        max-height: calc(100vh - var(--header-height) - 20px);
+        /* Se mantiene un margen generoso también en móviles */
+        max-height: calc(100vh - var(--header-height) - 80px);
         overflow-y: auto;
-        /* Scroll suave en iOS */
         -webkit-overflow-scrolling: touch; 
     }
 
-    /* Botón de apertura más accesible al tacto */
     .leaflet-open-button {
         width: 48px;
         height: 48px;
-        top: 10px !important; /* Forzar posición */
+        top: 10px !important; 
         left: 10px !important;
     }
 
-    /* Panel de Información: Estilo "Bottom Sheet" (Hoja inferior) */
     .info-panel {
         width: 100%;
-        max-height: 50vh; /* Ocupa máximo la mitad de la pantalla */
+        max-height: 50vh; 
         top: auto;
         bottom: 0;
         right: 0;
         left: 0;
-        border-radius: 16px 16px 0 0; /* Solo bordes superiores redondeados */
-        transform: translateY(110%); /* Ocultar hacia abajo */
+        border-radius: 16px 16px 0 0; 
+        transform: translateY(110%); 
         box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
     }
     .info-panel.is-visible {
         transform: translateY(0);
     }
     #info-panel-content {
-         max-height: 40vh; /* Scroll interno si hay muchos datos */
+         max-height: 40vh; 
     }
 
-    /* Leyenda más compacta */
      .info.legend {
         font-size: 11px;
         line-height: 1.4;
         padding: 6px 10px;
         max-width: 120px;
-        margin-bottom: 30px; /* Elevar para evitar conflicto con créditos */
+        margin-bottom: 30px; 
     }
     .info.legend i { width: 12px; height: 12px; }
 }
@@ -563,24 +565,24 @@ input:checked + .slider:before { transform: translateX(20px); }
     }
     
     .main-header { padding: 0 10px; }
-    .logo-container img { height: 28px; } /* Logos más discretos */
+    .logo-container img { height: 28px; } 
 
-    /* Panel de Controles: Pantalla completa para mejor usabilidad */
     .leaflet-custom-controls {
-        width: 100vw; /* Ancho total */
-        height: calc(100vh - var(--header-height)); /* Alto total menos header */
-        border-radius: 0; /* Sin bordes redondeados */
-        top: 0 !important; /* Pegado al header */
+        width: 100vw; 
+        /* En móviles muy pequeños, aprovechamos casi toda la altura */
+        height: calc(100vh - var(--header-height)); 
+        max-height: none; /* Reseteamos el max-height para que ocupe todo */
+        border-radius: 0; 
+        top: 0 !important; 
         left: 0;
-        transform: translateX(0); /* Visible por defecto si no tiene clase collapsed */
-        background: rgba(255, 255, 255, 0.98); /* Fondo más opaco para lectura */
+        transform: translateX(0); 
+        background: rgba(255, 255, 255, 0.98); 
     }
     
     .leaflet-custom-controls.collapsed {
-        transform: translateX(-100%); /* Ocultar completamente a la izquierda */
+        transform: translateX(-100%); 
     }
 
-    /* Inputs: Tamaño de fuente 16px para evitar zoom automático en iOS */
     input[type="text"], 
     input[type="number"], 
     select {
@@ -588,16 +590,14 @@ input:checked + .slider:before { transform: translateX(20px); }
         padding: 12px;
     }
 
-    /* Ajuste de botones y targets táctiles */
     .panel-close-button {
         width: 40px;
         height: 40px;
         font-size: 24px;
-        background-color: #f0f0f0; /* Fondo visible para fácil cierre */
+        background-color: #f0f0f0; 
     }
     
-    /* Ocultar controles de mapa no esenciales para limpiar la vista */
     .leaflet-control-zoom {
-        display: none; /* En móvil se usa pinch-to-zoom */
+        display: none; 
     }
 }
