@@ -1,6 +1,6 @@
 /**
  * @file style.css
- * @description Hoja de estilos para el Geovisor con scrollbar robusta y márgenes de seguridad.
+ * @description Hoja de estilos para el Geovisor (Versión Compacta).
 */
 
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
@@ -10,7 +10,7 @@
     --header-height: 70px;
     --header-bg: #FFFFFF;
     --panel-width: 340px;
-    --panel-bg: rgba(255, 255, 255, 0.95); /* Un poco más opaco para legibilidad */
+    --panel-bg: rgba(255, 255, 255, 0.95);
     --shadow-color: rgba(0, 0, 0, 0.15);
     --panel-shadow: 0 4px 12px var(--shadow-color);
     --border-radius: 8px;
@@ -72,11 +72,12 @@ body {
     height: 100%;
 }
 
-/* --- 4. PANEL DE CONTROLES --- */
+/* --- 4. PANEL DE CONTROLES (MODIFICADO PARA SER MÁS COMPACTO) --- */
 .leaflet-custom-controls {
     background: var(--panel-bg);
     backdrop-filter: blur(8px);
-    padding: 20px;
+    /* Padding reducido para ahorrar espacio vertical (antes 20px) */
+    padding: 15px 20px; 
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: var(--panel-shadow);
     width: var(--panel-width);
@@ -86,45 +87,35 @@ body {
     z-index: 1001;
     transform: translateX(0);
 
-    /* --- CORRECCIÓN: SCROLLBAR Y ALTURA --- */
-    /* Aumentamos el margen inferior a 80px para asegurar que la barra de tareas
-       de Windows/Mac no tape el final del panel.
-    */
-    max-height: calc(100vh - var(--header-height) - 80px);
-    overflow-y: auto; /* Habilita el scroll vertical */
-    
-    /* Propiedades para asegurar interacción */
+    /* --- AJUSTE DE ALTURA --- */
+    /* Aumentamos el espacio libre inferior a 140px para hacerlo visiblemente más corto */
+    max-height: calc(100vh - var(--header-height) - 140px);
+    overflow-y: auto;
     pointer-events: auto;
     
-    /* Estilizado de Scrollbar para Firefox */
-    scrollbar-width: auto; /* 'auto' en lugar de 'thin' para mejor usabilidad */
+    scrollbar-width: auto;
     scrollbar-color: #bbb transparent;
 }
 
-/* Estilizado de Scrollbar para Chrome/Edge/Safari (Webkit) */
+/* Scrollbar Styling */
 .leaflet-custom-controls::-webkit-scrollbar {
-    width: 12px; /* Más ancha para facilitar el clic */
+    width: 10px; /* Un poco más delgada pero funcional */
 }
 .leaflet-custom-controls::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05); /* Fondo sutil para el track */
+    background: rgba(0, 0, 0, 0.05);
 }
 .leaflet-custom-controls::-webkit-scrollbar-thumb {
-    background-color: #bbb; /* Color gris visible por defecto */
+    background-color: #bbb;
     border-radius: 6px;
-    border: 3px solid transparent; /* Truco para dar margen al thumb */
+    border: 2px solid transparent;
     background-clip: content-box;
 }
 .leaflet-custom-controls::-webkit-scrollbar-thumb:hover {
-    background-color: var(--accent-color); /* Azul al pasar el mouse */
+    background-color: var(--accent-color);
 }
 
-.leaflet-top.leaflet-left {
-    z-index: 1001;
-}
-
-.leaflet-custom-controls.collapsed {
-    transform: translateX(calc(-100% - 15px));
-}
+.leaflet-top.leaflet-left { z-index: 1001; }
+.leaflet-custom-controls.collapsed { transform: translateX(calc(-100% - 15px)); }
 
 .leaflet-open-button {
     background-color: white;
@@ -142,14 +133,12 @@ body {
     align-items: center;
     cursor: pointer;
 }
-
 .leaflet-open-button.is-visible {
     opacity: 1;
     pointer-events: auto;
     transform: scale(1);
     transition-delay: 0.1s;
 }
-
 .leaflet-open-button:hover {
     background-color: var(--accent-color);
     color: white;
@@ -157,16 +146,16 @@ body {
 
 .panel-close-button {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 30px;
-    height: 30px;
+    top: 10px; /* Subido un poco */
+    right: 10px;
+    width: 28px; /* Ligeramente más pequeño */
+    height: 28px;
     background: transparent;
     color: var(--text-light);
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 22px;
+    font-size: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -191,7 +180,6 @@ body {
     opacity: 0;
     transition: transform var(--animation-speed) var(--animation-easing), opacity var(--animation-speed) var(--animation-easing);
 }
-
 .info-panel.is-visible {
     transform: translateX(0);
     opacity: 1;
@@ -201,16 +189,14 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 15px 10px 20px;
+    padding: 12px 15px 8px 20px; /* Padding reducido */
     border-bottom: 1px solid var(--border-color);
 }
-
 .info-panel h2 {
     margin: 0;
-    font-size: 1.2em;
+    font-size: 1.1em;
     color: var(--accent-color);
 }
-
 .info-panel-close {
     background: transparent;
     border: none;
@@ -220,53 +206,53 @@ body {
     padding: 5px;
     transition: color 0.2s;
 }
-.info-panel-close:hover {
-    color: var(--text-color);
-}
-
+.info-panel-close:hover { color: var(--text-color); }
 #info-panel-content {
     padding: 15px 20px;
-    line-height: 1.6;
+    line-height: 1.5;
     max-height: 50vh;
     overflow-y: auto;
 }
-.info-panel-row {
-    margin-bottom: 8px;
-}
+.info-panel-row { margin-bottom: 6px; }
 .info-panel-row strong {
     color: var(--text-color);
     display: block;
-    font-size: 0.9em;
+    font-size: 0.85em;
 }
 .info-panel-value {
     color: var(--text-light);
-    font-size: 1em;
+    font-size: 0.95em;
 }
 
-/* --- 5. ELEMENTOS DE UI DENTRO DEL PANEL --- */
-.control-section { margin-bottom: 24px; }
+/* --- 5. ELEMENTOS DE UI (COMPACTADOS) --- */
+.control-section { 
+    margin-bottom: 16px; /* Reducido de 24px para compactar */
+}
 .control-section:last-child { margin-bottom: 0; }
+
 .control-section > label {
     display: block;
     font-weight: bold;
-    margin-bottom: 10px;
-    font-size: 14px;
+    margin-bottom: 6px; /* Reducido de 10px */
+    font-size: 13px; /* Fuente un poco más pequeña */
     color: #495057;
 }
+
 .control-section h1 {
     text-align: center;
     color: var(--text-color);
-    margin: 0 0 24px 0;
+    margin: 0 0 16px 0; /* Margen reducido */
     padding-right: 30px;
-    font-size: 1.4em;
+    font-size: 1.3em; /* Fuente reducida */
     line-height: 1.2;
 }
+
 #acuifero-select, #opacity-slider { width: 100%; }
 #acuifero-select {
-    padding: 10px;
+    padding: 8px; /* Padding reducido */
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
-    font-size: 14px;
+    font-size: 13px;
     background-color: white;
 }
 #acuifero-select:focus {
@@ -275,11 +261,11 @@ body {
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.radio-group { display: flex; flex-wrap: wrap; gap: 6px; }
 .radio-group label {
     background-color: #F1F3F5;
-    padding: 7px 14px;
-    font-size: 13px;
+    padding: 6px 12px; /* Botones más pequeños */
+    font-size: 12px;
     border: 1px solid transparent;
     border-radius: 20px;
     cursor: pointer;
@@ -294,25 +280,28 @@ body {
 .radio-group label:hover { border-color: var(--accent-color); }
 
 .layer-toggle { display: flex; justify-content: space-between; align-items: center; }
-.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+/* Texto de los toggles un poco más pequeño */
+.layer-toggle span { font-size: 13px; }
+
+.switch { position: relative; display: inline-block; width: 40px; height: 22px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider {
     position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
     background-color: #ccc; transition: .4s; border-radius: 24px;
 }
 .slider:before {
-    position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
+    position: absolute; content: ""; height: 14px; width: 14px; left: 4px; bottom: 4px;
     background-color: white; transition: .4s; border-radius: 50%;
 }
 input:checked + .slider { background-color: var(--accent-color); }
-input:checked + .slider:before { transform: translateX(20px); }
+input:checked + .slider:before { transform: translateX(18px); }
 
 #search-input {
     width: 100%;
-    padding: 10px;
+    padding: 8px; /* Más compacto */
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
-    font-size: 14px;
+    font-size: 13px;
 }
 #search-input:focus {
     outline: none;
@@ -321,7 +310,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 #search-results-container {
-    max-height: 200px;
+    max-height: 180px; /* Menos altura máxima */
     overflow-y: auto;
     background: #fff;
     border: 1px solid var(--border-color);
@@ -331,29 +320,24 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 .search-result-item {
-    padding: 10px 12px;
-    font-size: 14px;
+    padding: 8px 10px;
+    font-size: 13px;
     cursor: pointer;
     border-bottom: 1px solid #f0f0f0;
 }
-.search-result-item:last-child {
-    border-bottom: none;
-}
-.search-result-item:hover {
-    background-color: #f4f4f4;
-}
-.search-result-item strong {
-    color: var(--accent-color);
-}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item:hover { background-color: #f4f4f4; }
+.search-result-item strong { color: var(--accent-color); }
+
 .reset-section {
-    padding-bottom: 15px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
 }
 
 .action-button {
     width: 100%;
-    padding: 10px 15px;
-    font-size: 14px;
+    padding: 8px 12px; /* Botones más delgados */
+    font-size: 13px;
     font-weight: bold;
     color: white;
     background-color: var(--accent-color);
@@ -362,21 +346,15 @@ input:checked + .slider:before { transform: translateX(20px); }
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
+.action-button:hover { background-color: var(--accent-hover); }
 
-.action-button:hover {
-    background-color: var(--accent-hover);
-}
-.coord-input-group {
-    display: flex;
-    gap: 8px;
-}
-
+.coord-input-group { display: flex; gap: 8px; }
 .coord-input-group input {
     width: 50%;
-    padding: 10px;
+    padding: 8px;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
-    font-size: 13px;
+    font-size: 12px;
     -moz-appearance: textfield;
 }
 .coord-input-group input::-webkit-outer-spin-button,
@@ -386,11 +364,11 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 #coord-name {
     width: 100%;
-    padding: 10px;
+    padding: 8px;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
-    font-size: 14px;
-    margin-bottom: 8px; 
+    font-size: 13px;
+    margin-bottom: 6px; 
 }
 #coord-name:focus {
     outline: none;
@@ -398,40 +376,26 @@ input:checked + .slider:before { transform: translateX(20px); }
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 #coord-error-message {
-    font-size: 13px;
+    font-size: 12px;
     color: #D90404;
-    margin-top: 8px;
+    margin-top: 6px;
     display: none; 
 }
 
-/* --- 6. INDICADOR DE CARGA (SPINNER) --- */
+/* --- 6. INDICADOR DE CARGA --- */
 .loader-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    gap: 15px;
-    z-index: 9999;
+    display: flex; justify-content: center; align-items: center;
+    flex-direction: column; gap: 15px; z-index: 9999;
     transition: opacity 0.3s ease;
 }
 .loader-text {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: var(--accent-color);
-    margin: 0;
+    font-size: 1.2em; font-weight: bold; color: var(--accent-color); margin: 0;
 }
 .spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid var(--accent-color);
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
+    border: 5px solid #f3f3f3; border-top: 5px solid var(--accent-color);
+    border-radius: 50%; width: 50px; height: 50px;
     animation: spin 1s linear infinite;
 }
 @keyframes spin {
@@ -439,165 +403,117 @@ input:checked + .slider:before { transform: translateX(20px); }
     100% { transform: rotate(360deg); }
 }
 
-/* --- 7. OTROS CONTROLES DE LEAFLET --- */
+/* --- 7. OTROS CONTROLES --- */
 .info.legend {
     background: var(--panel-bg);
     backdrop-filter: blur(8px);
-    padding: 10px 15px;
+    padding: 8px 12px;
     border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
-    line-height: 1.8;
+    line-height: 1.6;
     color: #333;
+    font-size: 12px;
 }
-.info.legend h4 { margin: 0 0 10px; font-size: 16px; text-align: center; }
-.info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 1; border: 1px solid #999; }
+.info.legend h4 { margin: 0 0 8px; font-size: 14px; text-align: center; }
+.info.legend i { width: 16px; height: 16px; float: left; margin-right: 8px; opacity: 1; border: 1px solid #999; }
+
 .leaflet-logo-control {
     background-color: transparent !important;
     border: none !important;
     box-shadow: none !important;
     margin: 10PX 10px 0 0 !important;
 }
-.leaflet-logo-control img {
-    height: 20px;
-    width: auto;
-}
+.leaflet-logo-control img { height: 20px; width: auto; }
 .leaflet-top.leaflet-right { z-index: 1010 !important; }
+
 .leaflet-control-custom {
-    background-color: white;
-    width: 35px;
-    height: 35px;
-    border-radius: 4px;
-    cursor: pointer;
+    background-color: white; width: 35px; height: 35px;
+    border-radius: 4px; cursor: pointer;
     box-shadow: 0 1px 5px rgba(0,0,0,0.65);
 }
-.leaflet-control-custom svg path {
-    fill: #333;
-}
-.leaflet-control-custom:hover {
-    background-color: #f4f4f4;
-}
+.leaflet-control-custom svg path { fill: #333; }
+.leaflet-control-custom:hover { background-color: #f4f4f4; }
 
-/* --- 8. RESPONSIVIDAD Y ADAPTABILIDAD AVANZADA --- */
+/* --- 8. RESPONSIVIDAD AVANZADA --- */
 
-/* 8.1 PANTALLAS GRANDES (TVs, Monitores 4K, Proyectores > 1920px) */
+/* 8.1 PANTALLAS GRANDES (> 1920px) */
 @media (min-width: 1921px) {
     :root {
         --panel-width: 420px; 
         --header-height: 90px;
     }
-    
     body { font-size: 18px; }
-    .control-section h1 { font-size: 1.8em; }
+    .control-section h1 { font-size: 1.6em; }
     .control-section > label, .search-result-item { font-size: 16px; }
-    
-    .action-button { padding: 18px; font-size: 16px; }
-    .switch { width: 60px; height: 34px; }
-    .slider:before { height: 26px; width: 26px; left: 4px; bottom: 4px; }
-    input:checked + .slider:before { transform: translateX(26px); }
-    
+    .action-button { padding: 15px; font-size: 16px; }
     .info-panel { width: 400px; top: 120px; right: 40px; }
 }
 
-/* 8.2 TABLETS PAISAJE Y LAPTOPS PEQUEÑAS (1024px - 1366px) */
+/* 8.2 TABLETS/LAPTOPS PEQUEÑAS (1024px - 1366px) */
 @media (max-width: 1366px) {
-    :root {
-        --panel-width: 300px; 
-    }
+    :root { --panel-width: 300px; }
     .info-panel { width: 280px; }
 }
 
-/* 8.3 TABLETS RETRATO Y MÓVILES GRANDES (El breakpoint principal) */
+/* 8.3 TABLETS Y MÓVILES GRANDES (< 768px) */
 @media (max-width: 768px) {
     :root {
         --header-height: 60px;
         --panel-width: calc(100vw - 40px); 
     }
-    
     .logo-container img { height: 35px; }
     .control-section h1 { font-size: 1.2em; }
 
     .leaflet-custom-controls {
-        /* Se mantiene un margen generoso también en móviles */
-        max-height: calc(100vh - var(--header-height) - 80px);
+        /* En móviles, también mantenemos el panel más corto para que no tape todo */
+        max-height: calc(100vh - var(--header-height) - 100px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch; 
     }
 
     .leaflet-open-button {
-        width: 48px;
-        height: 48px;
-        top: 10px !important; 
-        left: 10px !important;
+        width: 48px; height: 48px;
+        top: 10px !important; left: 10px !important;
     }
 
     .info-panel {
-        width: 100%;
-        max-height: 50vh; 
-        top: auto;
-        bottom: 0;
-        right: 0;
-        left: 0;
+        width: 100%; max-height: 50vh; 
+        top: auto; bottom: 0; right: 0; left: 0;
         border-radius: 16px 16px 0 0; 
         transform: translateY(110%); 
         box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
     }
-    .info-panel.is-visible {
-        transform: translateY(0);
-    }
-    #info-panel-content {
-         max-height: 40vh; 
-    }
-
-     .info.legend {
-        font-size: 11px;
-        line-height: 1.4;
-        padding: 6px 10px;
-        max-width: 120px;
-        margin-bottom: 30px; 
-    }
+    .info-panel.is-visible { transform: translateY(0); }
+    #info-panel-content { max-height: 40vh; }
+    .info.legend { font-size: 11px; margin-bottom: 30px; }
     .info.legend i { width: 12px; height: 12px; }
 }
 
-/* 8.4 MÓVILES PEQUEÑOS (iPhone SE, Androids pequeños < 480px) */
+/* 8.4 MÓVILES PEQUEÑOS (< 480px) */
 @media (max-width: 480px) {
-    :root {
-        --header-height: 55px;
-    }
-    
+    :root { --header-height: 55px; }
     .main-header { padding: 0 10px; }
     .logo-container img { height: 28px; } 
 
     .leaflet-custom-controls {
         width: 100vw; 
-        /* En móviles muy pequeños, aprovechamos casi toda la altura */
-        height: calc(100vh - var(--header-height)); 
-        max-height: none; /* Reseteamos el max-height para que ocupe todo */
+        /* En móviles muy pequeños, usamos más espacio pero dejamos margen abajo */
+        height: auto;
+        max-height: calc(100vh - var(--header-height) - 50px); 
         border-radius: 0; 
-        top: 0 !important; 
-        left: 0;
+        top: 0 !important; left: 0;
         transform: translateX(0); 
         background: rgba(255, 255, 255, 0.98); 
     }
     
-    .leaflet-custom-controls.collapsed {
-        transform: translateX(-100%); 
+    .leaflet-custom-controls.collapsed { transform: translateX(-100%); }
+    
+    input[type="text"], input[type="number"], select {
+        font-size: 16px !important; padding: 12px;
     }
-
-    input[type="text"], 
-    input[type="number"], 
-    select {
-        font-size: 16px !important; 
-        padding: 12px;
-    }
-
     .panel-close-button {
-        width: 40px;
-        height: 40px;
-        font-size: 24px;
+        width: 40px; height: 40px; font-size: 24px;
         background-color: #f0f0f0; 
     }
-    
-    .leaflet-control-zoom {
-        display: none; 
-    }
+    .leaflet-control-zoom { display: none; }
 }
