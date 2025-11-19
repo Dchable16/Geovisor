@@ -72,7 +72,6 @@ body {
     height: 100%;
 }
 
-/* --- 4. PANEL DE CONTROLES --- */
 .leaflet-custom-controls {
     background: var(--panel-bg);
     backdrop-filter: blur(8px);
@@ -80,22 +79,38 @@ body {
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: var(--panel-shadow);
     width: var(--panel-width);
-    position: absolute;
-    transition: transform var(--animation-speed) var(--animation-easing);
+    
+    /* --- CAMBIOS ROBUSTOS --- */
     position: absolute;
     left: 0;
+    /* 1. Asegura que el panel nunca sea más alto que el mapa (menos un margen) */
+    max-height: calc(100% - 20px); 
+    /* 2. Si el contenido es muy largo, activa el scroll vertical */
+    overflow-y: auto; 
+    /* 3. Scroll suave */
+    scroll-behavior: smooth; 
+    
     z-index: 1001;
+    transition: transform var(--animation-speed) var(--animation-easing);
     transform: translateX(0);
+    
+    /* Estilo visual para la barra de scroll (opcional pero recomendado) */
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-color) #f1f1f1;
 }
 
-.leaflet-top.leaflet-left {
-    z-index: 1001; /* El default de Leaflet es 1000 */
+/* Estilo para Webkit (Chrome, Safari, Edge) */
+.leaflet-custom-controls::-webkit-scrollbar {
+    width: 6px;
 }
-
-.leaflet-custom-controls.collapsed {
-    transform: translateX(calc(-100% - 15px));
+.leaflet-custom-controls::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
 }
-
+.leaflet-custom-controls::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 4px;
+}
 .leaflet-open-button {
     background-color: white;
     width: 40px;
@@ -111,6 +126,8 @@ body {
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    margin-top: 10px; 
+    margin-left: 10px;
 }
 
 .leaflet-open-button.is-visible {
@@ -449,36 +466,57 @@ input:checked + .slider:before { transform: translateX(20px); }
     background-color: #f4f4f4;
 }
 
-/* --- 8. RESPONSIVIDAD --- */
+/* --- 8. RESPONSIVIDAD ROBUSTA --- */
 @media (max-width: 768px) {
     :root {
         --header-height: 60px;
-        --panel-width: calc(100vw - 40px);
+        /* En móviles, el panel ocupa casi todo el ancho pero deja ver un borde del mapa */
+        --panel-width: 85vw; 
     }
-    .logo-container img { height: 40px; }
-    .control-section h1 { font-size: 1.2em; }
 
+    .main-header {
+        padding: 0 15px;
+    }
+    
+    .logo-container img { 
+        height: 30px; /* Logos más pequeños en móvil */
+    }
+
+    /* El panel de controles en móvil */
+    .leaflet-custom-controls {
+        border-radius: var(--border-radius); /* Bordes redondeados completos en móvil */
+        top: 10px !important; /* Forzamos la posición superior */
+        left: 10px;
+        /* Calculamos la altura máxima restando el header y un margen */
+        max-height: calc(100vh - var(--header-height) - 20px);
+    }
+
+    /* Ajuste del botón de cerrar dentro del panel */
+    .panel-close-button {
+        top: 10px;
+        right: 10px;
+        background-color: #f8f9fa; /* Fondo visible para que sea fácil de tocar */
+    }
+
+    /* Panel de información (Pop-up de detalles) */
     .info-panel {
         width: 100%;
-        max-height: 45vh;
+        max-height: 50vh; /* Máximo 50% de la pantalla */
         top: auto;
         bottom: 0;
-        right: 0;
         left: 0;
-        border-radius: var(--border-radius) var(--border-radius) 0 0;
-        transform: translateY(100%);
+        right: 0;
+        border-radius: 15px 15px 0 0; /* Redondeado solo arriba */
+        transform: translateY(110%); /* Oculto hacia abajo */
+        z-index: 2000; /* Por encima de todo */
     }
+    
     .info-panel.is-visible {
         transform: translateY(0);
     }
-    #info-panel-content {
-         max-height: 35vh;
+
+    /* Ajuste de controles de Leaflet (Zoom, Capas) para que no se solapen con el header */
+    .leaflet-top {
+        top: 10px;
     }
-     .info.legend {
-        font-size: 12px;
-        line-height: 1.6;
-        padding: 8px 12px;
-    }
-    .info.legend h4 { font-size: 14px; }
-    .info.legend i { width: 14px; height: 14px; }
 }
