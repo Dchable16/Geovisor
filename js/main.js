@@ -88,6 +88,11 @@ class GeovisorApp {
             color: '#333',
             weight: 0.8,
             opacity: 0.6,
+            dashArray: [5, 5],
+            font: '12px Arial',     // Puedes reducir el tamaño aquí si se enciman mucho
+            // 'N'=Norte (Arriba), 'S'=Sur (Abajo), 'E'=Este (Derecha). 
+            // Quitamos 'W' para ocultar la Izquierda.
+            sides: ['N', 'S', 'E'], 
             zoomInterval: [
                 {start: 2, end: 4, interval: 10},
                 {start: 5, end: 7, interval: 5},
