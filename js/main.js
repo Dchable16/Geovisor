@@ -83,18 +83,12 @@ class GeovisorApp {
     async init() {
         this.uiManager.setLoading(true); // 1. Mostrar loader al iniciar
         await this.loadLayers();
-        this.leafletLayers.graticule = L.latlngGraticule({
-            showLabel: true,
-            color: '#333',
-            weight: 0.8,
-            opacity: 0.6,
-            zoomInterval: [
-                {start: 2, end: 4, interval: 10},
-                {start: 5, end: 7, interval: 5},
-                {start: 8, end: 10, interval: 1},
-                {start: 11, end: 18, interval: 0.25}
-            ]
-        });
+        this.leafletLayers.graticule = new L.AutoGraticule({
+            color: '#333',       // Color de la línea
+            weight: 0.8,         // Grosor
+            opacity: 0.5,        // Opacidad (bajita para que no estorbe)
+            minDistance: 100     // Distancia mínima entre líneas (evita amontonamiento)
+        }).addTo(this.mapManager.map);
         this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
         this.uiManager.updateView(this.state);
         
