@@ -88,16 +88,11 @@ class GeovisorApp {
             color: '#333',
             weight: 0.8,
             opacity: 0.6,
-            dashArray: [5, 5],
             zoomInterval: [
                 {start: 2, end: 4, interval: 10},
                 {start: 5, end: 7, interval: 5},
                 {start: 8, end: 10, interval: 1},
-                {start: 11, end: 12, interval: 0.5},
-                {start: 13, end: 14, interval: 0.1},
-                {start: 15, end: 16, interval: 0.01},   // 2 decimales (ej. 19.45)
-                {start: 17, end: 18, interval: 0.001},  // 3 decimales (ej. 19.453)
-                {start: 19, end: 22, interval: 0.0001}  // 4 decimales (ej. 19.4532)
+                {start: 11, end: 18, interval: 0.2}
             ]
         });
         this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
