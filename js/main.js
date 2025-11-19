@@ -19,8 +19,23 @@ const INITIAL_STATE = {
     isCoastline1kmVisible: false,
     isGraticuleVisible: false,
 };
-// --- FIN ---
 
+function toDMS(deg, isLat) {
+    var absolute = Math.abs(deg);
+    var degrees = Math.floor(absolute);
+    var minutesNotTruncated = (absolute - degrees) * 60;
+    var minutes = Math.floor(minutesNotTruncated);
+    var seconds = Math.round((minutesNotTruncated - minutes) * 60);
+
+    var direction = "";
+    if (isLat) {
+        direction = deg >= 0 ? "N" : "S";
+    } else {
+        direction = deg >= 0 ? "E" : "O";
+    }
+
+    return degrees + "° " + minutes + "' " + seconds + '" ' + direction;
+}
 
 class GeovisorApp {
     constructor() {
