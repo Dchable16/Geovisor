@@ -92,7 +92,7 @@ class GeovisorApp {
                 {start: 2, end: 4, interval: 10},
                 {start: 5, end: 7, interval: 5},
                 {start: 8, end: 10, interval: 1},
-                {start: 11, end: 18, interval: 0.2}
+                {start: 11, end: 18, interval: 0.25}
             ]
         });
         this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
