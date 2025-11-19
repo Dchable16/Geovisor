@@ -106,8 +106,11 @@ export class UIManager {
                 
                 // Retraso para asegurar que el botón de abrir exista y podamos alinear el panel
                 setTimeout(() => {
-                    if (this.nodes.openButton) {
-                        container.style.top = `${this.nodes.openButton.offsetTop}px`;
+                    if (this.nodes.openButton && window.innerWidth > 768) {
+                         container.style.top = `${this.nodes.openButton.offsetTop}px`;
+                    } else {
+                         // En móvil dejamos que el CSS controle la posición (top: 10px)
+                         container.style.top = ''; 
                     }
                 }, 0);
 
