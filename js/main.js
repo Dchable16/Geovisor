@@ -88,6 +88,7 @@ class GeovisorApp {
             color: '#333',
             weight: 0.8,
             opacity: 0.6,
+            sides: ['N', 'S', 'E', ''],
             zoomInterval: [
                 {start: 2, end: 4, interval: 10},
                 {start: 5, end: 7, interval: 5},
