@@ -89,7 +89,7 @@ class GeovisorApp {
             weight: 0.8,
             opacity: 0.5,
             minDistance: 100 // Distancia mínima para evitar solapamiento
-        }).addTo(this.mapManager.map);
+        });
         this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
         this.uiManager.updateView(this.state);
         
