@@ -88,11 +88,18 @@ class GeovisorApp {
             color: '#333',
             weight: 0.8,
             opacity: 0.6,
+            // sides: controla el sufijo. 
+            // Por defecto es ['N', 'S', 'E', 'W']. 
+            // Si prefieres español usa: ['N', 'S', 'E', 'O']
+            sides: ['N', 'S', 'E', 'W'], 
+            
             zoomInterval: [
                 {start: 2, end: 4, interval: 10},
                 {start: 5, end: 7, interval: 5},
                 {start: 8, end: 10, interval: 1},
-                {start: 11, end: 18, interval: 0.2}
+                {start: 11, end: 15, interval: 0.5},  // Intervalo seguro
+                {start: 16, end: 18, interval: 0.25}, // 0.25 es exacto y evita el error de 10 decimales
+                {start: 19, end: 22, interval: 0.125} // Mayor precisión sin errores
             ]
         });
         this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
