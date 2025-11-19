@@ -1,6 +1,6 @@
 /**
  * @file style.css
- * @description Hoja de estilos para el Geovisor (Versión Corregida y Robusta).
+ * @description Hoja de estilos para el Geovisor.
 */
 
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
@@ -10,7 +10,7 @@
     --header-height: 70px;
     --header-bg: #FFFFFF;
     --panel-width: 340px;
-    --panel-bg: rgba(255, 255, 255, 0.95); /* Un poco más opaco para lectura */
+    --panel-bg: rgba(255, 255, 255, 0.9);
     --shadow-color: rgba(0, 0, 0, 0.15);
     --panel-shadow: 0 4px 12px var(--shadow-color);
     --border-radius: 8px;
@@ -44,7 +44,6 @@ body {
     display: flex;
     flex-direction: column;
 }
-
 .main-header {
     flex-shrink: 0;
     height: var(--header-height);
@@ -54,7 +53,7 @@ body {
     padding: 0 2.5%;
     background-color: var(--header-bg);
     border-bottom: 1px solid var(--border-color);
-    z-index: 3000; /* Header siempre encima de todo */
+    z-index: 2000;
 }
 
 .logo-container img {
@@ -66,71 +65,37 @@ body {
 .map-container {
     flex-grow: 1;
     position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
 }
 
 #map {
     width: 100%;
     height: 100%;
-    z-index: 1;
 }
 
-/* --- 4. PANEL DE CONTROLES (LÓGICA ROBUSTA) --- */
+/* --- 4. PANEL DE CONTROLES --- */
 .leaflet-custom-controls {
     background: var(--panel-bg);
     backdrop-filter: blur(8px);
-    /* Padding superior extra para dejar espacio al botón de cerrar */
-    padding: 40px 20px 20px 20px; 
-    border-radius: var(--border-radius);
+    padding: 20px;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: var(--panel-shadow);
     width: var(--panel-width);
-    
-    /* Posicionamiento Absoluto y Fijo */
     position: absolute;
-    top: 10px;  /* Separación del borde superior */
-    left: 10px; /* Separación del borde izquierdo */
-    
-    /* LIMITA LA ALTURA para que nunca se salga de la pantalla */
-    max-height: calc(100% - 20px); 
-    
-    /* Activa SCROLL si el contenido es muy largo */
-    overflow-y: auto; 
-    overflow-x: hidden;
-    scroll-behavior: smooth;
-
-    z-index: 2000; /* Encima del mapa pero debajo del header si fuera necesario */
-    transition: transform var(--animation-speed) var(--animation-easing), opacity 0.3s;
+    transition: transform var(--animation-speed) var(--animation-easing);
+    position: absolute;
+    left: 0;
+    z-index: 1001;
     transform: translateX(0);
-    opacity: 1;
-
-    /* Estilo de la barra de desplazamiento */
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent-color) #f1f1f1;
 }
 
-/* Scrollbar para Chrome/Safari/Edge */
-.leaflet-custom-controls::-webkit-scrollbar {
-    width: 6px;
-}
-.leaflet-custom-controls::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-.leaflet-custom-controls::-webkit-scrollbar-thumb {
-    background: var(--accent-color);
-    border-radius: 4px;
+.leaflet-top.leaflet-left {
+    z-index: 1001; /* El default de Leaflet es 1000 */
 }
 
-/* Estado colapsado: Se mueve fuera de la pantalla */
 .leaflet-custom-controls.collapsed {
-    transform: translateX(-120%);
-    opacity: 0;
-    pointer-events: none; /* Importante: evita clics cuando está oculto */
+    transform: translateX(calc(-100% - 15px));
 }
 
-/* BOTÓN DE ABRIR (Hamburguesa) */
 .leaflet-open-button {
     background-color: white;
     width: 40px;
@@ -146,17 +111,13 @@ body {
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    
-    /* Asegura posición fija controlada por CSS */
-    margin-top: 10px !important;
-    margin-left: 10px !important;
-    z-index: 1999; /* Justo debajo del panel abierto */
 }
 
 .leaflet-open-button.is-visible {
     opacity: 1;
     pointer-events: auto;
     transform: scale(1);
+    transition-delay: 0.1s;
 }
 
 .leaflet-open-button:hover {
@@ -164,14 +125,13 @@ body {
     color: white;
 }
 
-/* BOTÓN DE CERRAR (Dentro del panel) */
 .panel-close-button {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    width: 35px;
-    height: 35px;
-    background: rgba(0, 0, 0, 0.05); /* Fondo sutil para mejor visibilidad */
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    background: transparent;
     color: var(--text-light);
     border: none;
     border-radius: 50%;
@@ -181,15 +141,12 @@ body {
     justify-content: center;
     align-items: center;
     transition: all 0.2s ease;
-    z-index: 2001; /* ENCIMA de todo el contenido del panel */
 }
-
 .panel-close-button:hover {
-    background-color: #D90404; /* Rojo */
-    color: white;
+    background-color: #E9ECEF;
+    color: var(--text-color);
 }
 
-/* PANEL DE INFORMACIÓN (Pop-up lateral o inferior) */
 .info-panel {
     background: var(--panel-bg);
     backdrop-filter: blur(8px);
@@ -199,12 +156,10 @@ body {
     position: absolute;
     top: 90px;
     right: 20px;
-    z-index: 2000;
+    z-index: 1000;
     transform: translateX(calc(100% + 20px));
     opacity: 0;
-    transition: transform var(--animation-speed) var(--animation-easing), opacity 0.3s;
-    max-height: calc(100% - 110px);
-    overflow-y: auto;
+    transition: transform var(--animation-speed) var(--animation-easing), opacity var(--animation-speed) var(--animation-easing);
 }
 
 .info-panel.is-visible {
@@ -218,10 +173,6 @@ body {
     align-items: center;
     padding: 15px 15px 10px 20px;
     border-bottom: 1px solid var(--border-color);
-    position: sticky; /* Header fijo al hacer scroll */
-    top: 0;
-    background: var(--panel-bg);
-    z-index: 10;
 }
 
 .info-panel h2 {
@@ -239,14 +190,19 @@ body {
     padding: 5px;
     transition: color 0.2s;
 }
-.info-panel-close:hover { color: var(--text-color); }
+.info-panel-close:hover {
+    color: var(--text-color);
+}
 
 #info-panel-content {
     padding: 15px 20px;
     line-height: 1.6;
+    max-height: 50vh;
+    overflow-y: auto;
 }
-
-.info-panel-row { margin-bottom: 8px; }
+.info-panel-row {
+    margin-bottom: 8px;
+}
 .info-panel-row strong {
     color: var(--text-color);
     display: block;
@@ -260,7 +216,6 @@ body {
 /* --- 5. ELEMENTOS DE UI DENTRO DEL PANEL --- */
 .control-section { margin-bottom: 24px; }
 .control-section:last-child { margin-bottom: 0; }
-
 .control-section > label {
     display: block;
     font-weight: bold;
@@ -268,35 +223,28 @@ body {
     font-size: 14px;
     color: #495057;
 }
-
 .control-section h1 {
     text-align: center;
     color: var(--text-color);
     margin: 0 0 24px 0;
-    padding-right: 10px; /* Menos padding ya que el botón está arriba */
+    padding-right: 30px;
     font-size: 1.4em;
     line-height: 1.2;
 }
-
-#acuifero-select, #opacity-slider, #search-input { 
-    width: 100%; 
-}
-
-#acuifero-select, #search-input, .coord-input-group input, #coord-name {
+#acuifero-select, #opacity-slider { width: 100%; }
+#acuifero-select {
     padding: 10px;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     font-size: 14px;
     background-color: white;
 }
-
-#acuifero-select:focus, #search-input:focus, .coord-input-group input:focus, #coord-name:focus {
+#acuifero-select:focus {
     outline: none;
     border-color: var(--accent-color);
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-/* Radio Buttons (Vulnerabilidad) */
 .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .radio-group label {
     background-color: #F1F3F5;
@@ -315,7 +263,6 @@ body {
 }
 .radio-group label:hover { border-color: var(--accent-color); }
 
-/* Toggles (Interruptores) */
 .layer-toggle { display: flex; justify-content: space-between; align-items: center; }
 .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
 .switch input { opacity: 0; width: 0; height: 0; }
@@ -330,7 +277,19 @@ body {
 input:checked + .slider { background-color: var(--accent-color); }
 input:checked + .slider:before { transform: translateX(20px); }
 
-/* Resultados de Búsqueda */
+#search-input {
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+}
+#search-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
 #search-results-container {
     max-height: 200px;
     overflow-y: auto;
@@ -338,23 +297,30 @@ input:checked + .slider:before { transform: translateX(20px); }
     border: 1px solid var(--border-color);
     border-top: none;
     border-radius: 0 0 var(--border-radius) var(--border-radius);
+    /* Oculto por defecto, se mostrará cuando haya resultados */
     display: none; 
 }
+
 .search-result-item {
     padding: 10px 12px;
     font-size: 14px;
     cursor: pointer;
     border-bottom: 1px solid #f0f0f0;
 }
-.search-result-item:last-child { border-bottom: none; }
-.search-result-item:hover { background-color: #f4f4f4; }
-.search-result-item strong { color: var(--accent-color); }
-
-/* Botones de Acción */
+.search-result-item:last-child {
+    border-bottom: none;
+}
+.search-result-item:hover {
+    background-color: #f4f4f4;
+}
+.search-result-item strong {
+    color: var(--accent-color);
+}
 .reset-section {
     padding-bottom: 15px;
     border-bottom: 1px solid var(--border-color);
 }
+
 .action-button {
     width: 100%;
     padding: 10px 15px;
@@ -366,27 +332,57 @@ input:checked + .slider:before { transform: translateX(20px); }
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: background-color 0.2s ease;
-    margin-top: 10px;
 }
-.action-button:hover { background-color: var(--accent-hover); }
 
-/* Coordenadas */
-.coord-input-group { display: flex; gap: 8px; }
-.coord-input-group input { width: 50%; font-size: 13px; -moz-appearance: textfield; }
+.action-button:hover {
+    background-color: var(--accent-hover);
+}
+.coord-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.coord-input-group input {
+    width: 50%;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+    /* Evita que aparezcan las flechas de 'number' */
+    -moz-appearance: textfield;
+}
 .coord-input-group input::-webkit-outer-spin-button,
-.coord-input-group input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-#coord-name { margin-bottom: 8px; }
+.coord-input-group input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#coord-name {
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    margin-bottom: 8px; /* <-- Para separarlo de los campos de abajo */
+}
+#coord-name:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
 #coord-error-message {
     font-size: 13px;
-    color: #D90404;
+    color: #D90404; /* Rojo (del config) */
     margin-top: 8px;
-    display: none; 
+    display: none; /* Oculto por defecto */
 }
 
 /* --- 6. INDICADOR DE CARGA (SPINNER) --- */
 .loader-overlay {
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(255, 255, 255, 0.8);
     display: flex;
     justify-content: center;
@@ -406,7 +402,8 @@ input:checked + .slider:before { transform: translateX(20px); }
     border: 5px solid #f3f3f3;
     border-top: 5px solid var(--accent-color);
     border-radius: 50%;
-    width: 50px; height: 50px;
+    width: 50px;
+    height: 50px;
     animation: spin 1s linear infinite;
 }
 @keyframes spin {
@@ -423,76 +420,64 @@ input:checked + .slider:before { transform: translateX(20px); }
     box-shadow: var(--panel-shadow);
     line-height: 1.8;
     color: #333;
-    margin-bottom: 25px !important; /* Evitar solapamiento con escala */
 }
 .info.legend h4 { margin: 0 0 10px; font-size: 16px; text-align: center; }
 .info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 1; border: 1px solid #999; }
-
 .leaflet-logo-control {
     background-color: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    margin: 10px 10px 0 0 !important;
+    margin: 10PX 10px 0 0 !important;
 }
-.leaflet-logo-control img { height: 20px; width: auto; }
-
-/* Asegurar que los controles de arriba a la derecha (capas) estén accesibles */
-.leaflet-top.leaflet-right { z-index: 1000; top: 10px; }
-
+.leaflet-logo-control img {
+    height: 20px;
+    width: auto;
+}
+.leaflet-top.leaflet-right { z-index: 1010 !important; }
 .leaflet-control-custom {
     background-color: white;
-    width: 35px; height: 35px;
+    width: 35px;
+    height: 35px;
     border-radius: 4px;
     cursor: pointer;
     box-shadow: 0 1px 5px rgba(0,0,0,0.65);
-    display: flex; justify-content: center; align-items: center;
 }
-.leaflet-control-custom svg { width: 20px; height: 20px; }
-.leaflet-control-custom:hover { background-color: #f4f4f4; }
+.leaflet-control-custom svg path {
+    fill: #333;
+}
+.leaflet-control-custom:hover {
+    background-color: #f4f4f4;
+}
 
-/* --- 8. RESPONSIVIDAD ROBUSTA (MÓVIL Y TABLET) --- */
+/* --- 8. RESPONSIVIDAD --- */
 @media (max-width: 768px) {
     :root {
         --header-height: 60px;
-        /* Panel ocupa casi todo el ancho pero deja margen para ver el mapa */
-        --panel-width: calc(100% - 20px); 
+        --panel-width: calc(100vw - 40px);
     }
-    
-    .main-header { padding: 0 15px; }
-    .logo-container img { height: 30px; }
+    .logo-container img { height: 40px; }
     .control-section h1 { font-size: 1.2em; }
 
-    /* PANEL DE CONTROL EN MÓVIL */
-    .leaflet-custom-controls {
-        width: var(--panel-width);
-        /* Posición fija desde arriba, respetando margen */
-        top: 10px !important; 
-        left: 10px !important;
-        bottom: auto;
-        /* Altura máxima calculada para no salirse por abajo */
-        max-height: calc(100% - 20px);
-    }
-
-    /* PANEL DE INFORMACIÓN (Bottom Sheet) */
     .info-panel {
         width: 100%;
-        max-height: 50vh;
+        max-height: 45vh;
         top: auto;
         bottom: 0;
         right: 0;
         left: 0;
-        border-radius: 16px 16px 0 0;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
         transform: translateY(100%);
-        /* Asegura que se vea sobre todo lo demás en móvil */
-        z-index: 2100; 
     }
-    .info-panel.is-visible { transform: translateY(0); }
-
-    /* Ajustes menores para leyenda */
-    .info.legend {
+    .info-panel.is-visible {
+        transform: translateY(0);
+    }
+    #info-panel-content {
+         max-height: 35vh;
+    }
+     .info.legend {
         font-size: 12px;
+        line-height: 1.6;
         padding: 8px 12px;
-        max-width: 150px;
     }
     .info.legend h4 { font-size: 14px; }
     .info.legend i { width: 14px; height: 14px; }
