@@ -80,34 +80,20 @@ body {
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: var(--panel-shadow);
     width: var(--panel-width);
-    
-    /* POSICIONAMIENTO Y LIMITACIONES DE ALTURA */
+    position: absolute;
+    transition: transform var(--animation-speed) var(--animation-easing);
     position: absolute;
     left: 0;
-    /* Ajustamos el top dinámicamente con JS, pero ponemos un tope de seguridad */
-    max-height: calc(100vh - var(--header-height) - 40px); /* Altura máxima: 100% menos header y márgenes */
-    overflow-y: auto; /* Habilita scroll vertical SOLO dentro del panel si es necesario */
-    overflow-x: hidden; /* Evita scroll horizontal accidental */
-    
-    transition: transform var(--animation-speed) var(--animation-easing);
     z-index: 1001;
     transform: translateX(0);
-
-    /* Estilizado del scrollbar para navegadores modernos */
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent-color) transparent;
 }
 
-/* Estilos para el scrollbar en Webkit (Chrome, Edge, Safari) */
-.leaflet-custom-controls::-webkit-scrollbar {
-    width: 6px;
+.leaflet-top.leaflet-left {
+    z-index: 1001; /* El default de Leaflet es 1000 */
 }
-.leaflet-custom-controls::-webkit-scrollbar-track {
-    background: transparent;
-}
-.leaflet-custom-controls::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 20px;
+
+.leaflet-custom-controls.collapsed {
+    transform: translateX(calc(-100% - 15px));
 }
 
 .leaflet-open-button {
@@ -247,18 +233,11 @@ body {
 }
 #acuifero-select, #opacity-slider { width: 100%; }
 #acuifero-select {
-    width: 100%;
-    max-width: 100%; /* Asegura que no exceda el contenedor parent */
     padding: 10px;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     font-size: 14px;
     background-color: white;
-    
-    /* Manejo de texto largo en las opciones */
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
 }
 #acuifero-select:focus {
     outline: none;
@@ -474,37 +453,32 @@ input:checked + .slider:before { transform: translateX(20px); }
 @media (max-width: 768px) {
     :root {
         --header-height: 60px;
-        --panel-width: 100%; /* En móviles, el panel ocupa todo el ancho para mejor tactilidad */
-        --border-radius: 0; /* Quitamos bordes redondeados en móvil para que pegue a los lados */
+        --panel-width: calc(100vw - 40px);
     }
+    .logo-container img { height: 40px; }
+    .control-section h1 { font-size: 1.2em; }
 
-    .leaflet-custom-controls {
-        width: 100%;
-        max-width: 100%;
-        border-radius: 0 0 15px 15px; /* Solo redondeado abajo */
-        max-height: 60vh; /* En móvil limitamos la altura al 60% para ver el mapa abajo */
-        left: 0;
-        right: 0;
-        top: 0 !important; /* Forzamos que empiece arriba en móvil */
-    }
-    .leaflet-open-button {
-        top: 10px !important;
-        left: 10px !important;
-    }
-
-    .logo-container img { height: 35px; } /* Logos un poco más pequeños */    
     .info-panel {
         width: 100%;
-        max-height: 50vh; /* Panel de información más alto en móvil */
-        z-index: 2000; /* Asegurar que quede por encima de todo */
+        max-height: 45vh;
+        top: auto;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        transform: translateY(100%);
     }
-}
-
-@media (max-width: 380px) {
-    .coord-input-group {
-        flex-direction: column; /* Apilar inputs de lat/lon */
+    .info-panel.is-visible {
+        transform: translateY(0);
     }
-    .coord-input-group input {
-        width: 100%;
+    #info-panel-content {
+         max-height: 35vh;
     }
+     .info.legend {
+        font-size: 12px;
+        line-height: 1.6;
+        padding: 8px 12px;
+    }
+    .info.legend h4 { font-size: 14px; }
+    .info.legend i { width: 14px; height: 14px; }
 }
