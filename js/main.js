@@ -7,6 +7,7 @@
 import { CONFIG } from './config.js';
 // Importamos ambas funciones de dataLoader
 import { fetchGeoJSON, fetchAllGeoJSON } from './dataLoader.js';
+import AutoGraticule from 'https://esm.sh/leaflet-auto-graticule';
 import { MapManager } from './mapManager.js';
 import { UIManager } from './uiManager.js';
 
@@ -83,11 +84,11 @@ class GeovisorApp {
     async init() {
         this.uiManager.setLoading(true); // 1. Mostrar loader al iniciar
         await this.loadLayers();
-        this.leafletLayers.graticule = new L.AutoGraticule({
-            color: '#333',       // Color de la línea
-            weight: 0.8,         // Grosor
-            opacity: 0.5,        // Opacidad (bajita para que no estorbe)
-            minDistance: 100     // Distancia mínima entre líneas (evita amontonamiento)
+        this.leafletLayers.graticule = new AutoGraticule({
+            color: '#333', 
+            weight: 0.8,
+            opacity: 0.5,
+            minDistance: 100 // Distancia mínima para evitar solapamiento
         }).addTo(this.mapManager.map);
         this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
         this.uiManager.updateView(this.state);
