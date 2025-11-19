@@ -1,6 +1,6 @@
 /**
  * @file style.css
- * @description Hoja de estilos para el Geovisor - Optimización Responsiva.
+ * @description Hoja de estilos optimizada para el Geovisor (Responsive Pro).
 */
 
 /* --- 1. IMPORTACIONES Y VARIABLES GLOBALES --- */
@@ -10,7 +10,7 @@
     --header-height: 70px;
     --header-bg: #FFFFFF;
     --panel-width: 340px;
-    --panel-bg: rgba(255, 255, 255, 0.95); /* Un poco más opaco para legibilidad */
+    --panel-bg: rgba(255, 255, 255, 0.95); /* Un poco más opaco para mejor lectura sobre mapa */
     --shadow-color: rgba(0, 0, 0, 0.15);
     --panel-shadow: 0 4px 12px var(--shadow-color);
     --border-radius: 8px;
@@ -21,24 +21,31 @@
     --text-light: #666;
     --border-color: #DDE2E6;
     --animation-speed: 0.3s;
-    --animation-easing: ease-in-out;
+    --animation-easing: cubic-bezier(0.4, 0, 0.2, 1); /* Suavizado más natural */
+    
+    /* Variables de seguridad para móviles (Notch/Home bar) */
+    --safe-bottom: env(safe-area-inset-bottom, 20px);
 }
 
 /* --- 2. RESET Y ESTILOS BASE --- */
 html, body {
     height: 100%;
-    width: 100%;
     margin: 0;
     padding: 0;
     font-family: var(--font-sans);
-    overflow: hidden; /* Evita scroll en el body, todo ocurre dentro de contenedores */
+    overflow: hidden; /* Evita scroll en el body, todo ocurre en contenedores */
     background-color: #F8F9FA;
     color: var(--text-color);
-    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent; /* Elimina highlight azul en móviles */
 }
 
 * {
     box-sizing: border-box;
+}
+
+img {
+    max-width: 100%;
+    display: block;
 }
 
 /* --- 3. LAYOUT PRINCIPAL --- */
@@ -53,31 +60,25 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 15px;
+    padding: 0 20px;
     background-color: var(--header-bg);
     border-bottom: 1px solid var(--border-color);
     z-index: 2000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-.logo-container {
-    display: flex;
-    align-items: center;
-    max-width: 45%; /* Evita que un logo empuje al otro fuera */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .logo-container img {
     height: 40px;
     width: auto;
-    max-width: 100%; /* Asegura que la imagen no se salga de su contenedor */
     object-fit: contain;
+    transition: height 0.3s ease;
 }
 
 .map-container {
     flex-grow: 1;
     position: relative;
     width: 100%;
-    height: calc(100% - var(--header-height));
+    height: calc(100vh - var(--header-height));
 }
 
 #map {
@@ -86,44 +87,36 @@ body {
     z-index: 1;
 }
 
-/* --- 4. PANEL DE CONTROLES (SOLUCIÓN RESPONSIVA) --- */
+/* --- 4. PANEL DE CONTROLES (IZQUIERDA) --- */
 .leaflet-custom-controls {
     background: var(--panel-bg);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px); /* Safari */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* Soporte Safari */
     padding: 20px;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: var(--panel-shadow);
     width: var(--panel-width);
     position: absolute;
-    top: 10px; /* Espacio desde arriba */
     left: 0;
+    /* IMPORTANTE: Control de altura para pantallas pequeñas/landscape */
+    max-height: calc(100% - 60px); 
+    overflow-y: auto; /* Scroll interno si el contenido es muy alto */
+    scrollbar-width: thin; /* Firefox */
+    
     transition: transform var(--animation-speed) var(--animation-easing);
     z-index: 1001;
     transform: translateX(0);
-    
-    /* --- CRÍTICO PARA RESPONSIVIDAD --- */
-    /* Limita la altura para que nunca se salga de la pantalla */
-    max-height: calc(100vh - var(--header-height) - 40px); 
-    /* Habilita el scroll interno si el contenido es muy largo */
-    overflow-y: auto; 
-    scrollbar-width: thin; /* Firefox - scroll delgado */
-    scrollbar-color: var(--accent-color) #f1f1f1;
 }
 
-/* Estilo del scrollbar para Chrome/Edge/Safari */
-.leaflet-custom-controls::-webkit-scrollbar {
+/* Scrollbar estilizado para Webkit (Chrome/Safari) */
+.leaflet-custom-controls::-webkit-scrollbar,
+#info-panel-content::-webkit-scrollbar {
     width: 6px;
 }
-.leaflet-custom-controls::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-.leaflet-custom-controls::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
-}
-.leaflet-custom-controls::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-color);
+.leaflet-custom-controls::-webkit-scrollbar-thumb,
+#info-panel-content::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 4px;
 }
 
 .leaflet-top.leaflet-left {
@@ -131,14 +124,13 @@ body {
 }
 
 .leaflet-custom-controls.collapsed {
-    transform: translateX(calc(-100% - 20px)); /* Ajustado para asegurar que se oculte bien */
+    transform: translateX(calc(-100% - 15px));
 }
 
-/* Botón de abrir panel */
 .leaflet-open-button {
     background-color: white;
-    width: 40px;
-    height: 40px;
+    width: 44px; /* Aumentado para mejor touch target (min 44px) */
+    height: 44px;
     font-size: 20px;
     border-radius: 50%;
     box-shadow: var(--panel-shadow);
@@ -150,8 +142,7 @@ body {
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    margin-left: 10px;
-    margin-top: 10px;
+    color: var(--text-color);
 }
 
 .leaflet-open-button.is-visible {
@@ -167,12 +158,12 @@ body {
 }
 
 .panel-close-button {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 36px; /* Área de toque más grande */
+    position: sticky; /* Se mantiene visible al hacer scroll */
+    top: -10px; /* Ajuste por el padding del padre */
+    float: right;
+    width: 36px;
     height: 36px;
-    background: transparent;
+    background: rgba(255,255,255,0.8);
     color: var(--text-light);
     border: none;
     border-radius: 50%;
@@ -183,31 +174,34 @@ body {
     align-items: center;
     transition: all 0.2s ease;
     z-index: 10;
+    margin-right: -10px;
 }
-
 .panel-close-button:hover {
     background-color: #E9ECEF;
-    color: var(--text-color);
+    color: var(--accent-color);
 }
 
-/* --- 5. PANEL DE INFORMACIÓN (INFO PANEL) --- */
+/* --- PANEL DE INFORMACIÓN (DERECHA/ABAJO) --- */
 .info-panel {
     background: var(--panel-bg);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
     width: 320px;
-    max-width: 90vw; /* Asegura que no sea más ancho que la pantalla en móviles */
     position: absolute;
-    top: 20px;
+    top: 20px; /* Margen superior relativo al mapa */
     right: 20px;
-    z-index: 1000;
+    z-index: 1002; /* Por encima de los controles izquierdos */
+    
+    /* Estado inicial oculto */
     transform: translateX(calc(100% + 30px));
     opacity: 0;
     transition: transform var(--animation-speed) var(--animation-easing), opacity var(--animation-speed) var(--animation-easing);
+    
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 140px); /* Evita que se salga verticalmente */
+    max-height: calc(100% - 40px); /* Evita que se salga por abajo en desktop */
 }
 
 .info-panel.is-visible {
@@ -227,8 +221,8 @@ body {
 .info-panel h2 {
     margin: 0;
     font-size: 1.1em;
+    font-weight: 700;
     color: var(--accent-color);
-    line-height: 1.3;
 }
 
 .info-panel-close {
@@ -236,23 +230,31 @@ body {
     border: none;
     color: var(--text-light);
     font-size: 20px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    padding: 5px;
-    min-width: 40px; /* Área táctil mínima */
-    min-height: 40px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+.info-panel-close:hover {
+    background-color: #f1f1f1;
+    color: var(--text-color);
 }
 
 #info-panel-content {
     padding: 15px 20px;
     line-height: 1.6;
-    overflow-y: auto; /* Scroll interno si la info es mucha */
-    scrollbar-width: thin;
+    overflow-y: auto; /* Scroll interno */
+    flex-grow: 1;
 }
 
 .info-panel-row {
     margin-bottom: 10px;
     border-bottom: 1px solid #f0f0f0;
-    padding-bottom: 5px;
+    padding-bottom: 8px;
 }
 .info-panel-row:last-child {
     border-bottom: none;
@@ -267,93 +269,73 @@ body {
 }
 .info-panel-value {
     color: #444;
-    font-size: 1em;
+    font-size: 1.05em;
     font-weight: 500;
 }
 
-/* --- 6. ELEMENTOS INTERNOS DEL PANEL DE CONTROLES --- */
+/* --- 5. ELEMENTOS DE UI DENTRO DEL PANEL --- */
 .control-section { margin-bottom: 20px; }
-.control-section:last-child { margin-bottom: 0; }
+.control-section:last-child { margin-bottom: 10px; }
 
 .control-section > label {
     display: block;
     font-weight: 600;
     margin-bottom: 8px;
-    font-size: 14px;
+    font-size: 13px;
     color: #495057;
+    text-transform: uppercase;
 }
 
 .control-section h1 {
-    text-align: center;
-    color: var(--text-color);
-    margin: 10px 0 20px 0;
-    padding-right: 30px; /* Espacio para el botón de cerrar */
+    text-align: left; /* Mejor lectura */
+    color: var(--accent-color);
+    margin: 0 0 20px 0;
+    padding-right: 40px; /* Espacio para el botón de cerrar */
     font-size: 1.3em;
-    line-height: 1.2;
+    line-height: 1.3;
 }
 
-/* Inputs y Selects optimizados */
-#acuifero-select, 
-#search-input, 
-.coord-input-group input, 
-#coord-name {
-    width: 100%;
-    padding: 12px; /* Padding cómodo para touch */
+#acuifero-select, #opacity-slider { width: 100%; }
+
+#acuifero-select {
+    padding: 12px; /* Más espacio para touch */
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
-    font-size: 14px; /* Base */
+    font-size: 14px;
     background-color: white;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none; /* Reset nativo */
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px top 50%;
+    background-size: 10px auto;
 }
-
-/* Evitar zoom en iOS al enfocar inputs */
-@media screen and (-webkit-min-device-pixel-ratio:0) { 
-  select:focus,
-  textarea:focus,
-  input:focus {
-    font-size: 16px;
-  }
-}
-
-#acuifero-select:focus, 
-#search-input:focus, 
-.coord-input-group input:focus, 
-#coord-name:focus {
+#acuifero-select:focus {
     outline: none;
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
 }
 
-/* Radio Buttons mejorados */
-.radio-group { 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 8px; 
-}
-
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .radio-group label {
-    background-color: #F1F3F5;
-    padding: 8px 16px; /* Botones más fáciles de tocar */
-    font-size: 14px;
-    border: 1px solid transparent;
+    background-color: #fff;
+    padding: 8px 16px;
+    font-size: 13px;
+    border: 1px solid var(--border-color);
     border-radius: 20px;
     cursor: pointer;
     transition: all 0.2s ease;
-    user-select: none;
-    flex-grow: 1; /* Se expanden para llenar huecos */
+    flex-grow: 1; /* Distribuye espacio equitativamente */
     text-align: center;
 }
-
 .radio-group input[type="radio"] { display: none; }
-
 .radio-group input[type="radio"]:checked + label {
     background-color: var(--accent-color);
     color: white;
-    font-weight: 600;
-    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+    border-color: var(--accent-color);
+    font-weight: 500;
+    box-shadow: 0 2px 5px rgba(0,123,255,0.3);
 }
 
-/* Toggles / Switches */
 .layer-toggle { 
     display: flex; 
     justify-content: space-between; 
@@ -362,21 +344,34 @@ body {
 }
 .layer-toggle span { font-size: 14px; }
 
-.switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+/* Switch Toggle Optimizado */
+.switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider {
     position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #ccc; transition: .3s; border-radius: 34px;
+    background-color: #e0e0e0; transition: .4s; border-radius: 26px;
 }
 .slider:before {
     position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
-    background-color: white; transition: .3s; border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    background-color: white; transition: .4s; border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 input:checked + .slider { background-color: var(--accent-color); }
-input:checked + .slider:before { transform: translateX(22px); }
+input:checked + .slider:before { transform: translateX(20px); }
 
-/* Resultados de búsqueda */
+#search-input {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+}
+#search-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
 #search-results-container {
     max-height: 200px;
     overflow-y: auto;
@@ -385,7 +380,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     border-top: none;
     border-radius: 0 0 var(--border-radius) var(--border-radius);
     display: none; 
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
 .search-result-item {
@@ -394,21 +389,21 @@ input:checked + .slider:before { transform: translateX(22px); }
     cursor: pointer;
     border-bottom: 1px solid #f8f9fa;
 }
-.search-result-item:hover, .search-result-item:active {
-    background-color: #eef6fc;
+.search-result-item:hover {
+    background-color: #f0f7ff;
+    color: var(--accent-color);
 }
 
-/* Botones de Acción */
 .reset-section {
-    padding-bottom: 20px;
+    padding-bottom: 15px;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 20px;
 }
 
 .action-button {
     width: 100%;
-    padding: 12px 15px;
-    font-size: 15px;
+    padding: 12px;
+    font-size: 14px;
     font-weight: 600;
     color: white;
     background-color: var(--accent-color);
@@ -416,31 +411,46 @@ input:checked + .slider:before { transform: translateX(22px); }
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s;
-}
-.action-button:active {
-    transform: scale(0.98);
+    box-shadow: 0 2px 4px rgba(0,123,255,0.2);
 }
 .action-button:hover {
     background-color: var(--accent-hover);
 }
+.action-button:active {
+    transform: translateY(1px);
+}
 
-/* Inputs de Coordenadas */
 .coord-input-group {
     display: flex;
     gap: 10px;
 }
-#coord-name { margin-bottom: 10px; }
+.coord-input-group input {
+    width: 50%;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    -moz-appearance: textfield;
+}
+#coord-name {
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    margin-bottom: 10px;
+}
 #coord-error-message {
     font-size: 13px;
     color: #D90404;
     margin-top: 8px;
     display: none;
-    padding: 5px;
-    background-color: rgba(217, 4, 4, 0.1);
+    background: rgba(217, 4, 4, 0.1);
+    padding: 8px;
     border-radius: 4px;
 }
 
-/* --- 7. LOADING SPINNER --- */
+/* --- 6. INDICADOR DE CARGA --- */
 .loader-overlay {
     position: absolute;
     top: 0;
@@ -457,19 +467,16 @@ input:checked + .slider:before { transform: translateX(22px); }
     transition: opacity 0.3s ease;
 }
 .loader-text {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: var(--accent-color);
-    margin: 0;
-    text-align: center;
-    padding: 0 20px;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #555;
 }
 .spinner {
-    border: 4px solid #e9ecef;
+    border: 4px solid #f3f3f3;
     border-top: 4px solid var(--accent-color);
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     animation: spin 0.8s linear infinite;
 }
 @keyframes spin {
@@ -477,32 +484,34 @@ input:checked + .slider:before { transform: translateX(22px); }
     100% { transform: rotate(360deg); }
 }
 
-/* --- 8. CONTROLES DE LEAFLET (PERSONALIZACIÓN) --- */
+/* --- 7. OTROS CONTROLES LEAFLET --- */
 .info.legend {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 10px 15px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--panel-shadow);
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(5px);
+    padding: 10px 12px;
+    border-radius: 4px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
     line-height: 1.5;
     color: #333;
-    font-size: 13px;
+    font-size: 12px;
 }
-.info.legend h4 { margin: 0 0 8px; font-size: 14px; text-align: center; }
-.info.legend i { width: 16px; height: 16px; float: left; margin-right: 8px; opacity: 1; border: 1px solid #ccc; border-radius: 3px; }
+.info.legend h4 { margin: 0 0 8px; font-size: 13px; text-align: center; font-weight: bold; }
+.info.legend i { width: 16px; height: 16px; float: left; margin-right: 8px; opacity: 0.9; border: 1px solid rgba(0,0,0,0.1); }
 
 .leaflet-logo-control {
-    background: none !important;
+    background-color: transparent !important;
+    border: none !important;
     box-shadow: none !important;
-    margin: 0 10px 10px 0 !important;
+    margin: 0 10px 5px 0 !important;
 }
 .leaflet-logo-control img {
-    height: 25px;
+    height: 24px; /* Ajustado para que no sea invasivo */
     width: auto;
-    background: rgba(255,255,255,0.7);
-    padding: 2px;
-    border-radius: 4px;
+    opacity: 0.8;
 }
+.leaflet-logo-control img:hover { opacity: 1; }
 
+/* Botón Imprimir */
 .leaflet-control-custom {
     background-color: white;
     width: 34px;
@@ -514,128 +523,150 @@ input:checked + .slider:before { transform: translateX(22px); }
     justify-content: center;
     align-items: center;
 }
-.leaflet-control-custom svg { width: 20px; height: 20px; }
 .leaflet-control-custom:hover { background-color: #f4f4f4; }
+.leaflet-control-custom svg { width: 20px; height: 20px; }
 
-/* --- 9. MEDIA QUERIES (RESPONSIVIDAD AVANZADA) --- */
+/* --- 8. SISTEMA DE RESPONSIVIDAD AVANZADO --- */
 
-/* Tabletas y Móviles Grandes */
+/* Tabletas en Portrait y Móviles Grandes (iPad, Tablets Android) < 992px */
+@media (max-width: 992px) {
+    :root {
+        --panel-width: 300px; /* Paneles un poco más estrechos */
+    }
+    .leaflet-custom-controls {
+        /* Asegura que no tapen toda la altura */
+        max-height: calc(100% - 80px);
+    }
+}
+
+/* Móviles y Tablets Pequeñas < 768px */
 @media (max-width: 768px) {
     :root {
-        --header-height: 60px; /* Header más compacto */
-        --panel-width: 320px;
+        --header-height: 60px;
+        --panel-width: 100%; /* Paneles ocupan todo el ancho disponible en modo Drawer */
+    }
+
+    .main-header {
+        padding: 0 15px;
     }
     
-    .main-header { padding: 0 10px; }
-    .logo-container img { height: 35px; }
+    .logo-container img { height: 32px; }
 
-    /* El panel de controles ocupa un ancho fijo pero seguro */
+    /* Transformar Panel Izquierdo a Drawer Lateral Completo */
     .leaflet-custom-controls {
-        width: 300px;
-        max-width: calc(100vw - 20px); /* Margen de seguridad */
-        top: 10px; 
-        left: 10px; /* Separado del borde */
-        border-radius: var(--border-radius);
-        padding: 15px;
+        top: 0 !important; /* Sobrescribe el inline style de JS si es necesario */
+        left: 0;
+        height: 100%;
+        max-height: none;
+        width: 85%; /* Deja ver un poco del mapa a la derecha */
+        max-width: 320px;
+        border-radius: 0;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        z-index: 2000; /* Superposición alta */
+        padding-top: 60px; /* Espacio para no tapar el botón de cerrar si fuera fijo, o estilo visual */
     }
     
-    /* Ajustar posición cuando está colapsado en móvil */
     .leaflet-custom-controls.collapsed {
-        transform: translateX(calc(-100% - 30px));
+        transform: translateX(-110%); /* Asegura que salga completamente */
     }
 
-    /* Panel de Info se mueve abajo para no tapar el mapa completo */
-    .info-panel {
-        top: auto;
-        bottom: 25px; /* Encima de los controles de atribución/zoom inferiores */
-        right: 10px;
-        left: 10px;
-        width: auto;
-        max-width: none;
-        transform: translateY(calc(100% + 20px));
-        border-radius: var(--border-radius);
-        max-height: 45vh; /* Máximo 45% de la pantalla */
+    /* Botón Menú Hamburguesa (Open Button) */
+    .leaflet-open-button {
+        top: 10px !important;
+        left: 10px !important;
+        width: 40px;
+        height: 40px;
     }
-    
+
+    /* Panel de Información (Bottom Sheet) */
+    .info-panel {
+        width: 100%;
+        height: auto;
+        max-height: 60vh; /* Máximo 60% de la pantalla */
+        top: auto;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        border-radius: 16px 16px 0 0; /* Bordes redondeados solo arriba */
+        transform: translateY(110%);
+        padding-bottom: var(--safe-bottom); /* Protección para iPhone X+ */
+    }
+
     .info-panel.is-visible {
         transform: translateY(0);
     }
-}
-
-/* Móviles Pequeños (Vertical) */
-@media (max-width: 480px) {
-    :root {
-        --header-height: 55px;
+    
+    #info-panel-content {
+         /* Asegura scroll si el contenido es largo en pantallas apaisadas */
+         max-height: calc(60vh - 60px); 
     }
     
-    .logo-container img { height: 30px; }
-    
-    .leaflet-custom-controls {
-        top: 0;
-        left: 0;
-        width: 100%; /* Panel ocupa todo el ancho */
-        max-width: 100%;
-        height: auto;
-        border-radius: 0 0 var(--border-radius) var(--border-radius);
-        /* Importante: Dejar espacio abajo para interactuar con el mapa si es muy largo */
-        max-height: 75vh; 
-    }
-
-    /* Botón de hamburguesa ajustado */
-    .leaflet-open-button {
-        margin-top: 10px;
-        margin-left: 10px;
+    /* Ajuste de controles del mapa para que no queden bajo el bottom sheet */
+    .leaflet-bottom {
+        bottom: 30px;
+        transition: bottom 0.3s;
     }
     
-    .control-section h1 { font-size: 1.1em; }
-    
-    /* Leyenda más compacta */
+    /* Leyenda más compacta en móvil */
     .info.legend {
-        margin-bottom: 30px; /* Para que no choque con la escala/logo */
-        padding: 5px 10px;
+        margin-bottom: 20px;
         font-size: 11px;
+        padding: 6px 8px;
+        max-width: 150px;
     }
     .info.legend i { width: 12px; height: 12px; }
+    .info.legend br { display: none; } /* Hacer leyenda horizontal si es posible o compacta */
+    .info.legend i { display: inline-block; float: none; margin-bottom: -3px;}
     
-    /* Ocultar textos largos si es necesario en headers muy pequeños */
-    .loader-text { font-size: 1em; }
+    /* Botones de Zoom más accesibles */
+    .leaflet-touch .leaflet-bar a {
+        width: 34px;
+        height: 34px;
+        line-height: 34px;
+    }
 }
 
-/* Orientación Horizontal en Móviles (Landscape) */
-@media (max-height: 500px) and (orientation: landscape) {
-    :root {
-        --header-height: 50px;
+/* Móviles Muy Pequeños (iPhone SE, Galaxy Fold cover) < 380px */
+@media (max-width: 380px) {
+    .control-section h1 { font-size: 1.1em; }
+    .logo-container img { height: 28px; }
+    
+    /* Ocultar logo secundario si no cabe */
+    .logo-container:last-child {
+        display: none;
     }
-    .main-header { display: flex; } /* A veces conviene ocultarlo, pero aquí lo dejamos compacto */
     
     .leaflet-custom-controls {
-        width: 280px;
-        padding: 10px;
-        max-height: calc(100vh - 60px); /* Aprovechar altura completa menos header */
+        width: 100%; /* Ocupar toda la pantalla en móviles tiny */
+        max-width: none;
     }
     
-    .control-section { margin-bottom: 15px; }
-    
-    /* Info Panel lateral en landscape */
-    .info-panel {
-        top: 10px;
-        bottom: 10px;
-        right: 10px;
-        left: auto;
-        width: 250px;
-        height: auto;
-        max-height: calc(100vh - 20px);
-        transform: translateX(calc(100% + 20px));
-    }
-    .info-panel.is-visible { transform: translateX(0); }
+    .coord-input-group { flex-direction: column; gap: 5px; }
+    .coord-input-group input { width: 100%; }
 }
 
-/* Pantallas Grandes (4K / TV) */
-@media (min-width: 1600px) {
-    :root {
-        --panel-width: 400px;
+/* Modo Paisaje en Móviles (Landscape) */
+@media (max-height: 500px) and (orientation: landscape) {
+    :root { --header-height: 50px; }
+    
+    .main-header { display: none; } /* Ocultar header para ganar espacio vertical */
+    .map-container { height: 100vh; }
+    
+    .leaflet-custom-controls {
+        padding-top: 10px;
+        max-height: 100vh;
     }
-    .control-section h1 { font-size: 1.6em; }
-    .control-section > label { font-size: 16px; }
-    .action-button, #acuifero-select, #search-input { font-size: 16px; padding: 15px; }
+    
+    .info-panel {
+        width: 50%; /* Panel lateral en vez de bottom sheet para landscape */
+        height: 100%;
+        max-height: 100%;
+        top: 0;
+        right: 0;
+        bottom: auto;
+        left: auto;
+        border-radius: 0;
+        transform: translateX(110%);
+    }
+    .info-panel.is-visible { transform: translateX(0); }
 }
