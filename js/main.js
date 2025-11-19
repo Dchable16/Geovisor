@@ -87,11 +87,10 @@ class GeovisorApp {
         await this.loadLayers();
         this.leafletLayers.graticule = L.latlngGraticule({
             showLabel: true,
-            color: '#333',       // Color de la línea
-            weight: 0.8,         // Grosor
-            opacity: 0.6,        // Opacidad
-            dashArray: [5, 5],   // Opcional: hace la línea punteada (estético)
-            zoomInterval: [      // Opcional: define la separación de líneas según el zoom
+            color: '#333',
+            weight: 0.8,
+            opacity: 0.6,
+            zoomInterval: [
                 {start: 2, end: 4, interval: 10},
                 {start: 5, end: 7, interval: 5},
                 {start: 8, end: 10, interval: 1},
