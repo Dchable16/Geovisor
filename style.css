@@ -227,6 +227,31 @@ body {
     color: var(--text-light);
     font-size: 0.95em;
 }
+/* style.css */
+.theme-switch {
+    display: flex;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+.theme-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+.theme-btn.active {
+    background: #007BFF;
+    color: white;
+    font-weight: bold;
+}
+.theme-btn:hover:not(.active) {
+    background: #e0e0e0;
+}
 
 /* --- 5. ELEMENTOS DE UI --- */
 .control-section { 
