@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "fuente": "CONAGUA - Actualización 2024",
+    "fecha_actualizacion": "2025-01-15"
+  },
+  "data": {
+    "0201": {
+      "nombre": "TIJUANA",
+      "disponibilidad": -5.2,
+      "transmisividad": 0.0045,
+      "coef_almacenamiento": 0.0001,
+      "tipo_acuifero": "Libre",
+      "profundidad_nivel_estatico": 15.5,
+      "calidad_agua": "Salobre"
+    },
+    "0202": {
+      "nombre": "LA MISION",
+      "disponibilidad": 2.1,
+      "transmisividad": 0.012,
+      "coef_almacenamiento": 0.005,
+      "tipo_acuifero": "Confinado",
+      "profundidad_nivel_estatico": 8.2,
+      "calidad_agua": "Dulce"
+    },
+    "0210": {
+      "nombre": "VALLE DE GUADALUPE",
+      "disponibilidad": -12.5,
+      "transmisividad": 0.0015,
+      "coef_almacenamiento": 0.15,
+      "tipo_acuifero": "Libre",
+      "profundidad_nivel_estatico": 25.0,
+      "calidad_agua": "Buena"
+    }
+  }
+}
