@@ -1,6 +1,7 @@
 /**
  * @file uiManager.js
  * @description Gestiona el panel de controles, interacción del usuario y visualización de datos.
+ * Actualizado para soportar capas de Vulnerabilidad, Hidráulica y Pozos.
  */
 
 import { CONFIG } from './config.js';
@@ -24,6 +25,7 @@ export class UIManager {
         const infoPanel = L.DomUtil.create('div', 'info-panel');
         this.nodes.infoPanelContainer = infoPanel;
         
+        // Clonar plantilla
         const template = document.querySelector('#info-panel-template');
         if (template) {
             infoPanel.appendChild(template.content.cloneNode(true));
@@ -31,27 +33,34 @@ export class UIManager {
         
         mapContainer.appendChild(infoPanel); 
         
+        // Referencias a elementos internos del panel
         this.nodes.infoPanelContent = infoPanel.querySelector('#info-panel-content');
         this.nodes.infoPanelTitle = infoPanel.querySelector('#info-panel-title');
         this.nodes.infoPanelClose = infoPanel.querySelector('.info-panel-close');
 
         this.nodes.infoPanelClose.addEventListener('click', () => this.hideInfoPanel());
+        
+        // Evitar que los clics en el panel pasen al mapa
         L.DomEvent.disableClickPropagation(infoPanel);
     }
 
     /**
-     * Muestra el panel con datos. Detecta automáticamente si es Vulnerabilidad o Hidráulica.
+     * Muestra el panel con datos.
+     * Detecta automáticamente si es un Acuífero (Vulnerabilidad/Hidráulica) o un Pozo.
+     * @param {Object} properties - Objeto con los datos a mostrar.
+     * @param {Object} [vulnerabilityMap] - Mapa de códigos de vulnerabilidad (opcional).
      */
     showInfoPanel(properties, vulnerabilityMap) {
         let htmlContent = '';
         
-        // Detectar Título (Maneja ambos formatos de datos)
-        const title = properties.NOM_ACUIF || properties.Nombre || properties.nombre || "Detalles del Acuífero";
+        // 1. DETECTAR TÍTULO
+        // Intenta buscar campos comunes de nombre
+        const title = properties.NOM_ACUIF || properties["Nombre del Pozo"] || properties.nombre || properties.Nombre || "Detalles";
         this.nodes.infoPanelTitle.textContent = title;
 
-        // Lógica de renderizado condicional
+        // 2. DETECTAR TIPO DE CONTENIDO
         if (properties.VULNERABIL !== undefined) {
-            // --- MODO VULNERABILIDAD ---
+            // --- CASO A: MODO VULNERABILIDAD ---
             const attributes = [
                 { key: 'NOM_ACUIF', label: 'Nombre' },
                 { key: 'CLAVE_ACUI', label: 'Clave' },
@@ -68,24 +77,33 @@ export class UIManager {
             });
 
         } else {
-            // --- MODO HIDRÁULICA (Genérico) ---
-            // Renderiza cualquier propiedad que venga en el objeto, excluyendo geometrías o IDs internos
-            const ignoreKeys = ['geometry', 'fid', 'cat', 'type'];
+            // --- CASO B: MODO HIDRÁULICA O POZOS ---
+            // Renderizado genérico inteligente
             
-            // Definir orden preferente para ciertos campos
-            const priorityKeys = ['Clave', 'tipo_acuifero', 'disponibilidad', 'calidad_agua'];
+            // Campos que NO queremos mostrar en la tabla
+            const ignoreKeys = ['geometry', 'fid', 'cat', 'type', 'bbox', 'Id', 'id'];
             
-            // 1. Renderizar campos prioritarios primero
+            // Campos prioritarios para mostrar arriba
+            const priorityKeys = ['Clave', 'Tipo', 'Acuífero', 'Transmisividad', 'Conductividad'];
+            
+            // 1. Renderizar Prioritarios
             priorityKeys.forEach(key => {
-                if (properties[key] !== undefined) {
-                    htmlContent += this._buildInfoRow(this._formatLabel(key), properties[key]);
+                // Buscamos keys que coincidan (case-insensitive o exactas)
+                const foundKey = Object.keys(properties).find(k => k === key || k.toLowerCase() === key.toLowerCase());
+                if (foundKey && properties[foundKey] !== undefined) {
+                    htmlContent += this._buildInfoRow(key, properties[foundKey]);
                 }
             });
 
             // 2. Renderizar el resto
             Object.keys(properties).forEach(key => {
-                if (!ignoreKeys.includes(key) && !priorityKeys.includes(key) && key !== 'Nombre' && key !== 'nombre') {
-                    htmlContent += this._buildInfoRow(this._formatLabel(key), properties[key]);
+                if (!ignoreKeys.includes(key) && !priorityKeys.includes(key) && 
+                    !priorityKeys.map(k => k.toLowerCase()).includes(key.toLowerCase()) &&
+                    key !== 'Nombre' && key !== 'nombre' && key !== 'NOM_ACUIF' && key !== 'NOMBRE_POZO') {
+                    
+                    // Formatear valor si es muy largo o tiene muchos decimales (opcional)
+                    let val = properties[key];
+                    htmlContent += this._buildInfoRow(this._formatLabel(key), val);
                 }
             });
         }
@@ -98,16 +116,18 @@ export class UIManager {
         this.nodes.infoPanelContainer.classList.remove('is-visible');
     }
 
-    // Helper para crear filas del panel
+    // Helper HTML para filas
     _buildInfoRow(label, value) {
+        // Si el valor es nulo o undefined, mostramos 'S/D' (Sin Dato)
+        const displayValue = (value !== undefined && value !== null && value !== '') ? value : 'S/D';
         return `
             <div class="info-panel-row">
                 <strong>${label}:</strong>
-                <span class="info-panel-value">${value !== undefined && value !== null ? value : 'S/D'}</span>
+                <span class="info-panel-value">${displayValue}</span>
             </div>`;
     }
 
-    // Helper para formatear llaves (ej: "tipo_acuifero" -> "Tipo Acuifero")
+    // Helper para formatear etiquetas (ej: "tipo_acuifero" -> "Tipo Acuifero")
     _formatLabel(key) {
         return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
@@ -134,6 +154,7 @@ export class UIManager {
 
                 this.generateVulnerabilityRadios(container); 
                 
+                // Ajuste de posición respecto al botón de abrir
                 setTimeout(() => {
                     if (this.nodes.openButton) {
                         container.style.top = `${this.nodes.openButton.offsetTop}px`;
@@ -187,22 +208,23 @@ export class UIManager {
     
     // --- CACHÉ DE REFERENCIAS DOM ---
     cacheNodes(container) {
-        // Botones de Tema (NUEVOS)
+        // Botones de Tema (Vulnerabilidad vs Hidráulica)
         this.nodes.btnThemeVuln = container.querySelector('#btn-theme-vulnerability');
         this.nodes.btnThemeHydro = container.querySelector('#btn-theme-hydraulics');
         this.nodes.vulnerabilitySection = container.querySelector('#vulnerability-radio-group')?.closest('.control-section');
 
-        // Controles existentes
+        // Toggles de Capas
+        this.nodes.wellsToggle = container.querySelector('#wells-toggle'); // <--- NUEVO
+        this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
+        this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
+        this.nodes.graticuleToggle = container.querySelector('#graticule-toggle');
+
+        // Controles generales
         this.nodes.aquiferSelect = container.querySelector('#acuifero-select');
         this.nodes.opacitySlider = container.querySelector('#opacity-slider');
         this.nodes.opacityValueSpan = container.querySelector('#opacity-value');
         this.nodes.filterRadios = Array.from(container.querySelectorAll('input[name="vulnerability"]'));
         this.nodes.closeButton = container.querySelector('.panel-close-button');
-        
-        // Capas
-        this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
-        this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
-        this.nodes.graticuleToggle = container.querySelector('#graticule-toggle');
         
         // Búsqueda y Coordenadas
         this.nodes.searchInput = container.querySelector('#search-input');
@@ -218,23 +240,29 @@ export class UIManager {
     addListeners() {
         this.nodes.closeButton.addEventListener('click', () => this.setPanelCollapsed(true));
         
-        // LISTENERS DE TEMA (NUEVOS)
+        // LISTENERS DE TEMA
         if (this.nodes.btnThemeVuln && this.nodes.btnThemeHydro) {
             this.nodes.btnThemeVuln.addEventListener('click', () => this.onStateChange({ activeTheme: 'vulnerability' }));
             this.nodes.btnThemeHydro.addEventListener('click', () => this.onStateChange({ activeTheme: 'hydraulics' }));
         }
 
-        // Listeners generales
+        // LISTENER DE POZOS (NUEVO)
+        if (this.nodes.wellsToggle) {
+            this.nodes.wellsToggle.addEventListener('change', e => this.onStateChange({ areWellsVisible: e.target.checked }));
+        }
+
+        // Listeners de otras capas
+        this.nodes.coastlineToggle.addEventListener('change', e => this.onStateChange({ isCoastlineVisible: e.target.checked }));
+        this.nodes.coastline1kmToggle.addEventListener('change', e => this.onStateChange({ isCoastline1kmVisible: e.target.checked }));
+        this.nodes.graticuleToggle.addEventListener('change', e => this.onStateChange({ isGraticuleVisible: e.target.checked }));
+        
+        // Controles comunes
         this.nodes.aquiferSelect.addEventListener('change', e => this.onStateChange({ selectedAquifer: e.target.value }));
         this.nodes.opacitySlider.addEventListener('input', e => this.onStateChange({ opacity: parseFloat(e.target.value) }));
         
         this.nodes.filterRadios.forEach(radio => {
             radio.addEventListener('change', e => this.onStateChange({ filterValue: e.target.value }));
         });
-        
-        this.nodes.coastlineToggle.addEventListener('change', e => this.onStateChange({ isCoastlineVisible: e.target.checked }));
-        this.nodes.coastline1kmToggle.addEventListener('change', e => this.onStateChange({ isCoastline1kmVisible: e.target.checked }));
-        this.nodes.graticuleToggle.addEventListener('change', e => this.onStateChange({ isGraticuleVisible: e.target.checked }));
         
         // Búsqueda
         this.nodes.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
@@ -265,33 +293,40 @@ export class UIManager {
 
     // --- ACTUALIZACIÓN DE LA VISTA BASADA EN EL ESTADO ---
     updateView(state) {
-        // 1. Actualizar Sliders y Toggles comunes
+        // 1. Sliders y Texto
         this.nodes.opacityValueSpan.textContent = `${Math.round(state.opacity * 100)}%`;
         this.nodes.opacitySlider.value = state.opacity;
-        this.nodes.coastlineToggle.checked = state.isCoastlineVisible;
-        this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
-        this.nodes.graticuleToggle.checked = state.isGraticuleVisible;
+        
+        // 2. Toggles de Capas
+        if(this.nodes.coastlineToggle) this.nodes.coastlineToggle.checked = state.isCoastlineVisible;
+        if(this.nodes.coastline1kmToggle) this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
+        if(this.nodes.graticuleToggle) this.nodes.graticuleToggle.checked = state.isGraticuleVisible;
+        
+        // Toggle de Pozos (NUEVO)
+        if (this.nodes.wellsToggle) {
+            this.nodes.wellsToggle.checked = state.areWellsVisible;
+        }
 
-        // 2. Actualizar Select de Acuíferos
-        if (this.nodes.aquiferSelect.value !== state.selectedAquifer) {
+        // 3. Select de Acuíferos
+        if (this.nodes.aquiferSelect && this.nodes.aquiferSelect.value !== state.selectedAquifer) {
             this.nodes.aquiferSelect.value = state.selectedAquifer;
         }
 
-        // 3. Actualizar Radio Buttons (solo si aplica)
+        // 4. Radio Buttons (Filtros Vulnerabilidad)
         const radioToCheck = this.nodes.filterRadios.find(radio => radio.value === String(state.filterValue));
         if (radioToCheck) radioToCheck.checked = true;
 
-        // 4. ACTUALIZACIÓN DE TEMA (NUEVO)
+        // 5. ACTUALIZACIÓN DE TEMA (Vulnerabilidad vs Hidráulica)
         if (this.nodes.btnThemeVuln && this.nodes.btnThemeHydro) {
             if (state.activeTheme === 'vulnerability') {
                 this.nodes.btnThemeVuln.classList.add('active');
                 this.nodes.btnThemeHydro.classList.remove('active');
-                // Mostrar controles de vulnerabilidad
+                // Mostrar controles exclusivos de vulnerabilidad
                 if(this.nodes.vulnerabilitySection) this.nodes.vulnerabilitySection.style.display = 'block';
             } else {
                 this.nodes.btnThemeHydro.classList.add('active');
                 this.nodes.btnThemeVuln.classList.remove('active');
-                // Ocultar controles de vulnerabilidad (ya que no aplican a hidráulica)
+                // Ocultar controles exclusivos de vulnerabilidad
                 if(this.nodes.vulnerabilitySection) this.nodes.vulnerabilitySection.style.display = 'none';
             }
         }
@@ -384,10 +419,8 @@ export class UIManager {
     
     populateAquiferSelect(aquiferNames) {
         if(!this.nodes.aquiferSelect) return;
-        // Evitar duplicados si se llama varias veces
         const currentOptions = new Set(Array.from(this.nodes.aquiferSelect.options).map(o => o.value));
         const newOptions = aquiferNames.sort().filter(name => !currentOptions.has(name));
-        
         this.nodes.aquiferSelect.innerHTML += newOptions.map(name => `<option value="${name}">${name}</option>`).join('');
     }
 }
