@@ -401,10 +401,20 @@ class GeovisorApp {
         layer.on('click', (e) => {
             L.DomEvent.stop(e);
             this.updateState({ selectedWellId: feature.properties.NOMBRE_POZO });
-            this.uiManager.showInfoPanel({
+            const props = feature.properties;
+            const displayData = {
                 "Tipo": "Pozo de Monitoreo",
-                ...feature.properties
-            });
+                "Nombre del Pozo": props.NOMBRE_POZO,
+                "Acuífero": props.ACUIFERO,
+                // Formatear con unidades si existen
+                "Transmisividad": props.T_m2d ? `${props.T_m2d} m²/d` : null,
+                "Conductividad": props.K_md ? `${props.K_md} m/d` : null,
+                "Coef. Almacenamiento": props.S,
+                "Caudal (Q)": props.Q_lps ? `${props.Q_lps} lps` : null,
+                "Profundidad": props.PROFUNDIDAD ? `${props.PROFUNDIDAD} m` : null
+            };
+
+            this.uiManager.showInfoPanel(displayData);
         });
     }
 
