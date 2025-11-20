@@ -32,6 +32,13 @@
     <template id="panel-template">
         <div class="panel-close-button" title="Ocultar controles">«</div>
         <h1>Vulnerabilidad a la Intrusión Salina</h1>
+        <div class="control-section theme-selector-container">
+            <label>Modo de Visualización:</label>
+            <div class="theme-switch">
+                <button id="btn-theme-vulnerability" class="theme-btn active" data-theme="vulnerability">Vulnerabilidad</button>
+                <button id="btn-theme-hydraulics" class="theme-btn" data-theme="hydraulics">Hidráulica</button>
+            </div>
+        </div>
         <div class="control-section">
             <label for="search-input">Buscar acuífero (por Nombre o Clave):</label>
             <input type="text" id="search-input" placeholder="Escribe aquí para buscar...">
