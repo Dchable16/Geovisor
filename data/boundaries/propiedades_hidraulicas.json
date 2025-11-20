@@ -1,35 +1,140 @@
 {
-  "metadata": {
-    "fuente": "CONAGUA - Actualización 2024",
-    "fecha_actualizacion": "2025-01-15"
-  },
   "data": {
-    "0201": {
-      "nombre": "TIJUANA",
-      "disponibilidad": -5.2,
-      "transmisividad": 0.0045,
-      "coef_almacenamiento": 0.0001,
-      "tipo_acuifero": "Libre",
-      "profundidad_nivel_estatico": 15.5,
-      "calidad_agua": "Salobre"
-    },
-    "0202": {
-      "nombre": "LA MISION",
-      "disponibilidad": 2.1,
-      "transmisividad": 0.012,
-      "coef_almacenamiento": 0.005,
-      "tipo_acuifero": "Confinado",
-      "profundidad_nivel_estatico": 8.2,
-      "calidad_agua": "Dulce"
-    },
     "0210": {
-      "nombre": "VALLE DE GUADALUPE",
-      "disponibilidad": -12.5,
-      "transmisividad": 0.0015,
-      "coef_almacenamiento": 0.15,
-      "tipo_acuifero": "Libre",
-      "profundidad_nivel_estatico": 25.0,
-      "calidad_agua": "Buena"
+      "nombre": "VALLE DE MEXICALLI",
+      "transmisividad_media": null,
+      "conductividad_media": 186.8616,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 12
+    },
+    "0221": {
+      "nombre": "SAN QUINTIN",
+      "transmisividad_media": 101.8581,
+      "conductividad_media": 6.121,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 15
+    },
+    "0324": {
+      "nombre": "LA PAZ",
+      "transmisividad_media": 1785.9523,
+      "conductividad_media": 47.9532,
+      "coef_almacenamiento_medio": 0.1,
+      "profundidad_media": null,
+      "pozos_registrados": 19
+    },
+    "0405": {
+      "nombre": "XPUJIL",
+      "transmisividad_media": 2257.75,
+      "conductividad_media": 45.65,
+      "coef_almacenamiento_medio": 0.25,
+      "profundidad_media": 160.0,
+      "pozos_registrados": 4
+    },
+    "0506": {
+      "nombre": "EL HUNDIDO",
+      "transmisividad_media": 6524.8488,
+      "conductividad_media": 6.1876,
+      "coef_almacenamiento_medio": 0.0,
+      "profundidad_media": 97.75,
+      "pozos_registrados": 6
+    },
+    "0528": {
+      "nombre": "CUATROCIENEGAS",
+      "transmisividad_media": 8948.7223,
+      "conductividad_media": 89.4872,
+      "coef_almacenamiento_medio": 0.0002,
+      "profundidad_media": 79.75,
+      "pozos_registrados": 4
+    },
+    "1310": {
+      "nombre": "VALLE DEL MEZQUITAL",
+      "transmisividad_media": 1225.8554,
+      "conductividad_media": 38.9331,
+      "coef_almacenamiento_medio": 0.0012,
+      "profundidad_media": null,
+      "pozos_registrados": 13
+    },
+    "1701": {
+      "nombre": "Cuernavaca",
+      "transmisividad_media": 204.336,
+      "conductividad_media": 7.897,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 2
+    },
+    "1702": {
+      "nombre": "Cuautla-Yautepec",
+      "transmisividad_media": 2576.4941,
+      "conductividad_media": 1704.1081,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 3
+    },
+    "1703": {
+      "nombre": "Zacatepec",
+      "transmisividad_media": 821.448,
+      "conductividad_media": 142.4736,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 4
+    },
+    "1704": {
+      "nombre": "Tepalcingo-Axochiapan",
+      "transmisividad_media": 72.8646,
+      "conductividad_media": 5.0419,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 5
+    },
+    "2603": {
+      "nombre": "SONOYTA - PUERTO PEÑASCO",
+      "transmisividad_media": null,
+      "conductividad_media": 4.3027,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 1
+    },
+    "2604": {
+      "nombre": "ARROYO SAHUARO",
+      "transmisividad_media": null,
+      "conductividad_media": 66.8378,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 4
+    },
+    "2616": {
+      "nombre": "RÍO SAN PEDRO",
+      "transmisividad_media": 570.687,
+      "conductividad_media": 1.5208,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 24
+    },
+    "2636": {
+      "nombre": "SAN JOSE DE GUAYMAS",
+      "transmisividad_media": 596.039,
+      "conductividad_media": 46.277,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": null,
+      "pozos_registrados": 15
+    },
+    "3105": {
+      "nombre": "PENINSULA DE YUCATAN",
+      "transmisividad_media": 288.6,
+      "conductividad_media": 4.4,
+      "coef_almacenamiento_medio": 0.5,
+      "profundidad_media": 90.0,
+      "pozos_registrados": 4
+    },
+    "3227": {
+      "nombre": "XPUJIL",
+      "transmisividad_media": 56.8,
+      "conductividad_media": 1.9008,
+      "coef_almacenamiento_medio": null,
+      "profundidad_media": 70.0,
+      "pozos_registrados": 1
     }
   }
 }
