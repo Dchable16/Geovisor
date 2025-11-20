@@ -1,17 +1,16 @@
 /**
  * @file main.js
- * @description Archivo principal que inicializa el geovisor.
+ * @description Archivo principal actualizado con arquitectura de Doble Capa (Vulnerabilidad/Hidráulica).
  */
 'use strict';
 
 import { CONFIG } from './config.js';
-// Importamos ambas funciones de dataLoader
 import { fetchGeoJSON, fetchAllGeoJSON } from './dataLoader.js';
 import AutoGraticule from 'https://esm.sh/leaflet-auto-graticule';
 import { MapManager } from './mapManager.js';
 import { UIManager } from './uiManager.js';
 
-// --- ESTADO INICIAL ---
+// --- ESTADO INICIAL ACTUALIZADO ---
 const INITIAL_STATE = {
     opacity: 0.5,
     filterValue: 'all',
@@ -19,297 +18,318 @@ const INITIAL_STATE = {
     isCoastlineVisible: false,
     isCoastline1kmVisible: false,
     isGraticuleVisible: false,
+    activeTheme: 'vulnerability' // NUEVO: 'vulnerability' | 'hydraulics'
 };
 
 class GeovisorApp {
     constructor() {
-        // Usamos el estado inicial
         this.state = { ...INITIAL_STATE };
 
         this.data = {
-            aquifers: {}, // Almacenará las capas por nombre de acuífero
-            keyToNameMap: {} // Mapa para buscar por Clave
+            aquifers: {},       // Referencias a capas de vulnerabilidad (GeoJSON fragmentado)
+            keyToNameMap: {},   // Mapa Clave -> Nombre
+            hydraulicProps: {}  // NUEVO: "Base de datos" alfanumérica (JSON)
         };
 
-        this.leafletLayers = {}; // Almacenará las capas de Leaflet
+        this.leafletLayers = {
+            vulnerability: null,    // Capa compleja (mosaico)
+            aquiferBoundaries: null, // NUEVO: Capa simple (polígonos únicos)
+            coastline: null,
+            coastline1km: null,
+            graticule: null
+        };
 
-        // Inicializar los módulos
         this.mapManager = new MapManager(CONFIG.mapId);
         this.uiManager = new UIManager(this.mapManager.map, this.handleStateChange.bind(this));
         
         this.init();
     }
 
-    // Método para manejar los cambios de estado provenientes de la UI
     handleStateChange(newState) {
         this.updateState(newState);
     }
 
-    // Método centralizado para actualizar el estado y volver a renderizar
     updateState(newState) {
-
-        // 1. Comprobar si es una acción de reinicio
         if (newState.reset === true) {
             this.state = { ...INITIAL_STATE };
-            this.mapManager.resetView(); // Llama al método en mapManager
-            this.render(); // Vuelve a dibujar todo con el estado limpio
-            return; // Salir de la función
+            this.mapManager.resetView();
+            this.render();
+            return;
         }
 
-        // 2. Comprobar si es una acción de "Volar a"
         if (newState.flyToCoords) {
             const [lat, lon, name] = newState.flyToCoords;
             this.mapManager.flyToCoords(lat, lon, name);
         }
 
-        // 3. Si no es reinicio, continuar con la lógica normal de estado
         this.state = { ...this.state, ...newState };
-        console.log("Nuevo estado:", this.state);
+        console.log("Estado actualizado:", this.state);
 
-        // Lógica de zoom al seleccionar/deseleccionar acuífero
+        // Lógica de Zoom Inteligente
         if (newState.selectedAquifer !== undefined) {
-             if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
-                 // Acuífero seleccionado: hacer zoom a sus límites
+             // Si estamos en modo vulnerabilidad, usamos los fragmentos
+             if (this.state.activeTheme === 'vulnerability' && this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
                  const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
                  this.mapManager.fitBounds(group.getBounds());
-             } else if (this.leafletLayers.vulnerability && newState.selectedAquifer === null) { 
-                 // Solo hacer zoom out si se deselecciona activamente
-                 this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
              }
+             // TODO: Agregar lógica de zoom para modo hidráulico si se selecciona desde la lista
         }
 
         this.render();
     }
 
     async init() {
-        this.uiManager.setLoading(true); // 1. Mostrar loader al iniciar
+        this.uiManager.setLoading(true);
+        
+        // 1. Cargar Datos Alfanuméricos (La "Base de Datos" Hidráulica)
+        // Se asume que existe data/propiedades_hidraulicas.json
+        try {
+            const hydroResponse = await fetch('data/propiedades_hidraulicas.json');
+            if (hydroResponse.ok) {
+                this.data.hydraulicProps = await hydroResponse.json();
+                console.log("Datos hidráulicos cargados:", Object.keys(this.data.hydraulicProps.data).length, "registros.");
+            } else {
+                console.warn("No se encontró propiedades_hidraulicas.json, el modo hidráulico estará vacío.");
+            }
+        } catch (e) {
+            console.error("Error cargando datos hidráulicos:", e);
+        }
+
+        // 2. Cargar Capas Geográficas
         await this.loadLayers();
+
+        // 3. Configurar Graticule
         this.leafletLayers.graticule = new AutoGraticule({
             color: '#333', 
             weight: 0.8,
             opacity: 0.5,
-            minDistance: 100 // Distancia mínima para evitar solapamiento
+            minDistance: 100
         });
-        this.uiManager.setLoading(false); // 2. Ocultar loader tras la carga
+
+        this.uiManager.setLoading(false);
         this.uiManager.updateView(this.state);
         
-        // 3. Zoom inicial al extent completo tras la carga
+        // Zoom inicial
         if (this.leafletLayers.vulnerability) {
             this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
         }
     }
 
     async loadLayers() {
-        // Cargar capas auxiliares (Líneas de costa)
+        // --- Carga de Capas Auxiliares ---
         const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
-        if (coastlineData) {
-            this.leafletLayers.coastline = L.geoJson(coastlineData, { style: CONFIG.styles.coastline });
-        }
+        if (coastlineData) this.leafletLayers.coastline = L.geoJson(coastlineData, { style: CONFIG.styles.coastline });
         
         const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
-        if (coastline1kmData) {
-            this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { style: CONFIG.styles.coastline1km });
-        }
+        if (coastline1kmData) this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { style: CONFIG.styles.coastline1km });
 
-        // --- INICIO DE LA LÓGICA DE CARGA MÚLTIPLE ---
-        
-        // 1. Cargar el archivo manifiesto
-        console.log("Cargando manifiesto desde:", CONFIG.dataManifestUrl);
+        // --- Carga CAPA 1: Vulnerabilidad (Fragmentada) ---
         const manifest = await fetchGeoJSON(CONFIG.dataManifestUrl);
-        
-        if (!manifest || !manifest.files || !manifest.basePath) {
-            this.uiManager.setLoading(false);
-            alert("Error: No se pudo cargar el manifiesto de datos (manifest.json). La capa principal no se mostrará.");
-            return;
-        }
+        if (manifest && manifest.files) {
+            const dataUrls = manifest.files.map(file => manifest.basePath + file);
+            const geojsonArray = await fetchAllGeoJSON(dataUrls);
+            
+            const allFeatures = geojsonArray.reduce((acc, fc) => acc.concat(fc ? fc.features : []), []);
+            const mainData = { type: "FeatureCollection", features: allFeatures };
 
-        // 2. Construir las URLs completas a partir del manifiesto
-        const dataUrls = manifest.files.map(file => manifest.basePath + file);
-        console.log(`Cargando ${dataUrls.length} archivos de datos...`);
+            if (mainData.features.length > 0) {
+                this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
+                    mainData,
+                    (feature) => this.getFeatureStyle(feature),
+                    (feature, layer) => this.onEachFeature(feature, layer)
+                );
 
-        // 3. Cargar todos los archivos GeoJSON en paralelo
-        const geojsonArray = await fetchAllGeoJSON(dataUrls);
-
-        if (geojsonArray.length === 0) {
-            this.uiManager.setLoading(false);
-            alert("No se pudieron cargar los datos de vulnerabilidad. La aplicación puede no funcionar correctamente.");
-            return;
-        }
-
-        // 4. Unir todos los "features" de todos los archivos en un solo array
-        const allFeatures = geojsonArray.reduce((acc, featureCollection) => {
-            if (featureCollection && featureCollection.features) {
-                return acc.concat(featureCollection.features);
-            }
-            return acc;
-        }, []);
-        
-        // 5. Creamos una única FeatureCollection para Leaflet
-        const mainData = {
-            type: "FeatureCollection",
-            features: allFeatures
-        };
-        
-        console.log(`Carga completa. Total de ${allFeatures.length} features procesados.`);
-        // Esta lógica es la original, ahora se aplica a 'mainData'
-        if (mainData.features.length > 0) {
-            // 1. Crear la capa Leaflet con estilos y eventos
-            this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
-                mainData,
-                (feature) => this.getFeatureStyle(feature),
-                (feature, layer) => this.onEachFeature(feature, layer)
-            );
-
-            // 2. PROCESAMIENTO DE DATOS: Agrupar referencias
-            this.leafletLayers.vulnerability.eachLayer(layer => {
-                const { NOM_ACUIF, CLAVE_ACUI } = layer.feature.properties;
-                
-                // Lógica para el dropdown
-                if (NOM_ACUIF && !this.data.aquifers[NOM_ACUIF]) {
-                    this.data.aquifers[NOM_ACUIF] = [];
-                }
-                if (NOM_ACUIF) {
-                    this.data.aquifers[NOM_ACUIF].push(layer);
-                }
-
-                // Lógica para el mapa de búsqueda (Clave -> Nombre)
-                if (CLAVE_ACUI && !this.data.keyToNameMap[CLAVE_ACUI]) {
-                    this.data.keyToNameMap[CLAVE_ACUI] = NOM_ACUIF;
-                }
-            });
-
-            // 3. Poblar el dropdown
-            if (Object.keys(this.data.aquifers).length > 0) {
-                 this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
-            }
-        
-            // 4. Enviar datos al buscador
-            this.uiManager.setSearchData(
-                Object.keys(this.data.aquifers), // Solo la lista de nombres
-                this.data.keyToNameMap           // El mapa de Clave->Nombre
-            );
-    
-        } else {
-            alert("No se cargaron features de vulnerabilidad. La aplicación puede no funcionar correctamente.");
-        }
-    }
-    
-    onEachFeature(feature, layer) {
-        const { NOM_ACUIF } = feature.properties;
-
-        layer.on({
-            mouseover: (e) => {
-                const targetLayer = e.target;
-                // Solo aplica estilo hover si NO es la capa seleccionada
-                if (NOM_ACUIF !== this.state.selectedAquifer) {
-                    const currentStyle = this.getFeatureStyle(feature);
-                    // Aplica solo las propiedades definidas en hover, manteniendo el resto
-                    const hoverStyle = { ...currentStyle, ...CONFIG.styles.hover };
-                    targetLayer.setStyle(hoverStyle);
-                }
-            },
-
-            mouseout: (e) => {
-                // Restaura el estilo correcto (base, muted o selection)
-                // Esta función se encarga de aplicar el estilo correcto según el estado
-                e.target.setStyle(this.getFeatureStyle(feature));
-            },
-
-            click: (e) => { // <-- Necesitamos el evento 'e'
-                const targetLayer = e.target; // La capa específica clickeada
-                let isHighlightActive = true;
-                targetLayer.setStyle(CONFIG.styles.clickHighlight); // Aplica estilo de clic temporal
-                targetLayer.bringToFront(); // Trae al frente el polígono clickeado
-                setTimeout(() => {
-                    isHighlightActive = false; // El resaltado termina
-                    // Comprobación: Solo revertir si la capa aún existe
-                    if (this.mapManager.map.hasLayer(targetLayer)) {
-                        targetLayer.setStyle(this.getFeatureStyle(feature));
-                        if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
-                            this.data.aquifers[this.state.selectedAquifer].forEach(l => {
-                                if (this.mapManager.map.hasLayer(l)) l.bringToFront();
-                            });
-                        }
+                // Procesamiento para el buscador (basado en vulnerabilidad)
+                this.leafletLayers.vulnerability.eachLayer(layer => {
+                    const { NOM_ACUIF, CLAVE_ACUI } = layer.feature.properties;
+                    if (NOM_ACUIF) {
+                        if (!this.data.aquifers[NOM_ACUIF]) this.data.aquifers[NOM_ACUIF] = [];
+                        this.data.aquifers[NOM_ACUIF].push(layer);
                     }
-                }, 1500); // 1.5 segundos de resaltado (ajusta si lo necesitas)
-                this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
-                L.DomEvent.stop(e);
+                    if (CLAVE_ACUI && !this.data.keyToNameMap[CLAVE_ACUI]) {
+                        this.data.keyToNameMap[CLAVE_ACUI] = NOM_ACUIF;
+                    }
+                });
+
+                this.uiManager.setSearchData(Object.keys(this.data.aquifers), this.data.keyToNameMap);
+                this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
             }
-        });
+        }
+
+        // --- Carga CAPA 2: Límites de Acuíferos (Unitaria/Simplificada) ---
+        // Se asume que existe data/limites_acuiferos_mx.geojson
+        const boundariesData = await fetchGeoJSON('data/limites_acuiferos_mx.geojson');
+        
+        if (boundariesData) {
+            console.log("Capa de límites cargada.");
+            this.leafletLayers.aquiferBoundaries = L.geoJson(boundariesData, {
+                style: (feature) => this.getHydraulicStyle(feature), // Estilo dinámico basado en datos
+                onEachFeature: (feature, layer) => this.onHydraulicFeature(feature, layer)
+            });
+            // Nota: No añadimos .addTo(map) aquí, el método render() decide cuándo mostrarla.
+        }
     }
 
+    // --- ESTILOS Y EVENTOS: MODO VULNERABILIDAD ---
     getFeatureStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
         const fillColor = this.mapManager.getColor(VULNERABIL);
-
-        // 1. Empezar con las propiedades del estilo base
+        
         let styleOptions = {
             ...CONFIG.styles.base,
-            fillColor: fillColor
+            fillColor: fillColor,
+            fillOpacity: this.state.opacity
         };
 
-        // 2. APLICAR LA OPACIDAD GLOBAL DEL SLIDER *SOLO* AL ESTADO BASE
-        //    Las opacidades de 'muted' y 'selection' se mantendrán fijas.
-        styleOptions.fillOpacity = this.state.opacity;
-
-        // 3. Aplicar Filtro de Vulnerabilidad (si aplica)
-        //    Esto sobrescribirá la opacidad con el valor fijo de 'muted' (ej. 0.1)
         if (this.state.filterValue !== 'all' && VULNERABIL != this.state.filterValue) {
             styleOptions = { ...styleOptions, ...CONFIG.styles.muted };
         }
 
-        // 4. Aplicar Estilo de Selección (si aplica)
-        //    Esto sobrescribirá la opacidad con el valor fijo de 'selection' (ej. 0.85)
         if (this.state.selectedAquifer === NOM_ACUIF) {
             styleOptions = { ...styleOptions, ...CONFIG.styles.selection };
         }
-
-        // 5. Devolver el objeto de estilo final
         return styleOptions;
     }
 
+    onEachFeature(feature, layer) {
+        // Eventos originales de vulnerabilidad
+        layer.on({
+            mouseover: (e) => {
+                if (feature.properties.NOM_ACUIF !== this.state.selectedAquifer) {
+                    e.target.setStyle({ ...this.getFeatureStyle(feature), ...CONFIG.styles.hover });
+                }
+            },
+            mouseout: (e) => { e.target.setStyle(this.getFeatureStyle(feature)); },
+            click: (e) => {
+                L.DomEvent.stop(e);
+                e.target.setStyle(CONFIG.styles.clickHighlight);
+                e.target.bringToFront();
+                setTimeout(() => {
+                    if (this.mapManager.map.hasLayer(e.target)) e.target.setStyle(this.getFeatureStyle(feature));
+                }, 1500);
+                
+                this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
+            }
+        });
+    }
+
+    // --- ESTILOS Y EVENTOS: MODO HIDRÁULICA (NUEVO) ---
+    getHydraulicStyle(feature) {
+        const clave = feature.properties.CLAVE_ACUI;
+        // JOIN: Buscamos en el JSON usando la clave del GeoJSON
+        const data = this.data.hydraulicProps?.data?.[clave];
+
+        // Lógica de color temporal (puedes moverla a config.js o mapManager después)
+        // Ejemplo: Colorear por Disponibilidad (Negativo = Rojo, Positivo = Azul)
+        let color = '#cccccc'; // Sin datos
+        if (data && data.disponibilidad !== undefined) {
+            color = data.disponibilidad < 0 ? '#D90404' : '#007BFF';
+        }
+
+        return {
+            weight: 1,
+            color: '#555',
+            fillColor: color,
+            fillOpacity: 0.7
+        };
+    }
+
+    onHydraulicFeature(feature, layer) {
+        const clave = feature.properties.CLAVE_ACUI;
+        
+        layer.on({
+            mouseover: (e) => {
+                e.target.setStyle({ weight: 3, color: '#FFF', fillOpacity: 0.9 });
+            },
+            mouseout: (e) => {
+                e.target.setStyle(this.getHydraulicStyle(feature));
+            },
+            click: (e) => {
+                L.DomEvent.stop(e);
+                // JOIN: Recuperar datos completos para el panel
+                const data = this.data.hydraulicProps?.data?.[clave];
+                
+                // Preparamos un objeto combinado para enviarlo a la UI
+                // Si uiManager no tiene método específico para hidráulica, 
+                // le enviamos datos formateados para que 'showInfoPanel' intente mostrarlos
+                const displayProps = {
+                    'Clave': clave,
+                    'Nombre': this.data.keyToNameMap[clave] || 'Desconocido',
+                    ...data // Esparce todas las propiedades (Transmisividad, etc.)
+                };
+
+                // Aquí podrías llamar a un método nuevo: this.uiManager.showHydraulicPanel(displayProps)
+                // Por ahora reusamos el existente pasando un mapa de configuración 'dummy' o nulo
+                console.log("Click en Acuífero (Hidráulica):", displayProps);
+                alert(`Datos Hidráulicos:\n${JSON.stringify(displayProps, null, 2)}`); // Temporal hasta actualizar UI
+            }
+        });
+    }
+
+    // --- RENDERIZADO PRINCIPAL ---
     render() {
         const map = this.mapManager.map;
+        const { activeTheme } = this.state;
 
-        // 1. Actualizar estilos de la capa de vulnerabilidad
-        if (this.leafletLayers.vulnerability) {
-            this.leafletLayers.vulnerability.eachLayer(layer => {
-                layer.setStyle(this.getFeatureStyle(layer.feature));
-            });
+        // 1. GESTIÓN DE CAPAS PRINCIPALES (SWITCH DE TEMA)
+        if (activeTheme === 'vulnerability') {
+            // Activar Vulnerabilidad
+            if (this.leafletLayers.vulnerability && !map.hasLayer(this.leafletLayers.vulnerability)) {
+                this.leafletLayers.vulnerability.addTo(map);
+            }
+            // Desactivar Hidráulica
+            if (this.leafletLayers.aquiferBoundaries && map.hasLayer(this.leafletLayers.aquiferBoundaries)) {
+                map.removeLayer(this.leafletLayers.aquiferBoundaries);
+            }
+
+            // Actualizar estilos de vulnerabilidad
+            if (this.leafletLayers.vulnerability) {
+                this.leafletLayers.vulnerability.eachLayer(layer => {
+                    layer.setStyle(this.getFeatureStyle(layer.feature));
+                });
+            }
+
+        } else if (activeTheme === 'hydraulics') {
+            // Activar Hidráulica
+            if (this.leafletLayers.aquiferBoundaries && !map.hasLayer(this.leafletLayers.aquiferBoundaries)) {
+                this.leafletLayers.aquiferBoundaries.addTo(map);
+            }
+            // Desactivar Vulnerabilidad
+            if (this.leafletLayers.vulnerability && map.hasLayer(this.leafletLayers.vulnerability)) {
+                map.removeLayer(this.leafletLayers.vulnerability);
+            }
+            
+            // Actualizar estilos hidráulicos
+            if (this.leafletLayers.aquiferBoundaries) {
+                this.leafletLayers.aquiferBoundaries.eachLayer(layer => {
+                    layer.setStyle(this.getHydraulicStyle(layer.feature));
+                });
+            }
         }
 
-        // 2. Después de aplicar estilos, traer al frente las capas seleccionadas
-        if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
+        // 2. Traer al frente selección (solo si aplica al tema activo)
+        if (activeTheme === 'vulnerability' && this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
             this.data.aquifers[this.state.selectedAquifer].forEach(layer => {
-                if (map.hasLayer(layer)) {
-                    layer.bringToFront();
-                }
+                if (map.hasLayer(layer)) layer.bringToFront();
             });
         }
 
-        // 3. Alternar visibilidad de capas adicionales
+        // 3. Capas Auxiliares (Independientes del tema)
         [
             { layer: this.leafletLayers.coastline, isVisible: this.state.isCoastlineVisible },
             { layer: this.leafletLayers.coastline1km, isVisible: this.state.isCoastline1kmVisible },
-            { layer: this.leafletLayers.graticule, isVisible: this.state.isGraticuleVisible } // <-- *** NUEVA LÍNEA ***
+            { layer: this.leafletLayers.graticule, isVisible: this.state.isGraticuleVisible }
         ].forEach(({ layer, isVisible }) => {
             if (!layer) return;
-            const isCurrentlyVisible = map.hasLayer(layer);
-            if (isVisible && !isCurrentlyVisible) {
-                layer.addTo(map);
-            } else if (!isVisible && isCurrentlyVisible) {
-                map.removeLayer(layer);
-            }
+            if (isVisible && !map.hasLayer(layer)) layer.addTo(map);
+            else if (!isVisible && map.hasLayer(layer)) map.removeLayer(layer);
         });
 
-        // 4. Actualizar la vista de la UI (SOLO UNA VEZ, AL FINAL)
+        // 4. UI Update
         this.uiManager.updateView(this.state);
+    }
+}
 
-    } // <-- Cierre del método render
-
-} // <-- Cierre de la CLASE GeovisorApp
-
-// Iniciar la aplicación cuando el DOM esté listo (FUERA de la clase)
 document.addEventListener('DOMContentLoaded', () => {
     new GeovisorApp();
 });
