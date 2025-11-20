@@ -84,7 +84,7 @@ class GeovisorApp {
         // 1. Cargar Datos Alfanuméricos (La "Base de Datos" Hidráulica)
         // Se asume que existe data/propiedades_hidraulicas.json
         try {
-            const hydroResponse = await fetch('data/propiedades_hidraulicas.json');
+            const hydroResponse = await fetch('data/boundaries/propiedades_hidraulicas.json');
             if (hydroResponse.ok) {
                 this.data.hydraulicProps = await hydroResponse.json();
                 console.log("Datos hidráulicos cargados:", Object.keys(this.data.hydraulicProps.data).length, "registros.");
@@ -158,7 +158,7 @@ class GeovisorApp {
 
         // --- Carga CAPA 2: Límites de Acuíferos (Unitaria/Simplificada) ---
         // Se asume que existe data/limites_acuiferos_mx.geojson
-        const boundariesData = await fetchGeoJSON('data/limites_acuiferos_mx.geojson');
+        const boundariesData = await fetchGeoJSON('data/boundaries/limites_acuiferos_mx.geojson');
         
         if (boundariesData) {
             console.log("Capa de límites cargada.");
