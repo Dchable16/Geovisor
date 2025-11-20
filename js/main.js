@@ -1,6 +1,10 @@
 /**
  * @file main.js
- * @description Archivo principal actualizado con arquitectura de Doble Capa (Vulnerabilidad/Hidráulica).
+ * @description Lógica principal del Geovisor.
+ * Integra:
+ * 1. Capa de Vulnerabilidad (Fragmentada)
+ * 2. Capa Hidráulica (Límites Generales + Datos Promedio)
+ * 3. Capa de Pozos (Puntos Individuales)
  */
 'use strict';
 
@@ -10,15 +14,19 @@ import AutoGraticule from 'https://esm.sh/leaflet-auto-graticule';
 import { MapManager } from './mapManager.js';
 import { UIManager } from './uiManager.js';
 
-// --- ESTADO INICIAL ACTUALIZADO ---
+// --- ESTADO INICIAL ---
 const INITIAL_STATE = {
     opacity: 0.5,
     filterValue: 'all',
-    selectedAquifer: null,
+    selectedAquifer: null,      // Para selección de vulnerabilidad
     isCoastlineVisible: false,
     isCoastline1kmVisible: false,
     isGraticuleVisible: false,
-    activeTheme: 'vulnerability' // NUEVO: 'vulnerability' | 'hydraulics'
+    
+    // NUEVOS ESTADOS
+    activeTheme: 'vulnerability', // 'vulnerability' | 'hydraulics'
+    areWellsVisible: false,       // Toggle de pozos
+    selectedWellId: null          // ID del pozo seleccionado para el resaltado
 };
 
 class GeovisorApp {
@@ -27,13 +35,14 @@ class GeovisorApp {
 
         this.data = {
             aquifers: {},       // Referencias a capas de vulnerabilidad (GeoJSON fragmentado)
-            keyToNameMap: {},   // Mapa Clave -> Nombre
-            hydraulicProps: {}  // NUEVO: "Base de datos" alfanumérica (JSON)
+            keyToNameMap: {},   // Mapa Clave -> Nombre para búsqueda
+            hydraulicProps: {}  // Base de datos de promedios hidráulicos (JSON)
         };
 
         this.leafletLayers = {
-            vulnerability: null,    // Capa compleja (mosaico)
-            aquiferBoundaries: null, // NUEVO: Capa simple (polígonos únicos)
+            vulnerability: null,     // Capa de zonas de vulnerabilidad
+            aquiferBoundaries: null, // Capa de límites de acuíferos (Modo Hidráulica)
+            wells: null,             // Capa de pozos (Puntos)
             coastline: null,
             coastline1km: null,
             graticule: null
@@ -50,6 +59,7 @@ class GeovisorApp {
     }
 
     updateState(newState) {
+        // Manejo de Reset
         if (newState.reset === true) {
             this.state = { ...INITIAL_STATE };
             this.mapManager.resetView();
@@ -57,22 +67,27 @@ class GeovisorApp {
             return;
         }
 
+        // Manejo de Vuelo a Coordenadas
         if (newState.flyToCoords) {
             const [lat, lon, name] = newState.flyToCoords;
             this.mapManager.flyToCoords(lat, lon, name);
         }
 
+        // Actualizar estado
         this.state = { ...this.state, ...newState };
         console.log("Estado actualizado:", this.state);
 
-        // Lógica de Zoom Inteligente
-        if (newState.selectedAquifer !== undefined) {
-             // Si estamos en modo vulnerabilidad, usamos los fragmentos
-             if (this.state.activeTheme === 'vulnerability' && this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
+        // Lógica de Zoom al seleccionar acuífero (Vulnerabilidad)
+        if (newState.selectedAquifer !== undefined && this.state.activeTheme === 'vulnerability') {
+             if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
                  const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
                  this.mapManager.fitBounds(group.getBounds());
              }
-             // TODO: Agregar lógica de zoom para modo hidráulico si se selecciona desde la lista
+        }
+
+        // Si se desactivan los pozos, limpiamos la selección del pozo
+        if (newState.areWellsVisible === false) {
+            this.state.selectedWellId = null;
         }
 
         this.render();
@@ -81,15 +96,14 @@ class GeovisorApp {
     async init() {
         this.uiManager.setLoading(true);
         
-        // 1. Cargar Datos Alfanuméricos (La "Base de Datos" Hidráulica)
-        // Se asume que existe data/propiedades_hidraulicas.json
+        // 1. Cargar Datos Alfanuméricos (Promedios Hidráulicos)
         try {
             const hydroResponse = await fetch('data/boundaries/propiedades_hidraulicas.json');
             if (hydroResponse.ok) {
                 this.data.hydraulicProps = await hydroResponse.json();
-                console.log("Datos hidráulicos cargados:", Object.keys(this.data.hydraulicProps.data).length, "registros.");
+                console.log("Datos hidráulicos cargados:", Object.keys(this.data.hydraulicProps.data || {}).length, "acuíferos.");
             } else {
-                console.warn("No se encontró propiedades_hidraulicas.json, el modo hidráulico estará vacío.");
+                console.warn("No se encontró propiedades_hidraulicas.json en data/boundaries/");
             }
         } catch (e) {
             console.error("Error cargando datos hidráulicos:", e);
@@ -109,21 +123,21 @@ class GeovisorApp {
         this.uiManager.setLoading(false);
         this.uiManager.updateView(this.state);
         
-        // Zoom inicial
+        // Zoom inicial (si hay vulnerabilidad cargada)
         if (this.leafletLayers.vulnerability) {
             this.mapManager.fitBounds(this.leafletLayers.vulnerability.getBounds());
         }
     }
 
     async loadLayers() {
-        // --- Carga de Capas Auxiliares ---
+        // --- A. Capas Auxiliares ---
         const coastlineData = await fetchGeoJSON(CONFIG.coastlineUrl);
         if (coastlineData) this.leafletLayers.coastline = L.geoJson(coastlineData, { style: CONFIG.styles.coastline });
         
         const coastline1kmData = await fetchGeoJSON(CONFIG.coastline1kmUrl);
         if (coastline1kmData) this.leafletLayers.coastline1km = L.geoJson(coastline1kmData, { style: CONFIG.styles.coastline1km });
 
-        // --- Carga CAPA 1: Vulnerabilidad (Fragmentada) ---
+        // --- B. Capa de Vulnerabilidad (Fragmentada) ---
         const manifest = await fetchGeoJSON(CONFIG.dataManifestUrl);
         if (manifest && manifest.files) {
             const dataUrls = manifest.files.map(file => manifest.basePath + file);
@@ -135,11 +149,11 @@ class GeovisorApp {
             if (mainData.features.length > 0) {
                 this.leafletLayers.vulnerability = this.mapManager.addGeoJsonLayer(
                     mainData,
-                    (feature) => this.getFeatureStyle(feature),
-                    (feature, layer) => this.onEachFeature(feature, layer)
+                    (feature) => this.getVulnerabilityStyle(feature),
+                    (feature, layer) => this.onVulnerabilityFeature(feature, layer)
                 );
 
-                // Procesamiento para el buscador (basado en vulnerabilidad)
+                // Indexar para búsqueda
                 this.leafletLayers.vulnerability.eachLayer(layer => {
                     const { NOM_ACUIF, CLAVE_ACUI } = layer.feature.properties;
                     if (NOM_ACUIF) {
@@ -156,22 +170,31 @@ class GeovisorApp {
             }
         }
 
-        // --- Carga CAPA 2: Límites de Acuíferos (Unitaria/Simplificada) ---
-        // Se asume que existe data/limites_acuiferos_mx.geojson
+        // --- C. Capa de Límites de Acuíferos (Modo Hidráulica) ---
         const boundariesData = await fetchGeoJSON('data/boundaries/limites_acuiferos_mx.geojson');
-        
         if (boundariesData) {
-            console.log("Capa de límites cargada.");
             this.leafletLayers.aquiferBoundaries = L.geoJson(boundariesData, {
-                style: (feature) => this.getHydraulicStyle(feature), // Estilo dinámico basado en datos
+                style: (feature) => this.getHydraulicBoundaryStyle(feature),
                 onEachFeature: (feature, layer) => this.onHydraulicFeature(feature, layer)
             });
-            // Nota: No añadimos .addTo(map) aquí, el método render() decide cuándo mostrarla.
+        }
+
+        // --- D. Capa de Pozos (Puntos) ---
+        const wellsData = await fetchGeoJSON('data/boundaries/pozos.geojson');
+        if (wellsData) {
+            this.leafletLayers.wells = L.geoJson(wellsData, {
+                pointToLayer: (feature, latlng) => {
+                    return L.circleMarker(latlng, this.getWellStyle(feature));
+                },
+                onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
+            });
         }
     }
 
-    // --- ESTILOS Y EVENTOS: MODO VULNERABILIDAD ---
-    getFeatureStyle(feature) {
+    // ============================================================
+    //      ESTILOS Y EVENTOS: MODO VULNERABILIDAD
+    // ============================================================
+    getVulnerabilityStyle(feature) {
         const { VULNERABIL, NOM_ACUIF } = feature.properties;
         const fillColor = this.mapManager.getColor(VULNERABIL);
         
@@ -191,21 +214,24 @@ class GeovisorApp {
         return styleOptions;
     }
 
-    onEachFeature(feature, layer) {
-        // Eventos originales de vulnerabilidad
+    onVulnerabilityFeature(feature, layer) {
         layer.on({
             mouseover: (e) => {
                 if (feature.properties.NOM_ACUIF !== this.state.selectedAquifer) {
-                    e.target.setStyle({ ...this.getFeatureStyle(feature), ...CONFIG.styles.hover });
+                    e.target.setStyle({ ...this.getVulnerabilityStyle(feature), ...CONFIG.styles.hover });
                 }
             },
-            mouseout: (e) => { e.target.setStyle(this.getFeatureStyle(feature)); },
+            mouseout: (e) => { e.target.setStyle(this.getVulnerabilityStyle(feature)); },
             click: (e) => {
                 L.DomEvent.stop(e);
                 e.target.setStyle(CONFIG.styles.clickHighlight);
                 e.target.bringToFront();
+                
+                // Restaurar estilo después de un momento
                 setTimeout(() => {
-                    if (this.mapManager.map.hasLayer(e.target)) e.target.setStyle(this.getFeatureStyle(feature));
+                    if (this.mapManager.map.hasLayer(e.target)) {
+                        e.target.setStyle(this.getVulnerabilityStyle(feature));
+                    }
                 }, 1500);
                 
                 this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
@@ -213,24 +239,17 @@ class GeovisorApp {
         });
     }
 
-    // --- ESTILOS Y EVENTOS: MODO HIDRÁULICA (NUEVO) ---
-    getHydraulicStyle(feature) {
-        const clave = feature.properties.CLAVE_ACUI;
-        // JOIN: Buscamos en el JSON usando la clave del GeoJSON
-        const data = this.data.hydraulicProps?.data?.[clave];
-
-        // Lógica de color temporal (puedes moverla a config.js o mapManager después)
-        // Ejemplo: Colorear por Disponibilidad (Negativo = Rojo, Positivo = Azul)
-        let color = '#cccccc'; // Sin datos
-        if (data && data.disponibilidad !== undefined) {
-            color = data.disponibilidad < 0 ? '#D90404' : '#007BFF';
-        }
-
+    // ============================================================
+    //      ESTILOS Y EVENTOS: MODO HIDRÁULICA (ACUÍFEROS)
+    // ============================================================
+    getHydraulicBoundaryStyle(feature) {
+        // Estilo base para los límites de acuíferos
+        // Podríamos colorear por alguna propiedad si quisiéramos (ej. disponibilidad)
         return {
             weight: 1,
-            color: '#555',
-            fillColor: color,
-            fillOpacity: 0.7
+            color: '#555',        // Borde gris oscuro
+            fillColor: '#AAD3DF', // Azul claro base
+            fillOpacity: 0.4
         };
     }
 
@@ -239,82 +258,140 @@ class GeovisorApp {
         
         layer.on({
             mouseover: (e) => {
-                e.target.setStyle({ weight: 3, color: '#FFF', fillOpacity: 0.9 });
+                e.target.setStyle({ weight: 2, color: '#000', fillOpacity: 0.6 });
             },
             mouseout: (e) => {
-                e.target.setStyle(this.getHydraulicStyle(feature));
+                e.target.setStyle(this.getHydraulicBoundaryStyle(feature));
             },
             click: (e) => {
-                L.DomEvent.stop(e);
-                // JOIN: Recuperar datos completos para el panel
-                const data = this.data.hydraulicProps?.data?.[clave];
+                L.DomEvent.stop(e); // No propagar click al mapa base
+
+                // 1. Buscar datos promedio en el JSON cargado
+                const dataPromedio = this.data.hydraulicProps?.data?.[clave];
                 
-                // Preparamos un objeto combinado para enviarlo a la UI
-                // Si uiManager no tiene método específico para hidráulica, 
-                // le enviamos datos formateados para que 'showInfoPanel' intente mostrarlos
+                // 2. Combinar con nombre/clave
+                const nombre = this.data.keyToNameMap[clave] || 'Acuífero';
                 const displayProps = {
+                    'Nombre': nombre,
                     'Clave': clave,
-                    'Nombre': this.data.keyToNameMap[clave] || 'Desconocido',
-                    ...data // Esparce todas las propiedades (Transmisividad, etc.)
+                    ...dataPromedio // Esparce transmisividad_media, etc.
                 };
 
-                // Aquí podrías llamar a un método nuevo: this.uiManager.showHydraulicPanel(displayProps)
-                // Por ahora reusamos el existente pasando un mapa de configuración 'dummy' o nulo
-                console.log("Click en Acuífero (Hidráulica):", displayProps);
-                alert(`Datos Hidráulicos:\n${JSON.stringify(displayProps, null, 2)}`); // Temporal hasta actualizar UI
+                // 3. Mostrar en panel
+                this.uiManager.showInfoPanel(displayProps);
             }
         });
     }
 
-    // --- RENDERIZADO PRINCIPAL ---
+    // ============================================================
+    //      ESTILOS Y EVENTOS: POZOS (PUNTOS)
+    // ============================================================
+    getWellStyle(feature) {
+        // ¿Es el pozo seleccionado?
+        const isSelected = (this.state.selectedWellId === feature.properties.NOMBRE_POZO);
+        
+        return {
+            radius: isSelected ? 8 : 4,         // Más grande si seleccionado
+            fillColor: isSelected ? '#FFD700' : '#007BFF', // Amarillo (Select) vs Azul (Normal)
+            color: '#fff',
+            weight: 1,
+            opacity: 1,
+            fillOpacity: isSelected ? 1 : 0.8
+        };
+    }
+
+    onWellFeature(feature, layer) {
+        layer.on('click', (e) => {
+            L.DomEvent.stop(e); // Importante: Que no seleccione el acuífero de abajo
+            
+            // 1. Actualizar estado para el resaltado
+            this.updateState({ selectedWellId: feature.properties.NOMBRE_POZO });
+            
+            // 2. Preparar datos para el panel
+            const props = feature.properties;
+            const displayData = {
+                "Tipo": "Pozo de Monitoreo",
+                "Nombre del Pozo": props.NOMBRE_POZO,
+                "Acuífero": props.ACUIFERO,
+                // Formatear con unidades si existen
+                "Transmisividad": props.T_m2d ? `${props.T_m2d} m²/d` : null,
+                "Conductividad": props.K_md ? `${props.K_md} m/d` : null,
+                "Coef. Almacenamiento": props.S,
+                "Caudal (Q)": props.Q_lps ? `${props.Q_lps} lps` : null,
+                "Profundidad": props.PROFUNDIDAD ? `${props.PROFUNDIDAD} m` : null
+            };
+
+            this.uiManager.showInfoPanel(displayData);
+        });
+    }
+
+
+    // ============================================================
+    //      RENDERIZADO PRINCIPAL (The Loop)
+    // ============================================================
     render() {
         const map = this.mapManager.map;
-        const { activeTheme } = this.state;
+        const { activeTheme, areWellsVisible, selectedWellId } = this.state;
 
-        // 1. GESTIÓN DE CAPAS PRINCIPALES (SWITCH DE TEMA)
+        // --- 1. GESTIÓN DE TEMA (CAPAS BASE DE INFORMACIÓN) ---
         if (activeTheme === 'vulnerability') {
-            // Activar Vulnerabilidad
+            // MOSTRAR Vulnerabilidad
             if (this.leafletLayers.vulnerability && !map.hasLayer(this.leafletLayers.vulnerability)) {
                 this.leafletLayers.vulnerability.addTo(map);
             }
-            // Desactivar Hidráulica
+            // OCULTAR Hidráulica (Límites)
             if (this.leafletLayers.aquiferBoundaries && map.hasLayer(this.leafletLayers.aquiferBoundaries)) {
                 map.removeLayer(this.leafletLayers.aquiferBoundaries);
             }
 
-            // Actualizar estilos de vulnerabilidad
+            // Actualizar estilos de vulnerabilidad (por opacidad o filtros)
             if (this.leafletLayers.vulnerability) {
                 this.leafletLayers.vulnerability.eachLayer(layer => {
-                    layer.setStyle(this.getFeatureStyle(layer.feature));
+                    layer.setStyle(this.getVulnerabilityStyle(layer.feature));
                 });
             }
 
         } else if (activeTheme === 'hydraulics') {
-            // Activar Hidráulica
+            // MOSTRAR Hidráulica (Límites)
             if (this.leafletLayers.aquiferBoundaries && !map.hasLayer(this.leafletLayers.aquiferBoundaries)) {
                 this.leafletLayers.aquiferBoundaries.addTo(map);
             }
-            // Desactivar Vulnerabilidad
+            // OCULTAR Vulnerabilidad
             if (this.leafletLayers.vulnerability && map.hasLayer(this.leafletLayers.vulnerability)) {
                 map.removeLayer(this.leafletLayers.vulnerability);
             }
             
-            // Actualizar estilos hidráulicos
+            // Actualizar estilos hidráulicos (si hubiera lógica dinámica)
             if (this.leafletLayers.aquiferBoundaries) {
                 this.leafletLayers.aquiferBoundaries.eachLayer(layer => {
-                    layer.setStyle(this.getHydraulicStyle(layer.feature));
+                    layer.setStyle(this.getHydraulicBoundaryStyle(layer.feature));
                 });
             }
         }
 
-        // 2. Traer al frente selección (solo si aplica al tema activo)
-        if (activeTheme === 'vulnerability' && this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
-            this.data.aquifers[this.state.selectedAquifer].forEach(layer => {
-                if (map.hasLayer(layer)) layer.bringToFront();
-            });
+        // --- 2. GESTIÓN DE CAPA DE POZOS (SUPERPUESTA) ---
+        if (this.leafletLayers.wells) {
+            if (areWellsVisible) {
+                if (!map.hasLayer(this.leafletLayers.wells)) {
+                    this.leafletLayers.wells.addTo(map);
+                }
+                // Actualizar estilo para reflejar selección (Highlight)
+                this.leafletLayers.wells.eachLayer(layer => {
+                    layer.setStyle(this.getWellStyle(layer.feature));
+                    
+                    // Traer el pozo seleccionado al frente para que no quede tapado
+                    if (layer.feature.properties.NOMBRE_POZO === selectedWellId) {
+                        layer.bringToFront();
+                    }
+                });
+            } else {
+                if (map.hasLayer(this.leafletLayers.wells)) {
+                    map.removeLayer(this.leafletLayers.wells);
+                }
+            }
         }
 
-        // 3. Capas Auxiliares (Independientes del tema)
+        // --- 3. CAPAS AUXILIARES (COSTA, ETC.) ---
         [
             { layer: this.leafletLayers.coastline, isVisible: this.state.isCoastlineVisible },
             { layer: this.leafletLayers.coastline1km, isVisible: this.state.isCoastline1kmVisible },
@@ -325,7 +402,7 @@ class GeovisorApp {
             else if (!isVisible && map.hasLayer(layer)) map.removeLayer(layer);
         });
 
-        // 4. UI Update
+        // --- 4. UPDATE UI ---
         this.uiManager.updateView(this.state);
     }
 }
