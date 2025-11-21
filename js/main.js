@@ -220,6 +220,7 @@ class GeovisorApp {
         });
 
         this.uiManager.setLoading(false);
+        this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
         this.uiManager.updateView(this.state);
         
         // Zoom inicial a la capa principal si existe
