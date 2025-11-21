@@ -306,6 +306,30 @@ export class UIManager {
         this.nodes.coordLon.addEventListener('input', () => this.setCoordError(''));
     }
 
+    refreshControls(names, keyMap) {
+        // 1. Actualizar datos internos de búsqueda
+        this.setSearchData(names, keyMap);
+
+        // 2. Limpiar y repoblar el Select
+        if (this.nodes.aquiferSelect) {
+            // Reiniciar opciones
+            this.nodes.aquiferSelect.innerHTML = '<option value="">-- Selecciona un acuífero --</option>';
+            // Poblar con la nueva lista
+            this.populateAquiferSelect(names);
+        }
+        
+        // 3. Limpiar resultados de búsqueda visuales si había alguno abierto
+        if(this.nodes.searchResults) {
+            this.nodes.searchResults.style.display = 'none';
+            this.nodes.searchResults.innerHTML = '';
+        }
+        
+        // 4. Limpiar input
+        if(this.nodes.searchInput) {
+            this.nodes.searchInput.value = '';
+        }
+    }
+
     // --- ACTUALIZACIÓN DE LA VISTA BASADA EN EL ESTADO ---
     updateView(state) {
         // 1. Sliders y Texto
