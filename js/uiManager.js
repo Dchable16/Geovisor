@@ -81,16 +81,10 @@ export class UIManager {
             // Renderizado genérico inteligente
             
             // Campos que NO queremos mostrar en la tabla
-            const ignore = ['geometry', 'fid', 'cat', 'type', 'bbox', 'Id', 'OBJECTID', 'CLV_EDO', 'NOM_EDO', 'CLV_REGION', 'NOM_REGION'];
+            const ignoreKeys = ['geometry', 'fid', 'cat', 'type', 'bbox', 'Id', 'id'];
             
             // Campos prioritarios para mostrar arriba
-            const priority = [
-                'Clave', 'Tipo', 'Acuífero', 'ACUIFERO', 
-                'Transmisividad Media', 'Transmisividad', 
-                'Conductividad Media', 'Conductividad',
-                'Coef. Almacenamiento', 'Profundidad Media', 'Pozos Registrados',
-                'Año'
-            ];
+            const priorityKeys = ['Clave', 'Tipo', 'Acuífero', 'Transmisividad', 'Conductividad'];
             
             // 1. Renderizar Prioritarios
             priorityKeys.forEach(key => {
