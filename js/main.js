@@ -340,7 +340,7 @@ class GeovisorApp {
             weight: 1,
             color: '#666',
             fillColor: data ? '#AAD3DF' : '#E0E0E0', // Azul si hay datos, gris si no
-            fillOpacity: 0.5
+            fillOpacity: this.state.opacity
         };
     }
 
