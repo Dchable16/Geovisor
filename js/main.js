@@ -111,6 +111,11 @@ class GeovisorApp {
             this.render();
             return;
         }
+        
+        if (newState.selectedAquifer !== undefined && newState.selectedAquifer !== this.state.selectedAquifer) {
+            // Si cambia el acuífero, forzamos la deselección del pozo
+            newState.selectedWellId = null; 
+        }
 
         // 2. Navegación
         if (newState.flyToCoords) {
