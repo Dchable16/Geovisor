@@ -258,13 +258,29 @@ class GeovisorApp {
                 this.leafletLayers.vulnerability.eachLayer(layer => {
                     const { NOM_ACUIF, CLAVE_ACUI } = layer.feature.properties;
                     if (NOM_ACUIF) {
-                        if (!this.data.aquifers[NOM_ACUIF]) this.data.aquifers[NOM_ACUIF] = [];
-                        this.data.aquifers[NOM_ACUIF].push(layer);
+                        // Antes: if (!this.data.aquifers[NOM_ACUIF]) ...
+                        // Ahora: Usamos vulnLayers
+                        if (!this.data.vulnLayers[NOM_ACUIF]) this.data.vulnLayers[NOM_ACUIF] = [];
+                        this.data.vulnLayers[NOM_ACUIF].push(layer);
+                        
+                        // Llenar lista de nombres para el buscador
+                        if (!this.data.vulnNames.includes(NOM_ACUIF)) {
+                            this.data.vulnNames.push(NOM_ACUIF);
+                        }
                     }
-                    if (CLAVE_ACUI && !this.data.keyToNameMap[CLAVE_ACUI]) {
-                        this.data.keyToNameMap[CLAVE_ACUI] = NOM_ACUIF;
+                    if (CLAVE_ACUI) {
+                        this.data.vulnKeyMap[CLAVE_ACUI] = NOM_ACUIF;
                     }
                 });
+                
+                // Ordenar nombres alfabéticamente
+                this.data.vulnNames.sort();
+
+                // Actualización de componentes de UI con las variables CORRECTAS
+                this.uiManager.setSearchData(this.data.vulnNames, this.data.vulnKeyMap);
+                this.uiManager.populateAquiferSelect(this.data.vulnNames);
+            }
+        }
                 
                 // Actualización de componentes de UI con los datos cargados
                 this.uiManager.setSearchData(Object.keys(this.data.aquifers), this.data.keyToNameMap);
