@@ -172,6 +172,10 @@ class GeovisorApp {
     async init() {
         this.uiManager.setLoading(true);
         
+        const map = this.mapManager.map;
+        map.createPane('wellsPane');
+        map.getPane('wellsPane').style.zIndex = 600; // Piso superior
+        
         // 1. Carga de base de datos hidráulica con estrategia de fallback (redilencia)
         let hydroData = null;
         const pathsToTry = [
@@ -211,10 +215,6 @@ class GeovisorApp {
         } else {
             console.warn("[Warn] No se pudo cargar el archivo 'propiedades_hidraulicas.json'. Verifique la ruta.");
         }
-
-        const map = this.mapManager.map;
-        map.createPane('wellsPane');
-        map.getPane('wellsPane').style.zIndex = 600;
 
         // 2. Carga de capas geográficas
         await this.loadLayers();
@@ -337,6 +337,7 @@ class GeovisorApp {
             this.leafletLayers.wells = L.geoJson(null, {
                 pane: 'wellsPane',
                 pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
+                pane: 'wellsPane'
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
         }
