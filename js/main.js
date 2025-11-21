@@ -171,11 +171,7 @@ class GeovisorApp {
      */
     async init() {
         this.uiManager.setLoading(true);
-        
-        const map = this.mapManager.map;
-        map.createPane('wellsPane');
-        map.getPane('wellsPane').style.zIndex = 600; // Piso superior
-        
+
         // 1. Carga de base de datos hidráulica con estrategia de fallback (redilencia)
         let hydroData = null;
         const pathsToTry = [
@@ -329,16 +325,13 @@ class GeovisorApp {
         
         if (wellsData) {
             console.log(`✅ Pozos cargados: ${wellsData.features.length} registros.`);
+            
+            // A. Guardamos los datos crudos en memoria
             this.data.wellsData = wellsData; 
 
+            // B. Inicializamos la capa VACÍA (null) pero configurada
             this.leafletLayers.wells = L.geoJson(null, {
-                // OJO: Esto asigna el pane al contenedor, pero a veces los puntos SVG necesitan ayuda
-                pane: 'wellsPane', 
-                
-                pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
-                    ...this.getWellStyle(feature),
-                }),
-                
+                pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
         }
