@@ -412,6 +412,7 @@ class GeovisorApp {
                 "Coef. Almacenamiento": props.S,
                 "Caudal (Q)": props.Q_lps ? `${props.Q_lps} lps` : null,
                 "Profundidad": props.PROFUNDIDAD ? `${props.PROFUNDIDAD} m` : null
+                "Año":  props.AÑO ? `${props.PROFUNDIDAD} m` : null
             };
 
             this.uiManager.showInfoPanel(displayData);
