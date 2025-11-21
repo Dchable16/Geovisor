@@ -99,30 +99,29 @@ class GeovisorApp {
      * @param {Object} newState - Nuevos valores de estado.
      */
     updateState(newState) {
-        // Reinicio completo de la vista
+        // 1. Reinicio completo
         if (newState.reset === true) {
             this.state = { ...INITIAL_STATE };
             this.mapManager.resetView();
+            // Restaurar controles al resetear
+            this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
             this.render();
             return;
         }
 
-        // Navegación a coordenadas específicas
+        // 2. Navegación
         if (newState.flyToCoords) {
             const [lat, lon, name] = newState.flyToCoords;
             this.mapManager.flyToCoords(lat, lon, name);
         }
 
-        updateState(newState) {
-        // Detectar cambio de tema
+        // 3. Detectar cambio de tema ANTES de mezclar el estado
         const themeChanged = newState.activeTheme && newState.activeTheme !== this.state.activeTheme;
 
-        // ... (reinicio y flyToCoords igual) ...
-
-        // Actualización del estado
+        // 4. Actualizar estado
         this.state = { ...this.state, ...newState };
 
-        // A. ACTUALIZACIÓN DE CONTROLES (BUSCADOR/SELECT)
+        // 5. ACTUALIZACIÓN DE CONTROLES (BUSCADOR/SELECT)
         if (themeChanged) {
             if (this.state.activeTheme === 'hydraulics') {
                 // Filtrar solo acuíferos con info hidráulica
@@ -134,21 +133,18 @@ class GeovisorApp {
             this.state.selectedAquifer = null; // Limpiar selección para evitar conflictos
         }
 
-        // B. LÓGICA DE ZOOM INTELIGENTE (AMBOS TEMAS)
+        // 6. LÓGICA DE ZOOM INTELIGENTE (AMBOS TEMAS)
         if (newState.selectedAquifer) {
             const name = newState.selectedAquifer;
             let targetLayer = null;
 
             if (this.state.activeTheme === 'vulnerability') {
-                // Usamos el índice de vulnerabilidad (ahora vulnLayers)
-                // Nota: Tu código original usaba 'aquifers', adáptalo si cambiaste el nombre en el constructor
+                // Buscar en índice de vulnerabilidad
                 if (this.data.vulnLayers[name]) { 
                     targetLayer = L.featureGroup(this.data.vulnLayers[name]);
-                } else if (this.data.aquifers[name]) { // Soporte legacy por si no cambiaste loadLayers
-                     targetLayer = L.featureGroup(this.data.aquifers[name]);
                 }
             } else {
-                // Usamos el índice hidráulico
+                // Buscar en índice hidráulico
                 targetLayer = this.data.hydroLayers[name];
             }
 
@@ -157,7 +153,7 @@ class GeovisorApp {
             }
         }
         
-        // Limpieza de selección de pozo si la capa se oculta
+        // 7. Limpieza de pozos
         if (newState.areWellsVisible === false) {
             this.state.selectedWellId = null;
         }
