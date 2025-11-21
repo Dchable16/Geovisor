@@ -84,40 +84,24 @@ export class UIManager {
             const ignoreKeys = ['geometry', 'fid', 'cat', 'type', 'bbox', 'Id', 'id'];
             
             // Campos prioritarios para mostrar arriba
-            const priorityKeys = [
-                'Clave', 
-                'Tipo', 
-                'Nombre del Acuífero',
-                'Nombre del Pozo',
-                'Acuífero', 
-                'Transmisividad Media', 'Transmisividad', 
-                'Conductividad Media', 'Conductividad', 
-                'Coef. Almacenamiento', 
-                'Caudal (Q)',
-                'Profundidad Media', 'Profundidad',
-                'Pozos Registrados',
-                'Año'
-            ];
+            const priorityKeys = ['Clave', 'Tipo', 'Acuífero', 'Transmisividad', 'Conductividad'];
             
-            // 1. Renderizar campos prioritarios en orden
+            // 1. Renderizar Prioritarios
             priorityKeys.forEach(key => {
-                // Buscamos si la propiedad existe (exacta o case-insensitive)
+                // Buscamos keys que coincidan (case-insensitive o exactas)
                 const foundKey = Object.keys(properties).find(k => k === key || k.toLowerCase() === key.toLowerCase());
-                
                 if (foundKey && properties[foundKey] !== undefined) {
                     htmlContent += this._buildInfoRow(key, properties[foundKey]);
                 }
             });
 
-            // 2. Renderizar el resto de campos que no estén en prioridad ni ignorados
+            // 2. Renderizar el resto
             Object.keys(properties).forEach(key => {
-                const keyLower = key.toLowerCase();
-                const isPriority = priorityKeys.some(pk => pk.toLowerCase() === keyLower);
-                const isIgnored = ignoreKeys.includes(key);
-                // Excluir también títulos redundantes
-                const isTitle = ['Nombre', 'nombre', 'NOM_ACUIF', 'NOMBRE_POZO'].includes(key);
-
-                if (!isPriority && !isIgnored && !isTitle) {
+                if (!ignoreKeys.includes(key) && !priorityKeys.includes(key) && 
+                    !priorityKeys.map(k => k.toLowerCase()).includes(key.toLowerCase()) &&
+                    key !== 'Nombre' && key !== 'nombre' && key !== 'NOM_ACUIF' && key !== 'NOMBRE_POZO') {
+                    
+                    // Formatear valor si es muy largo o tiene muchos decimales (opcional)
                     let val = properties[key];
                     htmlContent += this._buildInfoRow(this._formatLabel(key), val);
                 }
