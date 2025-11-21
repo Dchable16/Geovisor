@@ -589,7 +589,7 @@ class GeovisorApp {
                     const nombre = (data ? data.nombre : null) || l.feature.properties.NOM_ACUIF || l.feature.properties.NOM_ACUI;
                     
                     if (this.state.selectedAquifer === nombre) {
-                        l.bringToFront();
+                        l.bringToBack(); 
                     }
                 });
             }
