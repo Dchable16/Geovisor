@@ -55,7 +55,7 @@ export class UIManager {
         
         // 1. DETECTAR TÍTULO
         // Intenta buscar campos comunes de nombre
-        const title = properties.NOM_ACUIF || properties["Nombre del Pozo"] || properties.nombre || properties.Nombre || "Detalles";
+        const title = properties.NOM_ACUIF || properties["Nombre del Pozo"] || properties.nombre || properties.Nombre || properties['Nombre del Acuífero'] || "Detalles";
         this.nodes.infoPanelTitle.textContent = title;
 
         // 2. DETECTAR TIPO DE CONTENIDO
