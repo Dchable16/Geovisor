@@ -129,6 +129,9 @@ export class UIManager {
 
     hideInfoPanel() {
         this.nodes.infoPanelContainer.classList.remove('is-visible');
+        if (this.onStateChange) {
+            this.onStateChange({ selectedAquifer: null, selectedWellId: null });
+        }
     }
 
     // Helper HTML para filas
