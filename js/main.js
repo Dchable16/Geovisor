@@ -209,6 +209,9 @@ class GeovisorApp {
 
         // 2. Carga de capas geográficas
         await this.loadLayers();
+        const map = this.mapManager.map;
+        map.createPane('wellsPane');
+        map.getPane('wellsPane').style.zIndex = 600;
 
         // 3. Configuración de la retícula (Graticule)
         this.leafletLayers.graticule = new AutoGraticule({
@@ -326,6 +329,7 @@ class GeovisorApp {
 
             // B. Inicializamos la capa VACÍA (null) pero configurada
             this.leafletLayers.wells = L.geoJson(null, {
+                pane: 'wellsPane',
                 pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
