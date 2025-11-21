@@ -63,8 +63,10 @@ class GeovisorApp {
             hydroNames: [],      // Lista de nombres (solo los que tienen datos)
             hydroKeyMap: {},     // Clave -> Nombre
             
-            hydraulicProps: {}   // Base de datos JSON
+            hydraulicProps: {},   // Base de datos JSON
+            wellsData: null
         };
+        this.lastFilteredAquifer = 'NINGUNO';
 
         /**
          * Referencias a las instancias de capas de Leaflet.
@@ -316,12 +318,17 @@ class GeovisorApp {
         if (!wellsData) wellsData = await fetchGeoJSON('data/pozos.geojson');
         
         if (wellsData) {
-            this.leafletLayers.wells = L.geoJson(wellsData, {
+            console.log(`✅ Pozos cargados: ${wellsData.features.length} registros.`);
+            
+            // A. Guardamos los datos crudos en memoria
+            this.data.wellsData = wellsData; 
+
+            // B. Inicializamos la capa VACÍA (null) pero configurada
+            this.leafletLayers.wells = L.geoJson(null, {
                 pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
         }
-    }
 
     /**
      * Normaliza la clave del acuífero para asegurar coincidencia con la base de datos.
@@ -581,19 +588,44 @@ class GeovisorApp {
             }
         }
 
-        // 2. Gestión de Pozos
-        if (this.leafletLayers.wells) {
+        // 2. Gestión de Pozos con FILTRADO
+        // Verificamos que existan la capa Y los datos crudos
+        if (this.leafletLayers.wells && this.data.wellsData) {
+            
             if (areWellsVisible) {
+                // A. DETECTAR CAMBIOS: Si cambió el acuífero seleccionado, filtramos
+                // (selectedAquifer viene del estado, updatedState lo actualiza al hacer clic)
+                if (this.lastFilteredAquifer !== this.state.selectedAquifer) {
+                    
+                    let featuresToShow = this.data.wellsData.features;
+                    const nombreAcuifero = this.state.selectedAquifer;
+
+                    // LÓGICA DE FILTRADO
+                    if (nombreAcuifero) {
+                        // Mostrar SOLO pozos que pertenezcan al acuífero seleccionado
+                        featuresToShow = featuresToShow.filter(f => f.properties.ACUIFERO === nombreAcuifero);
+                    } 
+                    // Si nombreAcuifero es null, muestra todos (comportamiento default)
+
+                    // Actualizar la capa visual
+                    this.leafletLayers.wells.clearLayers(); // Borrar puntos viejos
+                    this.leafletLayers.wells.addData(featuresToShow); // Poner puntos nuevos
+                    
+                    this.lastFilteredAquifer = nombreAcuifero; // Recordar para no repetir
+                }
+
+                // B. Mostrar en mapa y aplicar estilos
                 if (!map.hasLayer(this.leafletLayers.wells)) {
                     this.leafletLayers.wells.addTo(map);
                 }
+
                 this.leafletLayers.wells.eachLayer(l => {
                     l.setStyle(this.getWellStyle(l.feature));
-                    // Traer pozo seleccionado al frente
                     if (l.feature.properties.NOMBRE_POZO === selectedWellId) {
                         l.bringToFront();
                     }
                 });
+
             } else {
                 if (map.hasLayer(this.leafletLayers.wells)) {
                     map.removeLayer(this.leafletLayers.wells);
