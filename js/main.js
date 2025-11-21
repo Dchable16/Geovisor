@@ -338,11 +338,12 @@ class GeovisorApp {
                 pane: 'wellsPane',
                 pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
                 pane: 'wellsPane'
+                }),
+                
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
         }
     }
-
     /**
      * Normaliza la clave del acuífero para asegurar coincidencia con la base de datos.
      * Convierte a string y rellena con ceros a la izquierda hasta 4 dígitos (ej: "201" -> "0201").
