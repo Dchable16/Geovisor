@@ -53,9 +53,17 @@ class GeovisorApp {
          * @property {Object} hydraulicProps - Datos alfanuméricos de propiedades hidráulicas.
          */
         this.data = {
-            aquifers: {},
-            keyToNameMap: {},
-            hydraulicProps: {}
+            // Índices para VULNERABILIDAD
+            vulnLayers: {},      // Nombre -> Capa (para zoom)
+            vulnNames: [],       // Lista de nombres para el buscador
+            vulnKeyMap: {},      // Clave -> Nombre
+
+            // Índices para HIDRÁULICA
+            hydroLayers: {},     // Nombre -> Capa (para zoom)
+            hydroNames: [],      // Lista de nombres (solo los que tienen datos)
+            hydroKeyMap: {},     // Clave -> Nombre
+            
+            hydraulicProps: {}   // Base de datos JSON
         };
 
         /**
@@ -105,15 +113,48 @@ class GeovisorApp {
             this.mapManager.flyToCoords(lat, lon, name);
         }
 
+        updateState(newState) {
+        // Detectar cambio de tema
+        const themeChanged = newState.activeTheme && newState.activeTheme !== this.state.activeTheme;
+
+        // ... (reinicio y flyToCoords igual) ...
+
         // Actualización del estado
         this.state = { ...this.state, ...newState };
-        
-        // Efecto secundario: Zoom al seleccionar acuífero en modo vulnerabilidad
-        if (newState.selectedAquifer !== undefined && this.state.activeTheme === 'vulnerability') {
-             if (this.state.selectedAquifer && this.data.aquifers[this.state.selectedAquifer]) {
-                 const group = L.featureGroup(this.data.aquifers[this.state.selectedAquifer]);
-                 this.mapManager.fitBounds(group.getBounds());
-             }
+
+        // A. ACTUALIZACIÓN DE CONTROLES (BUSCADOR/SELECT)
+        if (themeChanged) {
+            if (this.state.activeTheme === 'hydraulics') {
+                // Filtrar solo acuíferos con info hidráulica
+                this.uiManager.refreshControls(this.data.hydroNames, this.data.hydroKeyMap);
+            } else {
+                // Mostrar todos (Vulnerabilidad)
+                this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
+            }
+            this.state.selectedAquifer = null; // Limpiar selección para evitar conflictos
+        }
+
+        // B. LÓGICA DE ZOOM INTELIGENTE (AMBOS TEMAS)
+        if (newState.selectedAquifer) {
+            const name = newState.selectedAquifer;
+            let targetLayer = null;
+
+            if (this.state.activeTheme === 'vulnerability') {
+                // Usamos el índice de vulnerabilidad (ahora vulnLayers)
+                // Nota: Tu código original usaba 'aquifers', adáptalo si cambiaste el nombre en el constructor
+                if (this.data.vulnLayers[name]) { 
+                    targetLayer = L.featureGroup(this.data.vulnLayers[name]);
+                } else if (this.data.aquifers[name]) { // Soporte legacy por si no cambiaste loadLayers
+                     targetLayer = L.featureGroup(this.data.aquifers[name]);
+                }
+            } else {
+                // Usamos el índice hidráulico
+                targetLayer = this.data.hydroLayers[name];
+            }
+
+            if (targetLayer) {
+                this.mapManager.fitBounds(targetLayer.getBounds());
+            }
         }
         
         // Limpieza de selección de pozo si la capa se oculta
@@ -153,6 +194,20 @@ class GeovisorApp {
 
         if (hydroData) {
             this.data.hydraulicProps = hydroData;
+            
+            // PRE-PROCESAR: Crear lista para el filtro hidráulico
+            const hydroDict = hydroData.data || {};
+            Object.keys(hydroDict).forEach(key => {
+                const item = hydroDict[key];
+                if (item && item.nombre) {
+                    this.data.hydroNames.push(item.nombre);
+                    this.data.hydroKeyMap[key] = item.nombre;
+                }
+            });
+            this.data.hydroNames.sort();
+            
+            // Inicializar controles por defecto con la lista de vulnerabilidad (que se llenará en loadLayers)
+            // OJO: Asegúrate de llenar vulnNames en loadLayers o usar una lista por defecto
         } else {
             console.warn("[Warn] No se pudo cargar el archivo 'propiedades_hidraulicas.json'. Verifique la ruta.");
         }
@@ -234,7 +289,20 @@ class GeovisorApp {
         if (boundariesData) {
             this.leafletLayers.aquiferBoundaries = L.geoJson(boundariesData, {
                 style: (feature) => this.getHydraulicBoundaryStyle(feature),
-                onEachFeature: (feature, layer) => this.onHydraulicFeature(feature, layer)
+                onEachFeature: (feature, layer) => {
+                    // 1. Lógica estándar de eventos (clic, hover)
+                    this.onHydraulicFeature(feature, layer);
+                    
+                    // 2. NUEVO: Indexar capa para permitir ZOOM y BÚSQUEDA
+                    const clave = this._getNormalizedKey(feature);
+                    const data = this.data.hydraulicProps?.data?.[clave];
+                    // Nombre prioritario: El del JSON, o fallback al del Mapa
+                    const nombre = (data ? data.nombre : null) || feature.properties.NOM_ACUIF || feature.properties.NOM_ACUI;
+                    
+                    if (nombre) {
+                        this.data.hydroLayers[nombre] = layer; // Guardamos la capa
+                    }
+                }
             });
         } else {
             console.error("[Error] No se encontró el archivo 'limites_acuiferos_mx.geojson' en las rutas esperadas.");
