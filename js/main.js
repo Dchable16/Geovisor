@@ -552,15 +552,32 @@ class GeovisorApp {
                 this.leafletLayers.vulnerability.eachLayer(l => l.setStyle(this.getVulnerabilityStyle(l.feature)));
             }
         } else { // Theme: hydraulics
+            // 1. Mostrar la capa hidráulica
             if (this.leafletLayers.aquiferBoundaries && !map.hasLayer(this.leafletLayers.aquiferBoundaries)) {
                 this.leafletLayers.aquiferBoundaries.addTo(map);
             }
+            // 2. Ocultar la capa de vulnerabilidad
             if (this.leafletLayers.vulnerability && map.hasLayer(this.leafletLayers.vulnerability)) {
                 map.removeLayer(this.leafletLayers.vulnerability);
             }
             
+            // 3. Actualizar estilos y ORDEN DE APILAMIENTO (Z-INDEX)
             if (this.leafletLayers.aquiferBoundaries) {
-                this.leafletLayers.aquiferBoundaries.eachLayer(l => l.setStyle(this.getHydraulicBoundaryStyle(l.feature)));
+                this.leafletLayers.aquiferBoundaries.eachLayer(l => {
+                    // Aplicar el estilo (Amarillo o Gris)
+                    l.setStyle(this.getHydraulicBoundaryStyle(l.feature));
+                    
+                    // --- CORRECCIÓN CLAVE ---
+                    // Si este es el acuífero seleccionado, traerlo al frente para que no lo tapen
+                    // Recalculamos el nombre para comparar con el estado
+                    const clave = this._getNormalizedKey(l.feature);
+                    const data = this.data.hydraulicProps?.data?.[clave];
+                    const nombre = (data ? data.nombre : null) || l.feature.properties.NOM_ACUIF || l.feature.properties.NOM_ACUI;
+                    
+                    if (this.state.selectedAquifer === nombre) {
+                        l.bringToFront();
+                    }
+                });
             }
         }
 
