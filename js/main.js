@@ -281,12 +281,6 @@ class GeovisorApp {
                 this.uiManager.populateAquiferSelect(this.data.vulnNames);
             }
         }
-                
-                // Actualización de componentes de UI con los datos cargados
-                this.uiManager.setSearchData(Object.keys(this.data.aquifers), this.data.keyToNameMap);
-                this.uiManager.populateAquiferSelect(Object.keys(this.data.aquifers));
-            }
-        }
 
         // 2. Capa de Límites de Acuíferos (Hidráulica)
         let boundariesData = await fetchGeoJSON('data/boundaries/limites_acuiferos_mx.geojson');
