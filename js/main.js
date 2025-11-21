@@ -337,7 +337,6 @@ class GeovisorApp {
                 
                 pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
                     ...this.getWellStyle(feature),
-                    pane: 'wellsPane' // <--- FORZAMOS EL PANE AQUÍ TAMBIÉN
                 }),
                 
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
