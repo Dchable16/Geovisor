@@ -103,7 +103,7 @@ class GeovisorApp {
         if (newState.reset === true) {
             this.state = { ...INITIAL_STATE };
             this.mapManager.resetView();
-            // Restaurar controles al resetear
+            // Restaurar controles al resetear (Vulnerabilidad por defecto)
             this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
             this.render();
             return;
@@ -115,36 +115,32 @@ class GeovisorApp {
             this.mapManager.flyToCoords(lat, lon, name);
         }
 
-        // 3. Detectar cambio de tema ANTES de mezclar el estado
+        // 3. Detectar cambio de tema
         const themeChanged = newState.activeTheme && newState.activeTheme !== this.state.activeTheme;
 
         // 4. Actualizar estado
         this.state = { ...this.state, ...newState };
 
-        // 5. ACTUALIZACIÓN DE CONTROLES (BUSCADOR/SELECT)
+        // 5. Actualización de Controles
         if (themeChanged) {
             if (this.state.activeTheme === 'hydraulics') {
-                // Filtrar solo acuíferos con info hidráulica
                 this.uiManager.refreshControls(this.data.hydroNames, this.data.hydroKeyMap);
             } else {
-                // Mostrar todos (Vulnerabilidad)
                 this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
             }
-            this.state.selectedAquifer = null; // Limpiar selección para evitar conflictos
+            this.state.selectedAquifer = null; 
         }
 
-        // 6. LÓGICA DE ZOOM INTELIGENTE (AMBOS TEMAS)
+        // 6. Zoom Inteligente
         if (newState.selectedAquifer) {
             const name = newState.selectedAquifer;
             let targetLayer = null;
 
             if (this.state.activeTheme === 'vulnerability') {
-                // Buscar en índice de vulnerabilidad
                 if (this.data.vulnLayers[name]) { 
                     targetLayer = L.featureGroup(this.data.vulnLayers[name]);
                 }
             } else {
-                // Buscar en índice hidráulico
                 targetLayer = this.data.hydroLayers[name];
             }
 
