@@ -329,21 +329,20 @@ class GeovisorApp {
         
         if (wellsData) {
             console.log(`✅ Pozos cargados: ${wellsData.features.length} registros.`);
-            
-            // A. Guardamos los datos crudos en memoria
             this.data.wellsData = wellsData; 
 
-            // B. Inicializamos la capa VACÍA (null) pero configurada
             this.leafletLayers.wells = L.geoJson(null, {
-                pane: 'wellsPane',
-                pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
-                pane: 'wellsPane'
+                // OJO: Esto asigna el pane al contenedor, pero a veces los puntos SVG necesitan ayuda
+                pane: 'wellsPane', 
+                
+                pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+                    ...this.getWellStyle(feature),
+                    pane: 'wellsPane' // <--- FORZAMOS EL PANE AQUÍ TAMBIÉN
                 }),
                 
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
         }
-    }
     /**
      * Normaliza la clave del acuífero para asegurar coincidencia con la base de datos.
      * Convierte a string y rellena con ceros a la izquierda hasta 4 dígitos (ej: "201" -> "0201").
