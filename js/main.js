@@ -63,11 +63,8 @@ class GeovisorApp {
             hydroNames: [],      // Lista de nombres (solo los que tienen datos)
             hydroKeyMap: {},     // Clave -> Nombre
             
-            hydraulicProps: {},   // Base de datos JSON
-            wellsData: null
+            hydraulicProps: {}   // Base de datos JSON
         };
-
-        this.lastFilteredAquifer = 'NINGUNO';
 
         /**
          * Referencias a las instancias de capas de Leaflet.
@@ -110,11 +107,6 @@ class GeovisorApp {
             this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
             this.render();
             return;
-        }
-        
-        if (newState.selectedAquifer !== undefined && newState.selectedAquifer !== this.state.selectedAquifer) {
-            // Si cambia el acuífero, forzamos la deselección del pozo
-            newState.selectedWellId = null; 
         }
 
         // 2. Navegación
@@ -171,7 +163,7 @@ class GeovisorApp {
      */
     async init() {
         this.uiManager.setLoading(true);
-
+        
         // 1. Carga de base de datos hidráulica con estrategia de fallback (redilencia)
         let hydroData = null;
         const pathsToTry = [
@@ -324,18 +316,13 @@ class GeovisorApp {
         if (!wellsData) wellsData = await fetchGeoJSON('data/pozos.geojson');
         
         if (wellsData) {
-            console.log(`✅ Pozos cargados: ${wellsData.features.length} registros.`);
-            
-            // A. Guardamos los datos crudos en memoria
-            this.data.wellsData = wellsData; 
-
-            // B. Inicializamos la capa VACÍA (null) pero configurada
-            this.leafletLayers.wells = L.geoJson(null, {
+            this.leafletLayers.wells = L.geoJson(wellsData, {
                 pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
         }
-    }    
+    }
+
     /**
      * Normaliza la clave del acuífero para asegurar coincidencia con la base de datos.
      * Convierte a string y rellena con ceros a la izquierda hasta 4 dígitos (ej: "201" -> "0201").
@@ -565,73 +552,31 @@ class GeovisorApp {
                 this.leafletLayers.vulnerability.eachLayer(l => l.setStyle(this.getVulnerabilityStyle(l.feature)));
             }
         } else { // Theme: hydraulics
-            // 1. Mostrar la capa hidráulica
             if (this.leafletLayers.aquiferBoundaries && !map.hasLayer(this.leafletLayers.aquiferBoundaries)) {
                 this.leafletLayers.aquiferBoundaries.addTo(map);
             }
-            // 2. Ocultar la capa de vulnerabilidad
             if (this.leafletLayers.vulnerability && map.hasLayer(this.leafletLayers.vulnerability)) {
                 map.removeLayer(this.leafletLayers.vulnerability);
             }
             
-            // 3. Actualizar estilos y ORDEN DE APILAMIENTO (Z-INDEX)
             if (this.leafletLayers.aquiferBoundaries) {
-                this.leafletLayers.aquiferBoundaries.eachLayer(l => {
-                    // Aplicar el estilo (Amarillo o Gris)
-                    l.setStyle(this.getHydraulicBoundaryStyle(l.feature));
-                    
-                    // --- CORRECCIÓN CLAVE ---
-                    // Si este es el acuífero seleccionado, traerlo al frente para que no lo tapen
-                    // Recalculamos el nombre para comparar con el estado
-                    const clave = this._getNormalizedKey(l.feature);
-                    const data = this.data.hydraulicProps?.data?.[clave];
-                    const nombre = (data ? data.nombre : null) || l.feature.properties.NOM_ACUIF || l.feature.properties.NOM_ACUI;
-                    
-                    if (this.state.selectedAquifer === nombre) {
-                        l.bringToFront(); 
-                    }
-                });
+                this.leafletLayers.aquiferBoundaries.eachLayer(l => l.setStyle(this.getHydraulicBoundaryStyle(l.feature)));
             }
         }
 
-        // 2. Gestión de Pozos con FILTRADO
-        // Verificamos que existan la capa Y los datos crudos
-        if (this.leafletLayers.wells && this.data.wellsData) {
-            
+        // 2. Gestión de Pozos
+        if (this.leafletLayers.wells) {
             if (areWellsVisible) {
-                // A. DETECTAR CAMBIOS: Si cambió el acuífero seleccionado, filtramos
-                // (selectedAquifer viene del estado, updatedState lo actualiza al hacer clic)
-                if (this.lastFilteredAquifer !== this.state.selectedAquifer) {
-                    
-                    let featuresToShow = this.data.wellsData.features;
-                    const nombreAcuifero = this.state.selectedAquifer;
-
-                    // LÓGICA DE FILTRADO
-                    if (nombreAcuifero) {
-                        // Mostrar SOLO pozos que pertenezcan al acuífero seleccionado
-                        featuresToShow = featuresToShow.filter(f => f.properties.ACUIFERO === nombreAcuifero);
-                    } 
-                    // Si nombreAcuifero es null, muestra todos (comportamiento default)
-
-                    // Actualizar la capa visual
-                    this.leafletLayers.wells.clearLayers(); // Borrar puntos viejos
-                    this.leafletLayers.wells.addData(featuresToShow); // Poner puntos nuevos
-                    
-                    this.lastFilteredAquifer = nombreAcuifero; // Recordar para no repetir
-                }
-
-                // B. Mostrar en mapa y aplicar estilos
                 if (!map.hasLayer(this.leafletLayers.wells)) {
                     this.leafletLayers.wells.addTo(map);
                 }
-
                 this.leafletLayers.wells.eachLayer(l => {
                     l.setStyle(this.getWellStyle(l.feature));
+                    // Traer pozo seleccionado al frente
                     if (l.feature.properties.NOMBRE_POZO === selectedWellId) {
                         l.bringToFront();
                     }
                 });
-
             } else {
                 if (map.hasLayer(this.leafletLayers.wells)) {
                     map.removeLayer(this.leafletLayers.wells);
