@@ -165,7 +165,14 @@ class GeovisorApp {
      */
     async init() {
         this.uiManager.setLoading(true);
-        
+
+        const map = this.mapManager.map;
+        if (!map.getPane('wellsPane')) {
+            map.createPane('wellsPane');
+            map.getPane('wellsPane').style.zIndex = 600;
+        }
+
+        this.uiManager.setLoading(false);
         // 1. Carga de base de datos hidráulica con estrategia de fallback (redilencia)
         let hydroData = null;
         const pathsToTry = [
@@ -216,11 +223,6 @@ class GeovisorApp {
             opacity: 0.5,
             minDistance: 100
         });
-        const map = this.mapManager.map;
-        map.createPane('wellsPane');
-        map.getPane('wellsPane').style.zIndex = 600;
-
-        this.uiManager.setLoading(false);
 
         this.uiManager.setLoading(false);
         this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
