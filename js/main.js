@@ -63,8 +63,11 @@ class GeovisorApp {
             hydroNames: [],      // Lista de nombres (solo los que tienen datos)
             hydroKeyMap: {},     // Clave -> Nombre
             
-            hydraulicProps: {}   // Base de datos JSON
+            hydraulicProps: {},   // Base de datos JSON
+            wellsData: null
         };
+
+        this.lastFilteredAquifer = 'NINGUNO';
 
         /**
          * Referencias a las instancias de capas de Leaflet.
@@ -107,6 +110,11 @@ class GeovisorApp {
             this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
             this.render();
             return;
+        }
+        
+        if (newState.selectedAquifer !== undefined && newState.selectedAquifer !== this.state.selectedAquifer) {
+            // Si cambia el acuífero, forzamos la deselección del pozo
+            newState.selectedWellId = null; 
         }
 
         // 2. Navegación
@@ -163,6 +171,10 @@ class GeovisorApp {
      */
     async init() {
         this.uiManager.setLoading(true);
+        
+        const map = this.mapManager.map;
+        map.createPane('wellsPane');
+        map.getPane('wellsPane').style.zIndex = 600; // Piso superior
         
         // 1. Carga de base de datos hidráulica con estrategia de fallback (redilencia)
         let hydroData = null;
@@ -316,13 +328,21 @@ class GeovisorApp {
         if (!wellsData) wellsData = await fetchGeoJSON('data/pozos.geojson');
         
         if (wellsData) {
-            this.leafletLayers.wells = L.geoJson(wellsData, {
-                pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
+            console.log(`✅ Pozos cargados: ${wellsData.features.length} registros.`);
+            this.data.wellsData = wellsData; 
+
+            this.leafletLayers.wells = L.geoJson(null, {
+                // OJO: Esto asigna el pane al contenedor, pero a veces los puntos SVG necesitan ayuda
+                pane: 'wellsPane', 
+                
+                pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+                    ...this.getWellStyle(feature),
+                }),
+                
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
         }
-    }
-
+    }    
     /**
      * Normaliza la clave del acuífero para asegurar coincidencia con la base de datos.
      * Convierte a string y rellena con ceros a la izquierda hasta 4 dígitos (ej: "201" -> "0201").
@@ -575,25 +595,50 @@ class GeovisorApp {
                     const nombre = (data ? data.nombre : null) || l.feature.properties.NOM_ACUIF || l.feature.properties.NOM_ACUI;
                     
                     if (this.state.selectedAquifer === nombre) {
-                        l.bringToFront();
+                        l.bringToFront(); 
                     }
                 });
             }
         }
 
-        // 2. Gestión de Pozos
-        if (this.leafletLayers.wells) {
+        // 2. Gestión de Pozos con FILTRADO
+        // Verificamos que existan la capa Y los datos crudos
+        if (this.leafletLayers.wells && this.data.wellsData) {
+            
             if (areWellsVisible) {
+                // A. DETECTAR CAMBIOS: Si cambió el acuífero seleccionado, filtramos
+                // (selectedAquifer viene del estado, updatedState lo actualiza al hacer clic)
+                if (this.lastFilteredAquifer !== this.state.selectedAquifer) {
+                    
+                    let featuresToShow = this.data.wellsData.features;
+                    const nombreAcuifero = this.state.selectedAquifer;
+
+                    // LÓGICA DE FILTRADO
+                    if (nombreAcuifero) {
+                        // Mostrar SOLO pozos que pertenezcan al acuífero seleccionado
+                        featuresToShow = featuresToShow.filter(f => f.properties.ACUIFERO === nombreAcuifero);
+                    } 
+                    // Si nombreAcuifero es null, muestra todos (comportamiento default)
+
+                    // Actualizar la capa visual
+                    this.leafletLayers.wells.clearLayers(); // Borrar puntos viejos
+                    this.leafletLayers.wells.addData(featuresToShow); // Poner puntos nuevos
+                    
+                    this.lastFilteredAquifer = nombreAcuifero; // Recordar para no repetir
+                }
+
+                // B. Mostrar en mapa y aplicar estilos
                 if (!map.hasLayer(this.leafletLayers.wells)) {
                     this.leafletLayers.wells.addTo(map);
                 }
+
                 this.leafletLayers.wells.eachLayer(l => {
                     l.setStyle(this.getWellStyle(l.feature));
-                    // Traer pozo seleccionado al frente
                     if (l.feature.properties.NOMBRE_POZO === selectedWellId) {
                         l.bringToFront();
                     }
                 });
+
             } else {
                 if (map.hasLayer(this.leafletLayers.wells)) {
                     map.removeLayer(this.leafletLayers.wells);
