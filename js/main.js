@@ -357,21 +357,33 @@ class GeovisorApp {
             click: (e) => {
                 L.DomEvent.stop(e);
                 
-                // 1. Buscar datos en el objeto JSON cargado
+                // 1. Buscar datos en el JSON
                 const dataPromedio = this.data.hydraulicProps?.data?.[clave];
                 
                 if(!dataPromedio) {
                     console.warn(`[Warn] Datos no encontrados para la clave normalizada: ${clave}`);
                 }
 
-                // 2. Determinar nombre con prioridad (JSON > GeoJSON)
-                const nombre = (dataPromedio ? dataPromedio.nombre : null) || feature.properties.NOM_ACUIF || 'Acuífero';
+                // 2. Determinar nombre
+                const nombre = (dataPromedio ? dataPromedio.nombre : null) || feature.properties.NOM_ACUIF || feature.properties.NOM_ACUI || 'Acuífero';
 
-                // 3. Preparar datos para el panel
+                // 3. PREPARAR DATOS CON UNIDADES (Aquí está la corrección)
+                let propsConUnidades = {};
+                if (dataPromedio) {
+                    propsConUnidades = {
+                        "Transmisividad Media": dataPromedio.transmisividad_media ? `${dataPromedio.transmisividad_media} m²/d` : null,
+                        "Conductividad Media": dataPromedio.conductividad_media ? `${dataPromedio.conductividad_media} m/d` : null,
+                        "Coef. Almacenamiento": dataPromedio.coef_almacenamiento_medio, // Es adimensional
+                        "Profundidad Media": dataPromedio.profundidad_media ? `${dataPromedio.profundidad_media} m` : null,
+                        "Pozos Registrados": dataPromedio.pozos_registrados
+                    };
+                }
+
+                // 4. Objeto final para el panel
                 const displayProps = {
                     'Nombre del Acuífero': nombre,
                     'Clave': clave,
-                    ...dataPromedio 
+                    ...propsConUnidades 
                 };
                 
                 this.uiManager.showInfoPanel(displayProps);
