@@ -212,6 +212,10 @@ class GeovisorApp {
             console.warn("[Warn] No se pudo cargar el archivo 'propiedades_hidraulicas.json'. Verifique la ruta.");
         }
 
+        const map = this.mapManager.map;
+        map.createPane('wellsPane');
+        map.getPane('wellsPane').style.zIndex = 600;
+
         // 2. Carga de capas geográficas
         await this.loadLayers();
 
@@ -331,6 +335,7 @@ class GeovisorApp {
 
             // B. Inicializamos la capa VACÍA (null) pero configurada
             this.leafletLayers.wells = L.geoJson(null, {
+                pane: 'wellsPane',
                 pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
@@ -589,7 +594,7 @@ class GeovisorApp {
                     const nombre = (data ? data.nombre : null) || l.feature.properties.NOM_ACUIF || l.feature.properties.NOM_ACUI;
                     
                     if (this.state.selectedAquifer === nombre) {
-                        l.bringToBack(); 
+                        l.bringToFront(); 
                     }
                 });
             }
