@@ -407,10 +407,19 @@ class GeovisorApp {
         const clave = this._getNormalizedKey(feature);
         const data = this.data.hydraulicProps?.data?.[clave];
         
+        // Determinar si este polígono es el seleccionado
+        // Intentamos coincidir por nombre (que es lo que usamos en el estado)
+        const nombreGeo = feature.properties.NOM_ACUI || feature.properties.NOM_ACUIF;
+        const nombreData = data ? data.nombre : null;
+        // Usamos el mismo criterio de nombre que en el evento click
+        const nombre = nombreData || nombreGeo || 'Acuífero';
+        
+        const isSelected = (this.state.selectedAquifer === nombre);
+
         return {
-            weight: 1,
-            color: '#666',
-            fillColor: data ? '#AAD3DF' : '#E0E0E0', // Azul si hay datos, gris si no
+            weight: isSelected ? 4 : 1,          // Borde más grueso si seleccionado
+            color: isSelected ? '#FFD700' : '#666', // Amarillo (Gold) vs Gris
+            fillColor: data ? '#AAD3DF' : '#E0E0E0', 
             fillOpacity: this.state.opacity
         };
     }
@@ -423,8 +432,20 @@ class GeovisorApp {
         const clave = this._getNormalizedKey(feature);
         
         layer.on({
-            mouseover: (e) => e.target.setStyle({ weight: 2, color: '#000', fillOpacity: 0.7 }),
-            mouseout: (e) => e.target.setStyle(this.getHydraulicBoundaryStyle(feature)),
+            mouseover: (e) => {
+                // Resolvemos el nombre igual que en el click para comparar
+                const data = this.data.hydraulicProps?.data?.[clave];
+                const nombre = (data ? data.nombre : null) || feature.properties.NOM_ACUIF || feature.properties.NOM_ACUI || 'Acuífero';
+
+                // Solo aplicar estilo hover (negro) si NO es el acuífero seleccionado actualmente
+                if (this.state.selectedAquifer !== nombre) {
+                    e.target.setStyle({ weight: 2, color: '#000', fillOpacity: 0.7 });
+                }
+            },
+            mouseout: (e) => {
+                // Restaurar el estilo calculado (que ya sabe si debe pintarse amarillo o gris)
+                e.target.setStyle(this.getHydraulicBoundaryStyle(feature));
+            },
             click: (e) => {
                 L.DomEvent.stop(e);
                 
@@ -435,16 +456,19 @@ class GeovisorApp {
                     console.warn(`[Warn] Datos no encontrados para la clave normalizada: ${clave}`);
                 }
 
-                // 2. Determinar nombre
+                // 2. Determinar nombre (Prioridad: JSON > GeoJSON)
                 const nombre = (dataPromedio ? dataPromedio.nombre : null) || feature.properties.NOM_ACUIF || feature.properties.NOM_ACUI || 'Acuífero';
 
-                // 3. PREPARAR DATOS CON UNIDADES (Aquí está la corrección)
+                // --- NUEVO: Actualizar estado para fijar el borde amarillo ---
+                this.updateState({ selectedAquifer: nombre });
+
+                // 3. PREPARAR DATOS CON UNIDADES
                 let propsConUnidades = {};
                 if (dataPromedio) {
                     propsConUnidades = {
                         "Transmisividad Media": dataPromedio.transmisividad_media ? `${dataPromedio.transmisividad_media} m²/d` : null,
                         "Conductividad Media": dataPromedio.conductividad_media ? `${dataPromedio.conductividad_media} m/d` : null,
-                        "Coef. Almacenamiento": dataPromedio.coef_almacenamiento_medio, // Es adimensional
+                        "Coef. Almacenamiento": dataPromedio.coef_almacenamiento_medio,
                         "Profundidad Media": dataPromedio.profundidad_media ? `${dataPromedio.profundidad_media} m` : null,
                         "Pozos Registrados": dataPromedio.pozos_registrados
                     };
