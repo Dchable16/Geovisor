@@ -216,6 +216,11 @@ class GeovisorApp {
             opacity: 0.5,
             minDistance: 100
         });
+        const map = this.mapManager.map;
+        map.createPane('wellsPane');
+        map.getPane('wellsPane').style.zIndex = 600;
+
+        this.uiManager.setLoading(false);
 
         this.uiManager.setLoading(false);
         this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
@@ -325,6 +330,7 @@ class GeovisorApp {
 
             // B. Inicializamos la capa VACÍA (null) pero configurada
             this.leafletLayers.wells = L.geoJson(null, {
+                pane: 'wellsPane',
                 pointToLayer: (feature, latlng) => L.circleMarker(latlng, this.getWellStyle(feature)),
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
