@@ -83,25 +83,40 @@ export class UIManager {
             // Campos que NO queremos mostrar en la tabla
             const ignoreKeys = ['geometry', 'fid', 'cat', 'type', 'bbox', 'Id', 'id'];
             
-            // Campos prioritarios para mostrar arriba
-            const priorityKeys = ['Clave', 'Tipo', 'Acuífero', 'Transmisividad', 'Conductividad'];
+            const priorityKeys = [
+                'Clave', 
+                'Tipo', 
+                'Nombre del Acuífero',
+                'Nombre del Pozo',
+                'Acuífero', 
+                'Transmisividad Media', 'Transmisividad', 
+                'Conductividad Media', 'Conductividad', 
+                'Coef. Almacenamiento', 
+                'Caudal (Q)',
+                'Profundidad Media', 'Profundidad',
+                'Pozos Registrados',
+                'Año'
+            ];
             
-            // 1. Renderizar Prioritarios
+            // 1. Renderizar campos prioritarios en orden
             priorityKeys.forEach(key => {
-                // Buscamos keys que coincidan (case-insensitive o exactas)
+                // Buscamos si la propiedad existe (exacta o case-insensitive)
                 const foundKey = Object.keys(properties).find(k => k === key || k.toLowerCase() === key.toLowerCase());
+                
                 if (foundKey && properties[foundKey] !== undefined) {
                     htmlContent += this._buildInfoRow(key, properties[foundKey]);
                 }
             });
 
-            // 2. Renderizar el resto
+            // 2. Renderizar el resto de campos que no estén en prioridad ni ignorados
             Object.keys(properties).forEach(key => {
-                if (!ignoreKeys.includes(key) && !priorityKeys.includes(key) && 
-                    !priorityKeys.map(k => k.toLowerCase()).includes(key.toLowerCase()) &&
-                    key !== 'Nombre' && key !== 'nombre' && key !== 'NOM_ACUIF' && key !== 'NOMBRE_POZO') {
-                    
-                    // Formatear valor si es muy largo o tiene muchos decimales (opcional)
+                const keyLower = key.toLowerCase();
+                const isPriority = priorityKeys.some(pk => pk.toLowerCase() === keyLower);
+                const isIgnored = ignoreKeys.includes(key);
+                // Excluir también títulos redundantes
+                const isTitle = ['Nombre', 'nombre', 'NOM_ACUIF', 'NOMBRE_POZO'].includes(key);
+
+                if (!isPriority && !isIgnored && !isTitle) {
                     let val = properties[key];
                     htmlContent += this._buildInfoRow(this._formatLabel(key), val);
                 }
