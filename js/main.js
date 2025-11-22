@@ -634,12 +634,6 @@ class GeovisorApp {
 
         this.uiManager.updateView(this.state);
     }
-
-        // 4. Actualizar Interfaz de Usuario
-        this.uiManager.updateView(this.state);
-    }
-}
-
 // Punto de entrada de la aplicación
 document.addEventListener('DOMContentLoaded', () => { 
     new GeovisorApp(); 
