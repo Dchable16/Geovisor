@@ -66,7 +66,6 @@ class GeovisorApp {
             hydraulicProps: {},   // Base de datos JSON
             wellsData: null
         };
-
         this.lastFilteredAquifer = 'NINGUNO';
 
         /**
@@ -110,11 +109,6 @@ class GeovisorApp {
             this.uiManager.refreshControls(this.data.vulnNames, this.data.vulnKeyMap);
             this.render();
             return;
-        }
-        
-        if (newState.selectedAquifer !== undefined && newState.selectedAquifer !== this.state.selectedAquifer) {
-            // Si cambia el acuífero, forzamos la deselección del pozo
-            newState.selectedWellId = null; 
         }
 
         // 2. Navegación
@@ -172,6 +166,7 @@ class GeovisorApp {
     async init() {
         this.uiManager.setLoading(true);
 
+        this.uiManager.setLoading(false);
         // 1. Carga de base de datos hidráulica con estrategia de fallback (redilencia)
         let hydroData = null;
         const pathsToTry = [
@@ -335,7 +330,7 @@ class GeovisorApp {
                 onEachFeature: (feature, layer) => this.onWellFeature(feature, layer)
             });
         }
-    }    
+    }
     /**
      * Normaliza la clave del acuífero para asegurar coincidencia con la base de datos.
      * Convierte a string y rellena con ceros a la izquierda hasta 4 dígitos (ej: "201" -> "0201").
@@ -588,7 +583,7 @@ class GeovisorApp {
                     const nombre = (data ? data.nombre : null) || l.feature.properties.NOM_ACUIF || l.feature.properties.NOM_ACUI;
                     
                     if (this.state.selectedAquifer === nombre) {
-                        l.bringToFront(); 
+                        l.bringToFront();
                     }
                 });
             }
