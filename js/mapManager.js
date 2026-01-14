@@ -1,34 +1,51 @@
 /**
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet.
+ * Actualizado para instanciar capas base desde la configuración de strings.
  */
 
 import { CONFIG } from './config.js';
 
 export class MapManager {
     constructor(mapId) {
+        // 1. Instanciar la capa base inicial (Neutral) desde la configuración corregida
+        const neutralCfg = CONFIG.tileLayers["Neutral (defecto)"];
+        const initialLayer = L.tileLayer(neutralCfg.url, neutralCfg.options);
+
+        // 2. Crear el mapa
         this.map = L.map(mapId, {
             center: CONFIG.initialCoords,
             zoom: CONFIG.initialZoom,
             minZoom: 6,
-            layers: [CONFIG.tileLayers["Neutral (defecto)"]],
+            layers: [initialLayer], // Se pasa la instancia creada
             zoomControl: false,
             preferCanvas: true
         });
+
         this.tempMarker = null;
         this.addControls();
     }
 
     addControls() {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
-        L.control.layers(CONFIG.tileLayers, null, {
+
+        // 3. Crear el objeto de capas base para el selector (Control.Layers)
+        // Convertimos los objetos de configuración en instancias reales de L.tileLayer
+        const baseLayers = {};
+        Object.keys(CONFIG.tileLayers).forEach(key => {
+            const cfg = CONFIG.tileLayers[key];
+            baseLayers[key] = L.tileLayer(cfg.url, cfg.options);
+        });
+
+        L.control.layers(baseLayers, null, {
             collapsed: true,
             position: 'topright',
             sortLayers: true
         }).addTo(this.map);
+
         this.addLegend();
         this.addLogo();
-        L.control.scale({ position: 'bottomright', imperial: false }).addTo(this.map); // La escala se añade después (queda encima del logo)
+        L.control.scale({ position: 'bottomright', imperial: false }).addTo(this.map);
         this.addCustomPrintControl();
     }
 
@@ -58,12 +75,11 @@ export class MapManager {
                             pixelRatio: 3,
                             filter: (node) => {
                                  const exclusionClasses = [
-                                    'leaflet-control-zoom',       // Botones de Zoom
-                                    'leaflet-control-layers',     // Selector de capas
-                                    'leaflet-pm-toolbar',         // (No se usa, pero por si acaso)
-                                    'leaflet-control-custom',     // El mismo botón de imprimir
-                                    'leaflet-custom-controls',    // <-- AÑADIDO: El panel deslizable
-                                    'leaflet-open-button'         // <-- AÑADIDO: El botón (☰) para abrir el panel
+                                    'leaflet-control-zoom',
+                                    'leaflet-control-layers',
+                                    'leaflet-control-custom',
+                                    'leaflet-custom-controls',
+                                    'leaflet-open-button'
                                 ];
                                 return !exclusionClasses.some((classname) => node.classList?.contains(classname));
                             }
@@ -131,32 +147,25 @@ export class MapManager {
     }
     
     flyToCoords(lat, lon, name) {
-        // 1. Limpiar marcador anterior si existe
         if (this.tempMarker) {
             this.map.removeLayer(this.tempMarker);
             this.tempMarker = null;
         }
 
-        // 2. Crear nuevas coordenadas
         const latLng = L.latLng(lat, lon);
 
-        // 3. Crear el contenido del Popup
         let popupContent;
         if (name) {
-            // Si el usuario escribió un nombre
             popupContent = `<b>${name}</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
         } else {
-            // Si el campo de nombre estaba vacío
             popupContent = `<b>Coordenadas</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
         }
 
-        // 4. Crear marcador, añadir popup y abrirlo
         this.tempMarker = L.marker(latLng)
             .addTo(this.map)
-            .bindPopup(popupContent) // <-- Añade el popup
-            .openPopup();            // <-- Abre el popup automáticamente
+            .bindPopup(popupContent)
+            .openPopup();
 
-        // 5. Volar a la ubicación
         this.map.flyTo(latLng, 13);
     }
     
