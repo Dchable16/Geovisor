@@ -7,7 +7,7 @@
 export const CONFIG = {
     mapId: 'map',
     initialCoords: [23.6345, -102.5528],
-    initialZoom: 15,
+    initialZoom: 5,
     dataManifestUrl: 'data/manifest.json',
     coastlineUrl: 'data/Linea_Costa_10km.geojson',
     coastline1kmUrl: 'data/Linea_Costa_1km.geojson',
