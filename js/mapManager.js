@@ -16,7 +16,7 @@ export class MapManager {
         this.map = L.map(mapId, {
             center: CONFIG.initialCoords,
             zoom: CONFIG.initialZoom,
-            minZoom: 4,
+            minZoom: 5,
             layers: [initialLayer], // Se pasa la instancia creada
             zoomControl: false,
             preferCanvas: true
