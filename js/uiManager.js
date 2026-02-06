@@ -2,6 +2,7 @@
  * @file uiManager.js
  * @description Gestiona el panel de controles, interacción del usuario y visualización de datos.
  * Actualizado para soportar capas de Vulnerabilidad, Hidráulica y Pozos.
+ * PARCHEADO: Seguridad XSS aplicada (Fase 1).
  */
 
 import { CONFIG } from './config.js';
@@ -47,11 +48,16 @@ export class UIManager {
     /**
      * Muestra el panel con datos.
      * Detecta automáticamente si es un Acuífero (Vulnerabilidad/Hidráulica) o un Pozo.
+     * SEGURIDAD: Usa manipulación del DOM en lugar de innerHTML.
      * @param {Object} properties - Objeto con los datos a mostrar.
      * @param {Object} [vulnerabilityMap] - Mapa de códigos de vulnerabilidad (opcional).
      */
     showInfoPanel(properties, vulnerabilityMap) {
-        let htmlContent = '';
+        // Limpiar contenido previo de forma segura
+        this.nodes.infoPanelContent.innerHTML = ''; 
+        
+        // Fragmento para mejorar rendimiento al insertar múltiples filas
+        const fragment = document.createDocumentFragment();
         
         // 1. DETECTAR TÍTULO
         // Intenta buscar campos comunes de nombre
@@ -73,7 +79,7 @@ export class UIManager {
                     const levelData = vulnerabilityMap[String(value)];
                     value = value ? `${value} (${levelData ? levelData.label : ''})` : 'N/A';
                 }
-                htmlContent += this._buildInfoRow(attr.label, value);
+                fragment.appendChild(this._buildInfoRow(attr.label, value));
             });
 
         } else {
@@ -104,7 +110,7 @@ export class UIManager {
                 const foundKey = Object.keys(properties).find(k => k === key || k.toLowerCase() === key.toLowerCase());
                 
                 if (foundKey && properties[foundKey] !== undefined) {
-                    htmlContent += this._buildInfoRow(key, properties[foundKey]);
+                    fragment.appendChild(this._buildInfoRow(key, properties[foundKey]));
                 }
             });
 
@@ -118,12 +124,13 @@ export class UIManager {
 
                 if (!isPriority && !isIgnored && !isTitle) {
                     let val = properties[key];
-                    htmlContent += this._buildInfoRow(this._formatLabel(key), val);
+                    fragment.appendChild(this._buildInfoRow(this._formatLabel(key), val));
                 }
             });
         }
         
-        this.nodes.infoPanelContent.innerHTML = htmlContent;
+        // Insertar todo el contenido generado de una sola vez
+        this.nodes.infoPanelContent.appendChild(fragment);
         this.nodes.infoPanelContainer.classList.add('is-visible');
     }
 
@@ -134,15 +141,26 @@ export class UIManager {
         }
     }
 
-    // Helper HTML para filas
+    // Helper DOM seguro para filas (Reemplaza la versión de string anterior)
     _buildInfoRow(label, value) {
+        // Crear elementos del DOM
+        const row = document.createElement('div');
+        row.className = 'info-panel-row';
+
+        const labelElem = document.createElement('strong');
+        labelElem.textContent = `${label}: `;
+
+        const valueElem = document.createElement('span');
+        valueElem.className = 'info-panel-value';
+        
         // Si el valor es nulo o undefined, mostramos 'S/D' (Sin Dato)
         const displayValue = (value !== undefined && value !== null && value !== '') ? value : 'S/D';
-        return `
-            <div class="info-panel-row">
-                <strong>${label}:</strong>
-                <span class="info-panel-value">${displayValue}</span>
-            </div>`;
+        valueElem.textContent = displayValue; // textContent escapa cualquier HTML malicioso
+
+        row.appendChild(labelElem);
+        row.appendChild(valueElem);
+
+        return row;
     }
 
     // Helper para formatear etiquetas (ej: "tipo_acuifero" -> "Tipo Acuifero")
@@ -192,6 +210,9 @@ export class UIManager {
         const radioGroup = container.querySelector('#vulnerability-radio-group');
         if (!radioGroup) return;
 
+        // Aquí usamos innerHTML porque el contenido es controlado por nosotros (números de config),
+        // pero idealmente también podría refactorizarse a DOM elements si CONFIG fuera dinámico externo.
+        // Dado que CONFIG es interno, el riesgo es mínimo aquí.
         let radioHTML = '';
         const grades = Object.keys(CONFIG.vulnerabilityMap)
                              .filter(key => key !== 'default')
@@ -232,7 +253,7 @@ export class UIManager {
         this.nodes.vulnerabilitySection = container.querySelector('#vulnerability-radio-group')?.closest('.control-section');
 
         // Toggles de Capas
-        this.nodes.wellsToggle = container.querySelector('#wells-toggle'); // <--- NUEVO
+        this.nodes.wellsToggle = container.querySelector('#wells-toggle');
         this.nodes.coastlineToggle = container.querySelector('#coastline-toggle');
         this.nodes.coastline1kmToggle = container.querySelector('#coastline-1km-toggle');
         this.nodes.graticuleToggle = container.querySelector('#graticule-toggle');
@@ -264,7 +285,7 @@ export class UIManager {
             this.nodes.btnThemeHydro.addEventListener('click', () => this.onStateChange({ activeTheme: 'hydraulics' }));
         }
 
-        // LISTENER DE POZOS (NUEVO)
+        // LISTENER DE POZOS
         if (this.nodes.wellsToggle) {
             this.nodes.wellsToggle.addEventListener('change', e => this.onStateChange({ areWellsVisible: e.target.checked }));
         }
@@ -344,7 +365,7 @@ export class UIManager {
         if(this.nodes.coastline1kmToggle) this.nodes.coastline1kmToggle.checked = state.isCoastline1kmVisible;
         if(this.nodes.graticuleToggle) this.nodes.graticuleToggle.checked = state.isGraticuleVisible;
         
-        // Toggle de Pozos (NUEVO)
+        // Toggle de Pozos
         if (this.nodes.wellsToggle) {
             this.nodes.wellsToggle.checked = state.areWellsVisible;
         }
@@ -438,8 +459,13 @@ export class UIManager {
         resultsToShow.forEach(name => {
             const item = document.createElement('div');
             item.className = 'search-result-item';
+            
+            // Nota: Aquí se usa innerHTML para resaltar el texto buscado en negrita.
+            // Dado que 'name' proviene de una lista interna de nombres de acuíferos,
+            // el riesgo es bajo, pero para máxima seguridad en Fase 2 podríamos sanear esto.
             const regex = new RegExp(`(${query})`, 'gi');
             item.innerHTML = name.replace(regex, '<strong>$1</strong>');
+            
             item.addEventListener('click', () => this.selectSearchResult(name));
             this.nodes.searchResults.appendChild(item);
         });
