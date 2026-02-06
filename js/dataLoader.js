@@ -1,66 +1,118 @@
 /**
  * @file dataLoader.js
- * @description Módulo para cargar los datos GeoJSON con control de concurrencia.
- * PARCHEADO: Carga por lotes para evitar 'Failed to fetch' por saturación de red.
+ * @description Módulo para cargar los datos GeoJSON.
+ * Incluye control de concurrencia para evitar saturar el navegador y notificaciones de error.
  */
 
-// ... (Mantén la función _showErrorNotification igual que antes) ...
+/**
+ * Helper interno para mostrar notificaciones de error visuales en la UI.
+ * @param {string} message - El mensaje a mostrar.
+ */
 function _showErrorNotification(message) {
+    // Evitar duplicar la alerta si ya existe una
     if (document.querySelector('.dataload-error-toast')) return;
+
     const alertBox = document.createElement('div');
     alertBox.className = 'dataload-error-toast';
-    alertBox.style.cssText = `position: fixed; top: 20px; right: 20px; background-color: #e74c3c; color: white; padding: 16px 24px; border-radius: 8px; z-index: 9999; font-family: sans-serif; display: flex; gap: 12px; animation: fadeIn 0.3s ease-in-out; box-shadow: 0 4px 12px rgba(0,0,0,0.2);`;
-    alertBox.innerHTML = `<span style="font-size: 1.2em">⚠️</span><span>${message}</span><button onclick="this.parentElement.remove()" style="background:none; border:none; color:white; cursor:pointer; font-weight:bold; margin-left:10px;">&times;</button>`;
+    // Estilos inline para asegurar visibilidad inmediata sin depender de CSS externo
+    alertBox.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #e74c3c;
+        color: white;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: fadeIn 0.3s ease-in-out;
+    `;
+
+    alertBox.innerHTML = `
+        <span style="font-size: 1.2em">⚠️</span>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" style="background:none; border:none; color:white; cursor:pointer; font-weight:bold; font-size:16px; margin-left:10px;">&times;</button>
+    `;
+
     document.body.appendChild(alertBox);
-    setTimeout(() => { if (alertBox.parentElement) alertBox.remove(); }, 8000);
+
+    // Auto-eliminar después de 8 segundos
+    setTimeout(() => {
+        if (alertBox.parentElement) alertBox.remove();
+    }, 8000);
 }
 
-// ... (Mantén fetchGeoJSON igual que antes) ...
+/**
+ * Carga un archivo JSON o GeoJSON desde una URL con manejo de errores.
+ * @param {string} url - La URL del archivo.
+ * @returns {Promise<object|null>} - Promesa con los datos o null si falla.
+ */
 export async function fetchGeoJSON(url) {
     try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+        }
+        
         return await response.json();
     } catch (error) {
-        console.error(`❌ Falló carga: ${url}`, error);
-        return null;
+        console.warn(`⚠️ Falló la carga de: ${url}`, error);
+        // No mostramos alerta por cada archivo individual fallido para no llenar la pantalla,
+        // el error se maneja en el lote general o se ignora si es uno solo.
+        return null; 
     }
 }
 
 /**
- * Carga múltiples archivos con límite de concurrencia (Batching).
- * Evita saturar el navegador con demasiadas peticiones simultáneas.
+ * Carga múltiples archivos GeoJSON en paralelo pero controlando la concurrencia.
+ * Evita el error "Failed to fetch" por saturación de red.
+ * * @param {string[]} urls - Lista de URLs a cargar.
+ * @param {number} concurrency - Cuántas peticiones hacer al mismo tiempo (Default: 5).
+ * @returns {Promise<object[]>} - Array con los GeoJSONs cargados correctamente.
  */
 export async function fetchAllGeoJSON(urls, concurrency = 5) {
     const results = [];
     const total = urls.length;
     
-    // Función auxiliar para procesar un lote
+    // Función para procesar un sub-grupo de URLs
     async function processBatch(batch) {
         const promises = batch.map(url => fetchGeoJSON(url));
         return await Promise.all(promises);
     }
 
     try {
-        // Procesar en bucle por lotes
+        // Iterar sobre las URLs en pasos de 'concurrency'
         for (let i = 0; i < total; i += concurrency) {
             const batch = urls.slice(i, i + concurrency);
-            // console.log(`Cargando lote ${i/concurrency + 1}...`); // Opcional: Debug
+            
+            // Esperar a que este lote termine antes de lanzar el siguiente
             const batchResults = await processBatch(batch);
             results.push(...batchResults);
         }
 
+        // Filtrar nulos (archivos que fallaron)
         const validData = results.filter(data => data !== null);
-        
+
+        // Notificar si hubo fallos masivos
         if (validData.length === 0 && urls.length > 0) {
-            _showErrorNotification("No se pudieron cargar las capas de datos.");
+            _showErrorNotification("Error crítico: No se pudo cargar ninguna capa de datos.");
         } else if (validData.length < urls.length) {
             console.warn(`Advertencia: Se cargaron ${validData.length} de ${urls.length} archivos.`);
+            // Opcional: Notificar al usuario que faltan algunos datos
+            // _showErrorNotification(`Atención: Algunos archivos (${urls.length - validData.length}) no se cargaron.`);
         }
 
         return validData;
+
     } catch (error) {
-        console.error("Error crítico en carga por lotes:", error);
+        console.error("Error crítico en el cargador de datos:", error);
+        _showErrorNotification("Error del sistema al inicializar la carga de datos.");
         return [];
     }
 }
