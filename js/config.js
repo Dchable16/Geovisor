@@ -1,19 +1,23 @@
 /**
  * @file config.js
  * @description Almacena la configuración estática del geovisor.
- * Actualizado para evitar errores de referencia a 'L' durante la carga de módulos.
+ * Actualizado para soportar la arquitectura de Fase 3 (endpoints).
  */
 
 export const CONFIG = {
     mapId: 'map',
     initialCoords: [23.6345, -102.5528],
     initialZoom: 6,
-    dataManifestUrl: 'data/manifest.json',
-    coastlineUrl: 'data/Linea_Costa_10km.geojson',
-    coastline1kmUrl: 'data/Linea_Costa_1km.geojson',
+
+    // --- CORRECCIÓN: Agrupamos las rutas en 'endpoints' para que main.js las encuentre ---
+    endpoints: {
+        manifest: 'data/manifest.json',
+        wells: 'data/boundaries/pozos.geojson',
+        coastline: 'data/Linea_Costa_10km.geojson',
+        coastline1km: 'data/Linea_Costa_1km.geojson'
+    },
     
-    // Se definen solo las URLs y opciones. 
-    // Los objetos L.tileLayer se crearán en mapManager.js para mayor seguridad.
+    // Configuración de Mapas Base
     tileLayers: {
         "Neutral (defecto)": {
             url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
@@ -49,6 +53,7 @@ export const CONFIG = {
         }
     },
 
+    // Tus colores y etiquetas originales
     vulnerabilityMap: {
         '5': { color: '#D90404', label: 'Muy Alta' }, // Rojo (Máximo)
         '4': { color: '#F25C05', label: 'Alta' },
@@ -58,6 +63,7 @@ export const CONFIG = {
         'default': { color: '#CCCCCC', label: 'Sin Datos' }
     },
     
+    // Estilos visuales
     styles: {
         base: { weight: 1, opacity: 0.8, color: '#555555', fillOpacity: 0.65 },
         muted: { fillColor: '#cccccc', weight: 0.5, color: '#dddddd', fillOpacity: 0.1 },
