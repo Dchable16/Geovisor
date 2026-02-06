@@ -2,15 +2,19 @@
  * @file mapManager.js
  * @description Gestiona la creación y manipulación del mapa Leaflet.
  * Actualizado para instanciar capas base desde la configuración de strings.
+ * PARCHEADO: Corrección CORS para exportación de imágenes (Fase 1).
  */
 
 import { CONFIG } from './config.js';
 
 export class MapManager {
     constructor(mapId) {
-        // 1. Instanciar la capa base inicial (Neutral) desde la configuración corregida
+        // 1. Instanciar la capa base inicial (Neutral) con CORS habilitado
         const neutralCfg = CONFIG.tileLayers["Neutral (defecto)"];
-        const initialLayer = L.tileLayer(neutralCfg.url, neutralCfg.options);
+        const initialLayer = L.tileLayer(neutralCfg.url, {
+            ...neutralCfg.options,
+            crossOrigin: 'anonymous' // <--- CRÍTICO: Permite exportar el mapa a imagen
+        });
 
         // 2. Crear el mapa
         this.map = L.map(mapId, {
@@ -30,11 +34,14 @@ export class MapManager {
         L.control.zoom({ position: 'topleft' }).addTo(this.map);
 
         // 3. Crear el objeto de capas base para el selector (Control.Layers)
-        // Convertimos los objetos de configuración en instancias reales de L.tileLayer
+        // Convertimos los objetos de configuración en instancias reales de L.tileLayer con CORS
         const baseLayers = {};
         Object.keys(CONFIG.tileLayers).forEach(key => {
             const cfg = CONFIG.tileLayers[key];
-            baseLayers[key] = L.tileLayer(cfg.url, cfg.options);
+            baseLayers[key] = L.tileLayer(cfg.url, {
+                ...cfg.options,
+                crossOrigin: 'anonymous' // <--- CRÍTICO: Permite exportar el mapa a imagen
+            });
         });
 
         L.control.layers(baseLayers, null, {
@@ -70,6 +77,7 @@ export class MapManager {
 
                     if(loader) loader.style.display = 'flex';
                     try {
+                        // html-to-image requiere que las imágenes externas (tiles) tengan crossOrigin anonymous
                         const dataUrl = await htmlToImage.toPng(mapNode, {
                             quality: 1.0,
                             pixelRatio: 3,
@@ -90,7 +98,7 @@ export class MapManager {
                         link.click();
                     } catch (error) {
                         console.error('Error al exportar el mapa:', error);
-                        alert('No se pudo exportar el mapa. Inténtelo de nuevo.');
+                        alert('No se pudo exportar el mapa. Es posible que el servidor de mapas bloquee la descarga directa (CORS). Inténtelo de nuevo.');
                     } finally {
                         if(loader) loader.style.display = 'none';
                     }
@@ -106,6 +114,9 @@ export class MapManager {
         const vulnerabilityMap = CONFIG.vulnerabilityMap;
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend');
+            // Nota: Aquí usamos innerHTML para la leyenda estática.
+            // Dado que los datos provienen de CONFIG (interno y confiable), el riesgo XSS es bajo.
+            // Sin embargo, en una refactorización profunda (Fase 3), esto se movería a UI Manager con DOM elements.
             div.innerHTML = '<h4>Vulnerabilidad</h4>';
             Object.keys(vulnerabilityMap)
                 .filter(key => key !== 'default')
@@ -127,6 +138,7 @@ export class MapManager {
         const LogoControl = L.Control.extend({
             onAdd: () => {
                 const c = L.DomUtil.create('div', 'leaflet-logo-control');
+                // Logo estático desde URL confiable
                 c.innerHTML = `<img src="https://raw.githubusercontent.com/Dchable16/geovisor_vulnerabilidad/main/logos/Logo_SSIG.png" alt="Logo SSIG">`;
                 L.DomEvent.disableClickPropagation(c);
                 return c;
@@ -155,11 +167,14 @@ export class MapManager {
         const latLng = L.latLng(lat, lon);
 
         let popupContent;
-        if (name) {
-            popupContent = `<b>${name}</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
-        } else {
-            popupContent = `<b>Coordenadas</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
-        }
+        // Sanitización básica para el popup del marcador temporal
+        const latText = lat.toFixed(6);
+        const lonText = lon.toFixed(6);
+        // Usamos textContent indirectamente creando nodos si fuera complejo, 
+        // pero aquí es texto simple controlado.
+        const safeName = name ? name.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "Coordenadas";
+
+        popupContent = `<b>${safeName}</b><br>Lat: ${latText}<br>Lon: ${lonText}`;
 
         this.tempMarker = L.marker(latLng)
             .addTo(this.map)
