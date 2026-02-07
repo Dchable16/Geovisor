@@ -1,7 +1,7 @@
 /**
  * @file main.js
  * @description Orquestador principal.
- * VERSIÓN ESTABILIZADA: Implementa "Smart Rendering" para evitar recargas innecesarias de capas.
+ * VERSIÓN CORREGIDA: Restaura el comportamiento original (Clic no fuerza zoom).
  */
 
 import { CONFIG } from './config.js';
@@ -18,6 +18,11 @@ class GeovisorApp {
         
         // UI Manager con callback para cambios de estado
         this.uiManager = new UIManager(this.mapManager.map, (newState) => {
+            // Si la UI pide un cambio (ej. Dropdown), asumimos que el usuario quiere Zoom
+            // Agregamos la bandera 'zoomToSelection: true' explícitamente
+            if (newState.selectedAquifer !== undefined) {
+                newState.zoomToSelection = true;
+            }
             this.stateManager.setState(newState);
         });
 
@@ -38,7 +43,7 @@ class GeovisorApp {
             graticule: null
         };
 
-        // Memoria de estado previo para comparación (Diffing)
+        // Memoria de estado previo
         this.prevState = {
             filterValue: null,
             activeTheme: null,
@@ -94,33 +99,27 @@ class GeovisorApp {
             const p = f.properties;
             const name = p.NOM_ACUIF || p.nombre || p.Nombre;
             const key = p.CLAVE_ACUI || p.clave;
-            if (name && !names.includes(name)) names.push(name);
-            if (key && name) keyMap[key] = name;
+            
+            if (name) {
+                if (!names.includes(name)) names.push(name);
+                if (key) keyMap[key] = name;
+            }
         });
 
         this.uiManager.refreshControls(names, keyMap);
     }
 
-    /**
-     * Motor de Renderizado Inteligente.
-     * Compara el estado anterior con el nuevo para hacer solo lo mínimo necesario.
-     */
     render(state, force = false) {
         if (!this.aquiferData) return;
 
-        // 1. GESTIÓN DE CAPA DE ACUÍFEROS (La más pesada)
+        // 1. GESTIÓN DE CAPA DE ACUÍFEROS
         const filterChanged = state.filterValue !== this.prevState.filterValue;
         const themeChanged = state.activeTheme !== this.prevState.activeTheme;
         const opacityChanged = state.opacity !== this.prevState.opacity;
 
-        // A) Solo si cambia el filtro o el tema, reconstruimos la capa geométrica
         if (force || filterChanged || themeChanged || !this.layers.aquifers) {
-            
-            if (this.layers.aquifers) {
-                this.mapManager.map.removeLayer(this.layers.aquifers);
-            }
+            if (this.layers.aquifers) this.mapManager.map.removeLayer(this.layers.aquifers);
 
-            // Filtrado de datos
             let dataToShow = this.aquiferData;
             if (state.filterValue && state.filterValue !== 'all') {
                 dataToShow = {
@@ -137,19 +136,16 @@ class GeovisorApp {
                 state
             ).addTo(this.mapManager.map);
 
-        } else if (opacityChanged) {
-            // B) Si solo cambia opacidad, NO reconstruimos, solo actualizamos estilo
+        } else if (opacityChanged && this.layers.aquifers) {
             this.layers.aquifers.eachLayer(layer => {
-                const currentStyle = layer.options.style || {}; // Obtener estilo actual si es posible
-                // Mantenemos el color actual, solo cambiamos opacidad
                 layer.setStyle({ 
                     fillOpacity: state.opacity,
-                    opacity: (state.activeTheme === 'hydraulics') ? 1 : 0 // Borde
+                    opacity: (state.activeTheme === 'hydraulics') ? 1 : 0
                 });
             });
         }
 
-        // 2. GESTIÓN DE CAPA DE POZOS
+        // 2. CAPA DE POZOS
         if (this.wellsData) {
             if (state.areWellsVisible && !this.layers.wells) {
                 this.layers.wells = LayerFactory.createWellsLayer(
@@ -165,20 +161,20 @@ class GeovisorApp {
         // 3. CAPAS ESTÁTICAS
         this._toggleStaticLayer('coastline', this.coastlineData, state.isCoastlineVisible, { color: '#007BFF', weight: 2 });
         this._toggleStaticLayer('coastline1km', this.coastline1kmData, state.isCoastline1kmVisible, { color: '#FF0000', weight: 2 });
-        this._handleGraticule(state.isGraticuleVisible);
 
-        // 4. LÓGICA DE SELECCIÓN (Zoom y Popup)
-        // Solo actuamos si el acuífero seleccionado ha cambiado respecto a la última vez
+        // 4. LÓGICA DE SELECCIÓN (EL CAMBIO CLAVE)
         if (state.selectedAquifer !== this.prevState.selectedAquifer) {
             if (state.selectedAquifer) {
-                this.handleAquiferSelectionByName(state.selectedAquifer);
+                // Solo hacemos Zoom si la bandera 'zoomToSelection' es verdadera (viene del menú)
+                // Si viene de un clic en el mapa, esta bandera será falsa.
+                const shouldZoom = state.zoomToSelection === true;
+                this.handleAquiferSelectionByName(state.selectedAquifer, shouldZoom);
             } else {
                 this.uiManager.hideInfoPanel();
-                // Opcional: Reset view
             }
         }
 
-        // 5. ACCIONES DE UN SOLO USO
+        // 5. ACCIONES EFÍMERAS
         if (state.flyToCoords) {
             this.mapManager.flyToCoords(...state.flyToCoords);
             this.stateManager.state.flyToCoords = null; 
@@ -189,13 +185,11 @@ class GeovisorApp {
             this.stateManager.state.selectedAquifer = null;
         }
 
-        // Actualizar UI y guardar estado previo
         this.uiManager.updateView(state);
         this.prevState = { ...state };
     }
 
-    handleAquiferSelectionByName(aquiferName) {
-        // Buscar en la data cargada
+    handleAquiferSelectionByName(aquiferName, doZoom) {
         const feature = this.aquiferData.features.find(f => {
             const p = f.properties;
             const name = p.NOM_ACUIF || p.nombre || p.Nombre;
@@ -203,30 +197,28 @@ class GeovisorApp {
         });
 
         if (feature) {
-            // Hacemos Zoom
-            const bounds = L.geoJSON(feature).getBounds();
-            this.mapManager.fitBounds(bounds);
-            
-            // Mostramos Info
+            if (doZoom) {
+                const bounds = L.geoJSON(feature).getBounds();
+                this.mapManager.fitBounds(bounds);
+            }
+            // Siempre mostramos el panel
             this.uiManager.showInfoPanel(feature.properties, CONFIG.vulnerabilityMap);
         }
     }
 
     handleFeatureClick(feature, layer) {
-        // Al hacer clic, solo actualizamos el estado.
-        // El 'render' se encargará de mostrar el panel, pero NO de hacer zoom 
-        // (ya que el usuario ya está ahí).
-        
         const p = feature.properties;
         const name = p.NOM_ACUIF || p.nombre || p.Nombre;
 
-        // Evitamos bucle: Si ya está seleccionado, no hacemos nada o solo actualizamos panel
-        if (this.stateManager.getState().selectedAquifer !== name) {
-             this.stateManager.setState({ selectedAquifer: name });
-        } else {
-             // Si es el mismo, forzamos mostrar panel por si se cerró
-             this.uiManager.showInfoPanel(p, CONFIG.vulnerabilityMap);
-        }
+        // IMPORTANTE: Al hacer clic en el mapa, actualizamos el nombre
+        // PERO indicamos 'zoomToSelection: false' para que no salte la cámara.
+        this.stateManager.setState({ 
+            selectedAquifer: name,
+            zoomToSelection: false 
+        });
+        
+        // Forzamos mostrar el panel inmediatamente para respuesta rápida
+        this.uiManager.showInfoPanel(p, CONFIG.vulnerabilityMap);
     }
 
     _toggleStaticLayer(key, data, visible, style) {
@@ -236,19 +228,6 @@ class GeovisorApp {
             this.mapManager.map.removeLayer(this.layers[key]);
             this.layers[key] = null;
         }
-    }
-
-    _handleGraticule(visible) {
-        // Intenta usar una librería simple de graticule si existe, o dibuja líneas manuales
-        // Para simplificar, asumimos que no hay plugin externo y saltamos esto por ahora
-        // O implementamos una lógica básica si es crítico.
-        /* if (visible && !this.layers.graticule && L.simpleGraticule) {
-             this.layers.graticule = L.simpleGraticule({ interval: 1 }).addTo(this.mapManager.map);
-        } else if (!visible && this.layers.graticule) {
-             this.mapManager.map.removeLayer(this.layers.graticule);
-             this.layers.graticule = null;
-        }
-        */
     }
 }
 
